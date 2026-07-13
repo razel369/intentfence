@@ -12,7 +12,7 @@ const checks = [
 ];
 
 const manifest = `{
-  "agentpass": "0.1",
+  "agentpass": "0.3",
   "subject": "did:web:crew-07",
   "action": {
     "type": "travel.booking",
@@ -135,8 +135,8 @@ export default function Home() {
               <span>plus A2A 1.0</span>
             </div>
             <div>
-              <strong>JSON-native</strong>
-              <span>built for machines</span>
+              <strong>x402 + USDC</strong>
+              <span>agents pay directly</span>
             </div>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default function Home() {
           <span>03</span>
           <div>
             <h2>Act</h2>
-            <p>A signed, auditable decision travels with the action.</p>
+            <p>An auditable decision and x402 settlement proof travel with the action.</p>
           </div>
         </div>
       </section>
@@ -273,15 +273,16 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open draft / v0.1</div>
+          <div className="section-kicker">Open draft / v0.3</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
             Publish an AgentPass document at a well-known endpoint. Agents can
-            inspect it before acting; services can return a signed decision.
+            inspect it before acting; services can return a decision with x402 settlement proof.
           </p>
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
             <div><span>DISCOVER</span><code>GET /.well-known/agentpass.json</code></div>
             <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
+            <div><span>PAY + VERIFY</span><code>POST /api/preflight/verified</code></div>
             <div><span>A2A</span><code>GET /.well-known/agent-card.json</code></div>
           </div>
           <div className="manifest-actions">
@@ -311,7 +312,7 @@ export default function Home() {
       <footer>
         <a className="wordmark wordmark-footer" href="#top">AgentPass<span className="wordmark-dot">.</span></a>
         <p>An open preflight protocol for autonomous AI.</p>
-        <span>Draft 0.1 · Built for an agentic web</span>
+        <span>Draft 0.3 · x402 on Base · Built for an agentic web</span>
       </footer>
     </main>
   );

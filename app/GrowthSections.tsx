@@ -10,40 +10,68 @@ const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.si
     "constraints":{"cost_ceiling":100,"quoted_cost":79,"data_retention_hours":24}
   }'`;
 
+const paidFlow = `POST /api/preflight/verified
+-> 402 + PAYMENT-REQUIRED
+-> agent signs 0.05 USDC on Base
+-> retry + PAYMENT-SIGNATURE
+-> 200 + PAYMENT-RESPONSE`;
+
 const plans = [
   {
     key: "free",
-    name: "Open",
+    name: "Open Preview",
     price: "$0",
-    note: "for builders and distribution",
-    features: ["Open spec + discovery files", "10k public preflights / month", "REST, MCP and A2A", "Unsigned preview receipts"],
+    note: "free, unsigned preflight",
+    features: [
+      "Open spec and discovery files",
+      "REST, MCP and A2A",
+      "Deterministic policy checks",
+      "No wallet required",
+    ],
   },
   {
-    key: "builder",
-    name: "Builder",
-    price: "$49",
-    note: "per month · founding price",
-    features: ["100k preflights / month", "Signed decision receipts", "API keys and policy sets", "30-day audit history", "$9 per extra 100k"],
+    key: "verified",
+    name: "Verified x402",
+    price: "0.05 USDC",
+    note: "per action - live on Base",
+    features: [
+      "Agent pays directly",
+      "No account or API key",
+      "On-chain settlement proof",
+      "Machine-readable discovery",
+      "Payment audit record",
+    ],
     featured: true,
   },
   {
-    key: "scale",
-    name: "Scale",
-    price: "$249",
-    note: "per month · founding price",
-    features: ["1m preflights / month", "Team policy controls", "90-day audit history", "Priority onboarding", "Usage export"],
+    key: "high_assurance",
+    name: "High Assurance",
+    price: "0.25 USDC",
+    note: "per action - coming next",
+    features: [
+      "External identity proofs",
+      "Policy-set verification",
+      "Longer audit retention",
+      "Signed AgentPass attestation",
+      "Founding access priority",
+    ],
   },
   {
-    key: "enterprise",
-    name: "Enterprise",
+    key: "fleet",
+    name: "Agent Fleet",
     price: "Custom",
-    note: "for regulated agent fleets",
-    features: ["SSO and data residency", "Private deployment", "Custom retention and SLA", "Security review support"],
+    note: "for high-volume agent operators",
+    features: [
+      "Volume pricing",
+      "Batch settlement",
+      "Custom retention and SLA",
+      "Private deployment option",
+    ],
   },
 ];
 
 export default function GrowthSections() {
-  const [plan, setPlan] = useState("builder");
+  const [plan, setPlan] = useState("high_assurance");
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -85,7 +113,7 @@ export default function GrowthSections() {
     <>
       <section className="agent-gateway" id="agents" aria-labelledby="agents-title">
         <div className="gateway-intro">
-          <div className="section-kicker">Machine entry points · live now</div>
+          <div className="section-kicker">Machine entry points - live now</div>
           <h2 id="agents-title">One check, in the protocol your agent already speaks.</h2>
           <p>
             AgentPass publishes standard discovery files and callable endpoints so an agent can find the service without reading this page.
@@ -95,6 +123,7 @@ export default function GrowthSections() {
             <a href="/.well-known/agentpass.json">AgentPass manifest</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
+            <a href="/api/payments">x402 payment metadata</a>
           </div>
         </div>
 
@@ -102,41 +131,49 @@ export default function GrowthSections() {
           <article>
             <span>01 / REST</span>
             <h3>POST /api/preflight</h3>
-            <p>Universal JSON endpoint for any runtime, workflow, or backend.</p>
+            <p>Free JSON policy preview for any runtime, workflow, or backend.</p>
           </article>
           <article>
-            <span>02 / MCP</span>
-            <h3>POST /mcp</h3>
-            <p>Discover and call <code>agentpass_preflight</code> as an MCP tool.</p>
+            <span>02 / x402</span>
+            <h3>POST /api/preflight/verified</h3>
+            <p>Pay 0.05 USDC per successful action with on-chain settlement proof.</p>
           </article>
           <article>
-            <span>03 / A2A</span>
-            <h3>/.well-known/agent-card.json</h3>
-            <p>A2A 1.0 Agent Card with an HTTP+JSON message interface.</p>
+            <span>03 / MCP + A2A</span>
+            <h3>Machine-native discovery</h3>
+            <p>REST, MCP, A2A, OpenAPI, llms.txt, and Bazaar entry points.</p>
           </article>
         </div>
 
         <div className="quickstart">
           <div className="code-topline">
             <span>60-second quickstart</span>
-            <span>REST</span>
+            <span>FREE REST</span>
           </div>
           <pre><code>{curlExample}</code></pre>
+        </div>
+
+        <div className="quickstart">
+          <div className="code-topline">
+            <span>Autonomous payment flow</span>
+            <a href="/api/payments">LIVE x402</a>
+          </div>
+          <pre><code>{paidFlow}</code></pre>
         </div>
       </section>
 
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
-          <div className="section-kicker">Open protocol · paid trust infrastructure</div>
-          <h2 id="pricing-title">Free to adopt. Paid when the action needs proof.</h2>
+          <div className="section-kicker">Open protocol - autonomous USDC payments</div>
+          <h2 id="pricing-title">Free to discover. Pay only when an agent uses it.</h2>
           <p>
-            The open layer drives distribution. Hosted signing, policy enforcement, audit retention, and team controls are what businesses pay for.
+            An agent can discover the endpoint, pay 0.05 USDC on Base, and receive the result without creating an account or asking a human to enter a card.
           </p>
         </div>
         <div className="pricing-grid">
           {plans.map((item) => (
             <article className={item.featured ? "featured" : ""} key={item.key}>
-              {item.featured && <div className="plan-flag">Best starting point</div>}
+              {item.featured && <div className="plan-flag">Live pay-per-use</div>}
               <span>{item.name}</span>
               <h3>{item.price}</h3>
               <p>{item.note}</p>
@@ -145,20 +182,22 @@ export default function GrowthSections() {
               </ul>
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
+              ) : item.key === "verified" ? (
+                <a className="plan-button" href="/api/payments">Inspect the live payment flow</a>
               ) : (
                 <button className="plan-button" onClick={() => selectPlan(item.key)}>Request founding access</button>
               )}
             </article>
           ))}
         </div>
-        <p className="pricing-note">Founding prices are an early-access offer, not a claim that every listed paid feature is generally available today.</p>
+        <p className="pricing-note">Verified x402 at 0.05 USDC is live. High Assurance and fleet features are marked as upcoming or custom.</p>
       </section>
 
       <section className="founding-section" id="founding-access">
         <div>
           <div className="section-kicker">Founding customer program</div>
-          <h2>Bring one real agent action. We will help make it safe and billable.</h2>
-          <p>Tell us what your agent does and which plan fits. We will prioritize the policy and receipt flow around real demand.</p>
+          <h2>Bring one real agent action. We will help make it safe and autonomously billable.</h2>
+          <p>The pay-per-use endpoint is live. Use this form for higher-assurance verification, volume pricing, or a private deployment.</p>
         </div>
         <form onSubmit={submitLead}>
           <label>
@@ -176,9 +215,9 @@ export default function GrowthSections() {
           <label>
             Plan
             <select value={plan} onChange={(event) => setPlan(event.target.value)}>
-              <option value="builder">Builder · $49/mo</option>
-              <option value="scale">Scale · $249/mo</option>
-              <option value="enterprise">Enterprise · custom</option>
+              <option value="high_assurance">High Assurance - 0.25 USDC/action</option>
+              <option value="fleet">Agent Fleet - custom</option>
+              <option value="enterprise">Private Enterprise - custom</option>
             </select>
           </label>
           <label className="honeypot" aria-hidden="true">

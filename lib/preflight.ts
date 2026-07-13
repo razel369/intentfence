@@ -20,6 +20,102 @@ export type PreflightCheck = {
   detail: string;
 };
 
+export class PreflightValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PreflightValidationError";
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function boundedString(value: unknown, field: string, maxLength: number, required = false) {
+  if (value === undefined || value === null) {
+    if (required) throw new PreflightValidationError(`${field} is required.`);
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    throw new PreflightValidationError(`${field} must be a string.`);
+  }
+  const normalized = value.trim();
+  if (required && !normalized) {
+    throw new PreflightValidationError(`${field} is required.`);
+  }
+  if (normalized.length > maxLength) {
+    throw new PreflightValidationError(`${field} must be ${maxLength} characters or fewer.`);
+  }
+  return normalized || undefined;
+}
+
+function nonNegativeNumber(value: unknown, field: string) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 1_000_000_000_000) {
+    throw new PreflightValidationError(`${field} must be a finite, non-negative number.`);
+  }
+  return value;
+}
+
+export function validatePreflightInput(value: unknown): PreflightInput {
+  if (!isRecord(value)) {
+    throw new PreflightValidationError("The request body must be a JSON object.");
+  }
+  if (!isRecord(value.action)) {
+    throw new PreflightValidationError("action must be a JSON object.");
+  }
+  if (value.constraints !== undefined && !isRecord(value.constraints)) {
+    throw new PreflightValidationError("constraints must be a JSON object.");
+  }
+
+  const constraints = value.constraints as Record<string, unknown> | undefined;
+  const humanApproval = constraints?.human_approval;
+  if (
+    humanApproval !== undefined &&
+    !["required", "optional", "not_required"].includes(String(humanApproval))
+  ) {
+    throw new PreflightValidationError(
+      "constraints.human_approval must be required, optional, or not_required.",
+    );
+  }
+
+  let proofs: string[] | undefined;
+  if (value.proofs !== undefined) {
+    if (!Array.isArray(value.proofs) || value.proofs.length > 20) {
+      throw new PreflightValidationError("proofs must be an array with at most 20 entries.");
+    }
+    proofs = value.proofs.map((proof, index) => {
+      const normalized = boundedString(proof, `proofs[${index}]`, 200, true);
+      return normalized!;
+    });
+  }
+
+  return {
+    subject: boundedString(value.subject, "subject", 200, true),
+    action: {
+      type: boundedString(value.action.type, "action.type", 120, true),
+      resource: boundedString(value.action.resource, "action.resource", 500),
+    },
+    constraints: constraints
+      ? {
+          currency: boundedString(constraints.currency, "constraints.currency", 12)?.toUpperCase(),
+          cost_ceiling: nonNegativeNumber(constraints.cost_ceiling, "constraints.cost_ceiling"),
+          quoted_cost: nonNegativeNumber(constraints.quoted_cost, "constraints.quoted_cost"),
+          data_retention_hours: nonNegativeNumber(
+            constraints.data_retention_hours,
+            "constraints.data_retention_hours",
+          ),
+          human_approval: humanApproval as
+            | "required"
+            | "optional"
+            | "not_required"
+            | undefined,
+        }
+      : undefined,
+    proofs,
+  };
+}
+
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 
 export function evaluatePreflight(input: PreflightInput) {
@@ -115,7 +211,7 @@ export function evaluatePreflight(input: PreflightInput) {
   const requestId = crypto.randomUUID();
 
   return {
-    agentpass: "0.2",
+    agentpass: "0.3",
     request_id: requestId,
     status,
     checks,
@@ -139,22 +235,22 @@ export const preflightInputSchema = {
   type: "object",
   required: ["subject", "action"],
   properties: {
-    subject: { type: "string", description: "Agent or principal identifier." },
+    subject: { type: "string", minLength: 1, maxLength: 200, description: "Agent or principal identifier." },
     action: {
       type: "object",
       required: ["type"],
       properties: {
-        type: { type: "string" },
-        resource: { type: "string" },
+        type: { type: "string", minLength: 1, maxLength: 120 },
+        resource: { type: "string", maxLength: 500 },
       },
     },
     constraints: {
       type: "object",
       properties: {
-        currency: { type: "string" },
-        cost_ceiling: { type: "number" },
-        quoted_cost: { type: "number" },
-        data_retention_hours: { type: "number" },
+        currency: { type: "string", maxLength: 12 },
+        cost_ceiling: { type: "number", minimum: 0 },
+        quoted_cost: { type: "number", minimum: 0 },
+        data_retention_hours: { type: "number", minimum: 0 },
         human_approval: {
           type: "string",
           enum: ["required", "optional", "not_required"],
@@ -163,6 +259,7 @@ export const preflightInputSchema = {
     },
     proofs: {
       type: "array",
+      maxItems: 20,
       items: { type: "string" },
     },
   },

@@ -1,4 +1,9 @@
-import { evaluatePreflight, type PreflightInput } from "../../../lib/preflight";
+import {
+  evaluatePreflight,
+  PreflightValidationError,
+  validatePreflightInput,
+} from "../../../lib/preflight";
+import { JsonRequestError, readJsonWithLimit } from "../../../lib/request";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +19,7 @@ export function GET() {
   return Response.json(
     {
       name: "AgentPass Preflight API",
-      version: "0.2",
+      version: "0.3",
       method: "POST",
       documentation: "/openapi.json",
       discovery: "/.well-known/agentpass.json",
@@ -25,12 +30,24 @@ export function GET() {
 
 export async function POST(request: Request) {
   try {
-    const input = (await request.json()) as PreflightInput;
+    const input = validatePreflightInput(await readJsonWithLimit(request));
     return Response.json(evaluatePreflight(input), { headers: corsHeaders });
-  } catch {
+  } catch (error) {
+    if (error instanceof JsonRequestError) {
+      return Response.json(
+        { error: error.code, message: error.message },
+        { status: error.status, headers: corsHeaders },
+      );
+    }
+    if (error instanceof PreflightValidationError) {
+      return Response.json(
+        { error: "invalid_request", message: error.message },
+        { status: 400, headers: corsHeaders },
+      );
+    }
     return Response.json(
-      { error: "invalid_json", message: "Send a valid JSON preflight request." },
-      { status: 400, headers: corsHeaders },
+      { error: "internal_error", message: "The preflight request could not be processed." },
+      { status: 500, headers: corsHeaders },
     );
   }
 }

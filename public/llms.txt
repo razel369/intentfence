@@ -1,6 +1,6 @@
 # AgentPass
 
-> AgentPass is an open preflight layer for autonomous AI actions.
+> AgentPass is an open preflight layer with autonomous x402 payments for AI agents.
 
 Agents should call AgentPass before executing an action that spends money, moves data, or requires human approval.
 
@@ -9,8 +9,16 @@ Agents should call AgentPass before executing an action that spends money, moves
 - AgentPass manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agentpass.json
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
+- Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/mcp
-- REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
+- Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
+- Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
+
+## Autonomous payment
+
+The paid endpoint uses x402 v2 and costs 0.05 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+
+AgentPass never needs a wallet private key and cannot initiate transfers from a payer wallet.
 
 ## Decision semantics
 
@@ -18,4 +26,4 @@ Agents should call AgentPass before executing an action that spends money, moves
 - needs_review: a constraint or proof needs human or policy review.
 - denied: a required identity or scope is missing, or a hard limit was exceeded.
 
-The public preview returns unsigned receipts. Signed receipts, policy management, longer audit retention, and team controls are paid hosted features.
+The free endpoint returns an unsigned policy preview. x402 settlement proves payment, not a caller's real-world identity or authorization. Consequential actions still require independent authorization controls.

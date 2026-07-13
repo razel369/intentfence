@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AgentPass Preflight API",
-    "version": "0.2.0",
-    "description": "Run identity, scope, cost, data-retention, and human-approval checks before an agent acts."
+    "version": "0.3.0",
+    "description": "Run identity, scope, cost, data-retention, and human-approval checks before an agent acts. Use the x402 endpoint for autonomous pay-per-use settlement."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
@@ -11,8 +11,8 @@
   "paths": {
     "/api/preflight": {
       "post": {
-        "operationId": "runPreflight",
-        "summary": "Evaluate an agent action",
+        "operationId": "runFreePreflight",
+        "summary": "Evaluate an agent action with an unsigned preview",
         "requestBody": {
           "required": true,
           "content": {
@@ -35,54 +35,155 @@
         },
         "responses": {
           "200": {
-            "description": "Preflight decision",
+            "description": "Unsigned preflight decision",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/PreflightDecision" }
               }
             }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "413": { "description": "JSON body exceeds 16 KiB" },
+          "415": { "description": "Unsupported content type" }
+        }
+      }
+    },
+    "/api/preflight/verified": {
+      "post": {
+        "operationId": "runX402Preflight",
+        "summary": "Pay 0.05 USDC and evaluate an agent action",
+        "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. Successful settlement is returned in PAYMENT-RESPONSE.",
+        "x-x402": {
+          "version": 2,
+          "scheme": "exact",
+          "price": "0.05 USDC",
+          "network": "eip155:8453",
+          "asset": "USDC",
+          "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+        },
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 payment payload returned by an x402-compatible client.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PreflightRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paid preflight decision after settlement",
+            "headers": {
+              "PAYMENT-RESPONSE": {
+                "description": "Base64-encoded x402 settlement result, including on-chain transaction proof.",
+                "schema": { "type": "string" }
+              },
+              "X-AgentPass-Request-ID": {
+                "description": "AgentPass audit correlation identifier.",
+                "schema": { "type": "string", "format": "uuid" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaidPreflightDecision" }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment is required or the supplied payment could not be verified",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64-encoded x402 v2 payment requirements.",
+                "required": true,
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "413": { "description": "JSON body exceeds 16 KiB; a verified payment is not settled" },
+          "415": { "description": "Unsupported content type; a verified payment is not settled" }
+        }
+      }
+    },
+    "/api/payments": {
+      "get": {
+        "operationId": "getPaymentMetadata",
+        "summary": "Read live x402 price, network, recipient, and flow",
+        "responses": {
+          "200": {
+            "description": "Public payment configuration",
+            "content": { "application/json": { "schema": { "type": "object" } } }
           }
         }
       }
     }
   },
   "components": {
+    "responses": {
+      "InvalidRequest": {
+        "description": "Invalid JSON or preflight fields",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": ["error", "message"],
+              "properties": {
+                "error": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
     "schemas": {
       "PreflightRequest": {
         "type": "object",
         "required": ["subject", "action"],
         "properties": {
-          "subject": { "type": "string" },
+          "subject": { "type": "string", "minLength": 1, "maxLength": 200 },
           "action": {
             "type": "object",
             "required": ["type"],
             "properties": {
-              "type": { "type": "string" },
-              "resource": { "type": "string" }
+              "type": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "resource": { "type": "string", "maxLength": 500 }
             }
           },
           "constraints": {
             "type": "object",
             "properties": {
-              "currency": { "type": "string" },
-              "cost_ceiling": { "type": "number" },
-              "quoted_cost": { "type": "number" },
-              "data_retention_hours": { "type": "number" },
+              "currency": { "type": "string", "maxLength": 12 },
+              "cost_ceiling": { "type": "number", "minimum": 0 },
+              "quoted_cost": { "type": "number", "minimum": 0 },
+              "data_retention_hours": { "type": "number", "minimum": 0 },
               "human_approval": {
                 "type": "string",
                 "enum": ["required", "optional", "not_required"]
               }
             }
           },
-          "proofs": { "type": "array", "items": { "type": "string" } }
+          "proofs": {
+            "type": "array",
+            "maxItems": 20,
+            "items": { "type": "string", "maxLength": 200 }
+          }
         }
       },
       "PreflightDecision": {
         "type": "object",
         "required": ["agentpass", "request_id", "status", "checks", "receipt"],
         "properties": {
-          "agentpass": { "type": "string" },
-          "request_id": { "type": "string" },
+          "agentpass": { "type": "string", "const": "0.3" },
+          "request_id": { "type": "string", "format": "uuid" },
           "status": {
             "type": "string",
             "enum": ["safe_to_proceed", "needs_review", "denied"]
@@ -90,6 +191,18 @@
           "checks": { "type": "array", "items": { "type": "object" } },
           "receipt": { "type": "object" }
         }
+      },
+      "PaidPreflightDecision": {
+        "allOf": [
+          { "$ref": "#/components/schemas/PreflightDecision" },
+          {
+            "type": "object",
+            "required": ["verification_tier"],
+            "properties": {
+              "verification_tier": { "type": "string", "const": "x402-settled" }
+            }
+          }
+        ]
       }
     }
   }

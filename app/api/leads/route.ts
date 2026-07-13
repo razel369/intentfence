@@ -20,9 +20,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "Enter a valid work email." }, { status: 400 });
     }
 
-    const plan = ["builder", "scale", "enterprise"].includes(body.plan ?? "")
+    const plan = ["high_assurance", "fleet", "enterprise"].includes(body.plan ?? "")
       ? body.plan!
-      : "builder";
+      : "high_assurance";
 
     await getDb()
       .insert(leads)

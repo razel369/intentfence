@@ -13,6 +13,8 @@ export const metadata: Metadata = {
     "A2A agent card",
     "agent policy",
     "AI audit receipts",
+    "x402 payments",
+    "USDC agent payments",
   ],
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
@@ -55,8 +57,7 @@ const structuredData = {
     "Preflight infrastructure for autonomous AI actions, available through REST, MCP, and A2A.",
   offers: [
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
-    { "@type": "Offer", name: "Builder", price: "49", priceCurrency: "USD" },
-    { "@type": "Offer", name: "Scale", price: "249", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Verified x402", price: "0.05", priceCurrency: "USDC" },
   ],
 };
 

@@ -14,6 +14,10 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@payai/facilitator": "^2.4.3",
+    "@x402/core": "^2.18.0",
+    "@x402/evm": "^2.18.0",
+    "@x402/next": "^2.18.0",
     "drizzle-orm": "0.45.2",
     "next": "16.2.6",
     "react": "19.2.6",
@@ -36,6 +40,10 @@
     "vinext": "0.0.50",
     "vite": "8.0.13",
     "wrangler": "4.92.0"
+  },
+  "overrides": {
+    "postcss": "8.5.14",
+    "ws": "8.21.0"
   },
   "type": "module"
 }
