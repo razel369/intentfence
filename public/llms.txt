@@ -13,6 +13,9 @@ Agents should call AgentPass before executing an action that spends money, moves
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/mcp
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
+- Receipt verifier: https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify
+- Public signing keys: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json
+- Receipt schema: https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json
 
 ## Autonomous payment
 
@@ -26,4 +29,4 @@ AgentPass never needs a wallet private key and cannot initiate transfers from a 
 - needs_review: a constraint or proof needs human or policy review.
 - denied: a required identity or scope is missing, or a hard limit was exceeded.
 
-The free endpoint returns an unsigned policy preview. x402 settlement proves payment, not a caller's real-world identity or authorization. Consequential actions still require independent authorization controls.
+The free endpoint returns an unsigned policy preview. The paid endpoint returns an ES256 JWS receipt attesting to AgentPass evaluation of the declared inputs. x402 settlement proves payment, while neither mechanism proves a caller's real-world identity or authorization. Consequential actions still require independent authorization controls.

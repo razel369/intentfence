@@ -9,6 +9,8 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
 };
 
 export function OPTIONS() {
@@ -19,7 +21,7 @@ export function GET() {
   return Response.json(
     {
       name: "AgentPass Preflight API",
-      version: "0.3",
+      version: "0.4",
       method: "POST",
       documentation: "/openapi.json",
       discovery: "/.well-known/agentpass.json",

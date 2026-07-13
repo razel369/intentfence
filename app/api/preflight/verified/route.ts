@@ -9,6 +9,8 @@ import {
   validatePreflightInput,
 } from "../../../../lib/preflight";
 import { JsonRequestError, readJsonWithLimit } from "../../../../lib/request";
+import { createSignedReceipt, ReceiptSigningError } from "../../../../lib/receipts";
+import { getReceiptSigningPrivateJwk } from "../../../../lib/runtime-secrets";
 import {
   agentpassX402Server,
   AGENTPASS_ASSET,
@@ -94,23 +96,31 @@ function unpaidResponse(request: NextRequest) {
   );
 }
 
-async function paidHandler(request: NextRequest) {
+async function paidHandler(request: NextRequest): Promise<NextResponse<unknown>> {
   try {
+    const privateJwk = await getReceiptSigningPrivateJwk();
+    if (!privateJwk) {
+      return NextResponse.json(
+        {
+          error: "signing_temporarily_unavailable",
+          message: "Receipt signing is temporarily unavailable; no payment was settled.",
+        },
+        { status: 503, headers: { ...corsHeaders, "Retry-After": "60" } },
+      );
+    }
     const input = validatePreflightInput(await readJsonWithLimit(request));
     const decision = evaluatePreflight(input);
+    const receipt = await createSignedReceipt(decision, privateJwk, {
+      network: AGENTPASS_NETWORK,
+      asset: AGENTPASS_ASSET,
+      amountAtomic: AGENTPASS_PRICE_ATOMIC,
+      payTo: AGENTPASS_PAY_TO,
+    });
     return NextResponse.json(
       {
         ...decision,
         verification_tier: "x402-settled",
-        receipt: {
-          ...decision.receipt,
-          payment_assurance: "x402-settled",
-          payment_network: AGENTPASS_NETWORK,
-          payment_asset: AGENTPASS_ASSET,
-          payment_amount_atomic: AGENTPASS_PRICE_ATOMIC,
-          pay_to: AGENTPASS_PAY_TO,
-          note: "The PAYMENT-RESPONSE HTTP header is the on-chain settlement proof for this response.",
-        },
+        receipt,
       },
       { headers: { ...corsHeaders, "X-AgentPass-Request-ID": decision.request_id } },
     );
@@ -127,6 +137,16 @@ async function paidHandler(request: NextRequest) {
         { status: 400, headers: corsHeaders },
       );
     }
+    if (error instanceof ReceiptSigningError) {
+      console.error("AgentPass receipt signing failed", { error: error.message });
+      return NextResponse.json(
+        {
+          error: "signing_temporarily_unavailable",
+          message: "Receipt signing is temporarily unavailable; no payment was settled.",
+        },
+        { status: 503, headers: { ...corsHeaders, "Retry-After": "60" } },
+      );
+    }
     return NextResponse.json(
       { error: "internal_error", message: "The paid preflight could not be processed." },
       { status: 500, headers: corsHeaders },
@@ -134,7 +154,7 @@ async function paidHandler(request: NextRequest) {
   }
 }
 
-const protectedPost = withX402(paidHandler, routeConfig, agentpassX402Server);
+const protectedPost = withX402<unknown>(paidHandler, routeConfig, agentpassX402Server);
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
@@ -146,6 +166,16 @@ export async function POST(request: NextRequest) {
     !request.headers.has("X-PAYMENT")
   ) {
     return unpaidResponse(request);
+  }
+
+  if (!(await getReceiptSigningPrivateJwk())) {
+    return NextResponse.json(
+      {
+        error: "signing_temporarily_unavailable",
+        message: "Receipt signing is temporarily unavailable; do not submit a payment yet.",
+      },
+      { status: 503, headers: { ...corsHeaders, "Retry-After": "60" } },
+    );
   }
 
   let response: NextResponse;

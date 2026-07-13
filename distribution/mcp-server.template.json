@@ -1,0 +1,13 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.your-verified-username/agentpass",
+  "title": "AgentPass Preflight",
+  "description": "Declared-input policy preflight for autonomous AI actions.",
+  "version": "0.4.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp"
+    }
+  ]
+}

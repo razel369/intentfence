@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AgentPass Preflight API",
-    "version": "0.3.0",
-    "description": "Run identity, scope, cost, data-retention, and human-approval checks before an agent acts. Use the x402 endpoint for autonomous pay-per-use settlement."
+    "version": "0.4.0",
+    "description": "Run declared-input identity, scope, cost, data-retention, and human-approval checks before an agent acts. The x402 endpoint returns an ES256-signed policy receipt."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
@@ -51,8 +51,8 @@
     "/api/preflight/verified": {
       "post": {
         "operationId": "runX402Preflight",
-        "summary": "Pay 0.05 USDC and evaluate an agent action",
-        "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. Successful settlement is returned in PAYMENT-RESPONSE.",
+        "summary": "Pay 0.05 USDC and receive a signed policy decision",
+        "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. A successful response includes an ES256 JWS receipt; settlement is returned separately in PAYMENT-RESPONSE.",
         "x-x402": {
           "version": 2,
           "scheme": "exact",
@@ -110,6 +110,47 @@
           "400": { "$ref": "#/components/responses/InvalidRequest" },
           "413": { "description": "JSON body exceeds 16 KiB; a verified payment is not settled" },
           "415": { "description": "Unsupported content type; a verified payment is not settled" }
+        }
+      }
+    },
+    "/api/receipts/verify": {
+      "post": {
+        "operationId": "verifyAgentPassReceipt",
+        "summary": "Verify an AgentPass ES256 compact JWS receipt",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["jws"],
+                "properties": {
+                  "jws": { "type": "string", "minLength": 100, "maxLength": 32768 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The receipt signature and registered claims are valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["valid", "claims"],
+                  "properties": {
+                    "valid": { "const": true },
+                    "claims": { "$ref": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Malformed, expired, unsupported, or invalid receipt" },
+          "413": { "description": "JSON body exceeds 36 KiB" },
+          "415": { "description": "Unsupported content type" }
         }
       }
     },
@@ -182,7 +223,7 @@
         "type": "object",
         "required": ["agentpass", "request_id", "status", "checks", "receipt"],
         "properties": {
-          "agentpass": { "type": "string", "const": "0.3" },
+          "agentpass": { "type": "string", "const": "0.4" },
           "request_id": { "type": "string", "format": "uuid" },
           "status": {
             "type": "string",

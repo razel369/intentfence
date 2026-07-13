@@ -1,98 +1,75 @@
-# vinext-starter
+# AgentPass
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+AgentPass is a public, machine-callable preflight layer for autonomous AI
+actions. It evaluates declared identity, scope, cost, data-retention, and
+human-approval constraints before a tool call and returns one of:
 
-## Prerequisites
+- `safe_to_proceed`
+- `needs_review`
+- `denied`
 
-- Node.js `>=22.13.0`
+Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 
-## Quick Start
+## Protocol surfaces
+
+| Surface | Endpoint |
+| --- | --- |
+| Free REST preview | `POST /api/preflight` |
+| Paid x402 decision | `POST /api/preflight/verified` |
+| Receipt verification | `POST /api/receipts/verify` |
+| Public ES256 keys | `GET /.well-known/jwks.json` |
+| MCP Streamable HTTP | `/mcp` |
+| A2A Agent Card | `GET /.well-known/agent-card.json` |
+| OpenAPI | `GET /openapi.json` |
+
+The paid endpoint costs 0.05 USDC on Base through x402. A successful call
+returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
+AgentPass ES256 compact-JWS receipt.
+
+## Important trust boundary
+
+AgentPass 0.4 attests that it evaluated the inputs supplied by the caller. It
+does not independently prove real-world identity, authorization, or downstream
+enforcement. The receipt-signing key is separate from the USDC recipient wallet.
+AgentPass never needs a payer's seed phrase or wallet private key.
+
+## Local development
 
 ```bash
 npm install
 npm run dev
-npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+The production signing key is stored in Sites as the secret
+`AGENTPASS_SIGNING_PRIVATE_JWK`. Generate a separate development key with:
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+node scripts/generate-signing-key.mjs /secure/path/agentpass-private-jwk.json
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+Never commit the generated private JWK. Publish only its public coordinates in
+`/.well-known/jwks.json`.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## Validation
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+```bash
+npm run test
+npm run lint
+npx tsc --noEmit
+npm run sdk:check
+npm run smoke:protocol -- http://localhost:3000
+```
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+Set `AGENTPASS_TEST_PRIVATE_JWK_PATH` only for a local smoke test that should
+exercise the signed-receipt verifier.
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+## Distribution
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+Draft TypeScript and Python SDKs live in `sdk/`. A remote-server metadata
+template for the official MCP Registry is in
+`distribution/mcp-server.template.json`. Publishing those artifacts requires a
+verified npm/PyPI namespace and a verified MCP Registry namespace; no external
+registry publication is performed by the build.
 
-## Useful Commands
-
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+See [docs/PROTOCOL.md](docs/PROTOCOL.md) and
+[docs/SECURITY.md](docs/SECURITY.md) for the protocol and security model.

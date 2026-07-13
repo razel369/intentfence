@@ -12,7 +12,7 @@ const checks = [
 ];
 
 const manifest = `{
-  "agentpass": "0.3",
+  "agentpass": "0.4",
   "subject": "did:web:crew-07",
   "action": {
     "type": "travel.booking",
@@ -273,7 +273,7 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open draft / v0.3</div>
+          <div className="section-kicker">Open draft / v0.4</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
             Publish an AgentPass document at a well-known endpoint. Agents can
@@ -283,6 +283,7 @@ export default function Home() {
             <div><span>DISCOVER</span><code>GET /.well-known/agentpass.json</code></div>
             <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
             <div><span>PAY + VERIFY</span><code>POST /api/preflight/verified</code></div>
+            <div><span>VERIFY RECEIPT</span><code>POST /api/receipts/verify</code></div>
             <div><span>A2A</span><code>GET /.well-known/agent-card.json</code></div>
           </div>
           <div className="manifest-actions">
@@ -312,7 +313,7 @@ export default function Home() {
       <footer>
         <a className="wordmark wordmark-footer" href="#top">AgentPass<span className="wordmark-dot">.</span></a>
         <p>An open preflight protocol for autonomous AI.</p>
-        <span>Draft 0.3 · x402 on Base · Built for an agentic web</span>
+        <span>Draft 0.4 · ES256 receipts · x402 on Base</span>
       </footer>
     </main>
   );

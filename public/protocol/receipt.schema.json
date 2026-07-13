@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json",
+  "title": "AgentPass 0.4 Signed Receipt Claims",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "iss",
+    "aud",
+    "iat",
+    "exp",
+    "jti",
+    "agentpass_version",
+    "assurance",
+    "request_id",
+    "decision",
+    "subject",
+    "action",
+    "checks",
+    "payment"
+  ],
+  "properties": {
+    "iss": { "const": "https://agentpass-protocol.rmalka06.chatgpt.site" },
+    "aud": { "const": "agentpass-verifier" },
+    "iat": { "type": "integer" },
+    "exp": { "type": "integer" },
+    "jti": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "agentpass_version": { "const": "0.4" },
+    "assurance": { "const": "declared-input-policy" },
+    "request_id": { "type": "string", "format": "uuid" },
+    "decision": {
+      "enum": ["safe_to_proceed", "needs_review", "denied"]
+    },
+    "subject": { "type": ["string", "null"] },
+    "action": { "type": ["object", "null"] },
+    "checks": { "type": "array" },
+    "payment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["protocol", "network", "asset", "amount_atomic", "pay_to"],
+      "properties": {
+        "protocol": { "const": "x402-v2" },
+        "network": { "type": "string" },
+        "asset": { "type": "string" },
+        "amount_atomic": { "type": "string" },
+        "pay_to": { "type": "string" }
+      }
+    }
+  }
+}

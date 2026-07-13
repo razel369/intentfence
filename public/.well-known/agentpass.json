@@ -1,12 +1,13 @@
 {
   "name": "AgentPass",
-  "version": "0.3",
-  "description": "A public preflight service with autonomous x402 payments for agent identity, scope, cost, data retention, and human approval checks.",
+  "version": "0.4",
+  "description": "A public declared-input policy preflight service with autonomous x402 payments and ES256-signed receipts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
     "rest": {
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+      "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
       "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json"
     },
     "mcp": {
@@ -18,6 +19,13 @@
       "protocolVersion": "1.0",
       "agentCard": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json"
     }
+  },
+  "receipts": {
+    "format": "JWS Compact",
+    "algorithm": "ES256",
+    "assurance": "declared-input-policy",
+    "jwks": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json",
+    "schema": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json"
   },
   "payments": {
     "protocol": "x402",
@@ -33,5 +41,5 @@
     "instructions": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments"
   },
   "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
-  "terms": "The free result is an unsigned policy preview. An x402 payment proves settlement, not the real-world identity or authorization of the caller. Keep independent authorization controls for consequential actions."
+  "terms": "The free result is unsigned. A signed receipt attests only to AgentPass evaluation of declared inputs. x402 proves settlement, not real-world identity or authorization. Keep independent authorization controls for consequential actions."
 }

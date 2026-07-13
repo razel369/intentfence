@@ -1,0 +1,15 @@
+{
+  "keys": [
+    {
+      "key_ops": ["verify"],
+      "ext": true,
+      "kty": "EC",
+      "x": "r4swuFACq9-FdJM6p8usBxDq6sh5iB9VHhqNilHAPko",
+      "y": "qsLdtuLtN-p4-Lc1xZovk2hVadpT7wtkGXLxofjRKjs",
+      "crv": "P-256",
+      "alg": "ES256",
+      "kid": "agentpass-es256-2026-07",
+      "use": "sig"
+    }
+  ]
+}

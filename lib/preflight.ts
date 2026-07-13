@@ -20,6 +20,27 @@ export type PreflightCheck = {
   detail: string;
 };
 
+export type PreflightDecision = {
+  agentpass: "0.4";
+  request_id: string;
+  status: "safe_to_proceed" | "needs_review" | "denied";
+  checks: PreflightCheck[];
+  receipt: {
+    id: string;
+    issued_at: string;
+    subject: string | null;
+    action: PreflightInput["action"] | null;
+    signed: false;
+    assurance: "declared-input-policy";
+    note: string;
+  };
+  links: {
+    discovery: string;
+    openapi: string;
+    pricing: string;
+  };
+};
+
 export class PreflightValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -118,7 +139,7 @@ export function validatePreflightInput(value: unknown): PreflightInput {
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 
-export function evaluatePreflight(input: PreflightInput) {
+export function evaluatePreflight(input: PreflightInput): PreflightDecision {
   const checks: PreflightCheck[] = [];
   const subject = input.subject?.trim();
   const actionType = input.action?.type?.trim();
@@ -211,7 +232,7 @@ export function evaluatePreflight(input: PreflightInput) {
   const requestId = crypto.randomUUID();
 
   return {
-    agentpass: "0.3",
+    agentpass: "0.4",
     request_id: requestId,
     status,
     checks,
@@ -221,7 +242,8 @@ export function evaluatePreflight(input: PreflightInput) {
       subject: subject ?? null,
       action: input.action ?? null,
       signed: false,
-      note: "Unsigned public-preview receipt. Hosted signed receipts are a paid feature.",
+      assurance: "declared-input-policy",
+      note: "Unsigned public preview of a declared-input policy decision. Use the paid endpoint for an ES256-signed receipt.",
     },
     links: {
       discovery: `${SITE_URL}/.well-known/agentpass.json`,

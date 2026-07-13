@@ -1,6 +1,20 @@
-import { evaluatePreflight, type PreflightInput } from "../../../lib/preflight";
+import {
+  evaluatePreflight,
+  PreflightValidationError,
+  validatePreflightInput,
+} from "../../../lib/preflight";
+import { JsonRequestError, readJsonWithLimit } from "../../../lib/request";
+import { A2A_VERSION, a2aHeaders, a2aProblem, invalidA2AVersion } from "../../../lib/a2a";
 
-type A2APart = { text?: string; data?: PreflightInput };
+type A2APart = { text?: unknown; data?: unknown };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: a2aHeaders });
+}
 
 export async function POST(
   request: Request,
@@ -8,42 +22,60 @@ export async function POST(
 ) {
   const { operation } = await context.params;
   if (operation !== "message:send") {
-    return Response.json({ error: "operation_not_found" }, { status: 404 });
+    return a2aProblem(404, "operation-not-found", "Operation Not Found", "The requested A2A operation is not available.");
+  }
+  if (invalidA2AVersion(request)) {
+    return a2aProblem(
+      400,
+      "version-not-supported",
+      "Protocol Version Not Supported",
+      "AgentPass supports A2A protocol version 1.0.",
+      { supportedVersions: [A2A_VERSION] },
+    );
   }
 
   try {
-    const body = (await request.json()) as {
-      message?: { parts?: A2APart[] };
-    };
-    const part = body.message?.parts?.[0];
-    let input: PreflightInput = part?.data ?? {};
-
-    if (!part?.data && part?.text) {
+    const body = await readJsonWithLimit(request);
+    if (!isRecord(body) || !isRecord(body.message)) {
+      throw new PreflightValidationError("message must be a JSON object.");
+    }
+    const message = body.message;
+    if (message.role !== "ROLE_USER" || !Array.isArray(message.parts) || message.parts.length === 0 || message.parts.length > 20) {
+      throw new PreflightValidationError("message must contain 1-20 parts and use role ROLE_USER.");
+    }
+    const parts = message.parts as A2APart[];
+    const dataPart = parts.find((part) => isRecord(part) && part.data !== undefined);
+    const textPart = parts.find((part) => isRecord(part) && typeof part.text === "string");
+    let input: unknown = dataPart?.data;
+    if (input === undefined && typeof textPart?.text === "string") {
+      if (textPart.text.length > 16_384) {
+        throw new PreflightValidationError("The text part is too large.");
+      }
       try {
-        input = JSON.parse(part.text) as PreflightInput;
+        input = JSON.parse(textPart.text) as unknown;
       } catch {
-        input = {};
+        throw new PreflightValidationError("The text part must contain a JSON preflight request.");
       }
     }
-
-    const decision = evaluatePreflight(input);
+    const decision = evaluatePreflight(validatePreflightInput(input));
     return new Response(
       JSON.stringify({
         message: {
           role: "ROLE_AGENT",
           parts: [{ text: JSON.stringify(decision), data: decision }],
           messageId: crypto.randomUUID(),
+          contextId: typeof message.contextId === "string" ? message.contextId : crypto.randomUUID(),
         },
       }),
-      {
-        headers: {
-          "Content-Type": "application/a2a+json",
-          "A2A-Version": "1.0",
-          "Access-Control-Allow-Origin": "*",
-        },
-      },
+      { status: 200, headers: a2aHeaders },
     );
-  } catch {
-    return Response.json({ error: "invalid_a2a_message" }, { status: 400 });
+  } catch (error) {
+    if (error instanceof JsonRequestError) {
+      return a2aProblem(error.status, error.code, "Invalid A2A Request", error.message);
+    }
+    if (error instanceof PreflightValidationError) {
+      return a2aProblem(400, "invalid-parameters", "Invalid Parameters", error.message);
+    }
+    return a2aProblem(500, "internal-error", "Internal Error", "The A2A message could not be processed.");
   }
 }

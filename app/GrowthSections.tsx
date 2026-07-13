@@ -38,6 +38,7 @@ const plans = [
       "Agent pays directly",
       "No account or API key",
       "On-chain settlement proof",
+      "ES256-signed policy receipt",
       "Machine-readable discovery",
       "Payment audit record",
     ],
@@ -52,7 +53,7 @@ const plans = [
       "External identity proofs",
       "Policy-set verification",
       "Longer audit retention",
-      "Signed AgentPass attestation",
+      "External proof verification",
       "Founding access priority",
     ],
   },
@@ -124,6 +125,7 @@ export default function GrowthSections() {
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
             <a href="/api/payments">x402 payment metadata</a>
+            <a href="/.well-known/jwks.json">Receipt signing keys</a>
           </div>
         </div>
 
@@ -136,7 +138,7 @@ export default function GrowthSections() {
           <article>
             <span>02 / x402</span>
             <h3>POST /api/preflight/verified</h3>
-            <p>Pay 0.05 USDC per successful action with on-chain settlement proof.</p>
+            <p>Pay 0.05 USDC per successful action with settlement proof and an ES256-signed receipt.</p>
           </article>
           <article>
             <span>03 / MCP + A2A</span>
@@ -190,7 +192,7 @@ export default function GrowthSections() {
             </article>
           ))}
         </div>
-        <p className="pricing-note">Verified x402 at 0.05 USDC is live. High Assurance and fleet features are marked as upcoming or custom.</p>
+        <p className="pricing-note">Verified x402 at 0.05 USDC now includes a signed declared-input receipt. External identity verification and fleet features remain upcoming or custom.</p>
       </section>
 
       <section className="founding-section" id="founding-access">

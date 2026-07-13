@@ -1,61 +1,157 @@
-import { evaluatePreflight, preflightInputSchema, type PreflightInput } from "../../lib/preflight";
+import {
+  evaluatePreflight,
+  preflightInputSchema,
+  PreflightValidationError,
+  validatePreflightInput,
+} from "../../lib/preflight";
+import { JsonRequestError, readJsonWithLimit } from "../../lib/request";
 
 const SITE_ORIGIN = "https://agentpass-protocol.rmalka06.chatgpt.site";
+const LATEST_PROTOCOL_VERSION = "2025-11-25";
+const SUPPORTED_PROTOCOL_VERSIONS = new Set([
+  "2025-03-26",
+  "2025-06-18",
+  LATEST_PROTOCOL_VERSION,
+]);
 
-function headers(request: Request) {
+type JsonRpcRequest = {
+  jsonrpc: "2.0";
+  id?: string | number | null;
+  method: string;
+  params?: Record<string, unknown>;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function corsHeaders(request: Request) {
   const origin = request.headers.get("origin");
   return {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": origin === SITE_ORIGIN ? origin : SITE_ORIGIN,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, MCP-Protocol-Version",
-    "MCP-Protocol-Version": "2025-11-25",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS, DELETE",
+    "Access-Control-Allow-Headers": "Accept, Content-Type, MCP-Protocol-Version, MCP-Session-Id",
+    "Access-Control-Expose-Headers": "MCP-Protocol-Version",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "MCP-Protocol-Version": LATEST_PROTOCOL_VERSION,
+    Vary: "Origin",
   };
 }
 
-function jsonRpc(request: Request, id: unknown, result: unknown, status = 200) {
-  return new Response(JSON.stringify({ jsonrpc: "2.0", id, result }), {
-    status,
-    headers: headers(request),
+function validOrigin(request: Request) {
+  const origin = request.headers.get("origin");
+  return !origin || origin === SITE_ORIGIN;
+}
+
+function jsonRpc(request: Request, id: JsonRpcRequest["id"], result: unknown) {
+  return new Response(JSON.stringify({ jsonrpc: "2.0", id: id ?? null, result }), {
+    status: 200,
+    headers: corsHeaders(request),
   });
 }
 
-function errorRpc(request: Request, id: unknown, code: number, message: string, status = 200) {
-  return new Response(JSON.stringify({ jsonrpc: "2.0", id, error: { code, message } }), {
-    status,
-    headers: headers(request),
-  });
+function errorRpc(
+  request: Request,
+  id: JsonRpcRequest["id"],
+  code: number,
+  message: string,
+  status = 200,
+  data?: unknown,
+) {
+  return new Response(
+    JSON.stringify({
+      jsonrpc: "2.0",
+      id: id ?? null,
+      error: { code, message, ...(data === undefined ? {} : { data }) },
+    }),
+    { status, headers: corsHeaders(request) },
+  );
+}
+
+function validateEnvelope(value: unknown): JsonRpcRequest | null {
+  if (!isRecord(value) || value.jsonrpc !== "2.0" || typeof value.method !== "string") {
+    return null;
+  }
+  if (
+    value.id !== undefined &&
+    value.id !== null &&
+    typeof value.id !== "string" &&
+    typeof value.id !== "number"
+  ) {
+    return null;
+  }
+  if (value.params !== undefined && !isRecord(value.params)) return null;
+  return value as JsonRpcRequest;
+}
+
+function unsupportedProtocolVersion(request: Request) {
+  const version = request.headers.get("MCP-Protocol-Version");
+  return Boolean(version && !SUPPORTED_PROTOCOL_VERSIONS.has(version));
 }
 
 export function OPTIONS(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== SITE_ORIGIN) return new Response(null, { status: 403 });
-  return new Response(null, { status: 204, headers: headers(request) });
+  if (!validOrigin(request)) return new Response(null, { status: 403 });
+  return new Response(null, { status: 204, headers: corsHeaders(request) });
+}
+
+export function GET(request: Request) {
+  if (!validOrigin(request)) return new Response(null, { status: 403 });
+  return new Response(null, {
+    status: 405,
+    headers: { ...corsHeaders(request), Allow: "POST, GET, OPTIONS, DELETE" },
+  });
+}
+
+export function DELETE(request: Request) {
+  if (!validOrigin(request)) return new Response(null, { status: 403 });
+  return new Response(null, {
+    status: 405,
+    headers: { ...corsHeaders(request), Allow: "POST, GET, OPTIONS, DELETE" },
+  });
 }
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== SITE_ORIGIN) return new Response(null, { status: 403 });
+  if (!validOrigin(request)) return new Response(null, { status: 403 });
+  if (unsupportedProtocolVersion(request)) {
+    return errorRpc(
+      request,
+      null,
+      -32600,
+      "Unsupported MCP-Protocol-Version",
+      400,
+      { supported: [...SUPPORTED_PROTOCOL_VERSIONS] },
+    );
+  }
 
-  let body: { id?: unknown; method?: string; params?: Record<string, unknown> };
+  let value: unknown;
   try {
-    body = await request.json();
-  } catch {
+    value = await readJsonWithLimit(request);
+  } catch (error) {
+    if (error instanceof JsonRequestError) {
+      return errorRpc(request, null, -32700, error.message, error.status);
+    }
     return errorRpc(request, null, -32700, "Parse error", 400);
   }
 
-  if (body.method === "notifications/initialized") {
-    return new Response(null, { status: 202, headers: headers(request) });
+  const body = validateEnvelope(value);
+  if (!body) return errorRpc(request, null, -32600, "Invalid Request", 400);
+
+  if (body.id === undefined) {
+    return new Response(null, { status: 202, headers: corsHeaders(request) });
   }
 
   if (body.method === "initialize") {
     return jsonRpc(request, body.id, {
-      protocolVersion: "2025-11-25",
+      protocolVersion: LATEST_PROTOCOL_VERSION,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "AgentPass", version: "0.2.0" },
-      instructions: "Run agentpass_preflight before an autonomous action to check identity, scope, cost, data, and approval constraints.",
+      serverInfo: { name: "AgentPass", version: "0.4.0" },
+      instructions: "Call agentpass_preflight before an autonomous action to evaluate declared identity, scope, cost, data-retention, and approval constraints.",
     });
   }
+
+  if (body.method === "ping") return jsonRpc(request, body.id, {});
 
   if (body.method === "tools/list") {
     return jsonRpc(request, body.id, {
@@ -63,8 +159,9 @@ export async function POST(request: Request) {
         {
           name: "agentpass_preflight",
           title: "AgentPass Preflight",
-          description: "Evaluate whether a proposed agent action is safe to proceed, needs review, or must be denied.",
+          description: "Evaluate declared action constraints and return safe_to_proceed, needs_review, or denied. This free MCP tool does not prove identity or authorization.",
           inputSchema: preflightInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
         },
       ],
     });
@@ -72,15 +169,29 @@ export async function POST(request: Request) {
 
   if (body.method === "tools/call") {
     if (body.params?.name !== "agentpass_preflight") {
-      return errorRpc(request, body.id, -32602, "Unknown tool name");
+      return jsonRpc(request, body.id, {
+        content: [{ type: "text", text: "Unknown tool name." }],
+        isError: true,
+      });
     }
-    const decision = evaluatePreflight((body.params.arguments ?? {}) as PreflightInput);
-    return jsonRpc(request, body.id, {
-      content: [{ type: "text", text: JSON.stringify(decision) }],
-      structuredContent: decision,
-      isError: false,
-    });
+    try {
+      const input = validatePreflightInput(body.params.arguments ?? {});
+      const decision = evaluatePreflight(input);
+      return jsonRpc(request, body.id, {
+        content: [{ type: "text", text: JSON.stringify(decision) }],
+        structuredContent: decision,
+        isError: false,
+      });
+    } catch (error) {
+      const message = error instanceof PreflightValidationError
+        ? error.message
+        : "The AgentPass preflight could not be processed.";
+      return jsonRpc(request, body.id, {
+        content: [{ type: "text", text: message }],
+        isError: true,
+      });
+    }
   }
 
-  return errorRpc(request, body.id ?? null, -32601, "Method not found");
+  return errorRpc(request, body.id, -32601, "Method not found");
 }
