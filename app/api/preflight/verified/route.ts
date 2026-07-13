@@ -91,7 +91,14 @@ async function paidHandler(request: NextRequest) {
   }
 }
 
-const protectedPost = withX402(paidHandler, routeConfig, agentpassX402Server);
+const protectedPost = withX402(
+  paidHandler,
+  routeConfig,
+  agentpassX402Server,
+  undefined,
+  undefined,
+  false,
+);
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
