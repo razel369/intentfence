@@ -1,4 +1,4 @@
-export type AgentPassInput = {
+export type IntentFenceInput = {
   subject: string;
   action: { type: string; resource?: string };
   constraints?: {
@@ -11,8 +11,8 @@ export type AgentPassInput = {
   proofs?: string[];
 };
 
-export type AgentPassDecision = {
-  agentpass: "0.4";
+export type IntentFenceDecision = {
+  intentfence: "0.5";
   request_id: string;
   status: "safe_to_proceed" | "needs_review" | "denied";
   checks: Array<{ name: string; status: "pass" | "review" | "deny"; detail: string }>;
@@ -23,39 +23,39 @@ export type AgentPassDecision = {
   };
 };
 
-export class AgentPassHttpError extends Error {
+export class IntentFenceHttpError extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly response: Response,
   ) {
     super(message);
-    this.name = "AgentPassHttpError";
+    this.name = "IntentFenceHttpError";
   }
 }
 
-export class AgentPassBlockedError extends Error {
-  constructor(public readonly decision: AgentPassDecision) {
-    super(`AgentPass blocked the tool call with status ${decision.status}.`);
-    this.name = "AgentPassBlockedError";
+export class IntentFenceBlockedError extends Error {
+  constructor(public readonly decision: IntentFenceDecision) {
+    super(`IntentFence blocked the tool call with status ${decision.status}.`);
+    this.name = "IntentFenceBlockedError";
   }
 }
 
-export type AgentPassClientOptions = {
+export type IntentFenceClientOptions = {
   baseUrl?: string;
   fetch?: typeof fetch;
 };
 
-export class AgentPassClient {
+export class IntentFenceClient {
   private readonly baseUrl: string;
   private readonly request: typeof fetch;
 
-  constructor(options: AgentPassClientOptions = {}) {
+  constructor(options: IntentFenceClientOptions = {}) {
     this.baseUrl = (options.baseUrl ?? "https://agentpass-protocol.rmalka06.chatgpt.site").replace(/\/$/u, "");
     this.request = options.fetch ?? globalThis.fetch;
   }
 
-  async preflight(input: AgentPassInput, options: { paid?: boolean } = {}) {
+  async preflight(input: IntentFenceInput, options: { paid?: boolean } = {}) {
     const path = options.paid ? "/api/preflight/verified" : "/api/preflight";
     const response = await this.request(`${this.baseUrl}${path}`, {
       method: "POST",
@@ -63,9 +63,9 @@ export class AgentPassClient {
       body: JSON.stringify(input),
     });
     if (!response.ok) {
-      throw new AgentPassHttpError(`AgentPass returned HTTP ${response.status}.`, response.status, response);
+      throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
     }
-    return await response.json() as AgentPassDecision;
+    return await response.json() as IntentFenceDecision;
   }
 
   async verifyReceipt(jws: string) {
@@ -76,16 +76,16 @@ export class AgentPassClient {
     });
     const result = await response.json() as { valid: boolean; claims?: unknown; reason?: string };
     if (!response.ok || !result.valid) {
-      throw new AgentPassHttpError(`Receipt verification failed: ${result.reason ?? response.status}.`, response.status, response);
+      throw new IntentFenceHttpError(`Receipt verification failed: ${result.reason ?? response.status}.`, response.status, response);
     }
     return result;
   }
 
   guard(options: { paid?: boolean; blockOnReview?: boolean } = {}) {
-    return async <T>(input: AgentPassInput, toolCall: () => Promise<T>) => {
+    return async <T>(input: IntentFenceInput, toolCall: () => Promise<T>) => {
       const decision = await this.preflight(input, { paid: options.paid });
       if (decision.status === "denied" || (options.blockOnReview !== false && decision.status === "needs_review")) {
-        throw new AgentPassBlockedError(decision);
+        throw new IntentFenceBlockedError(decision);
       }
       return await toolCall();
     };

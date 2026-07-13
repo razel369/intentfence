@@ -6,7 +6,7 @@ import test from "node:test";
 globalThis.crypto ??= webcrypto;
 
 const {
-  AGENTPASS_SIGNING_KID,
+  INTENTFENCE_SIGNING_KID,
   signReceiptClaims,
   verifyReceipt,
 } = await import("../lib/receipts.ts");
@@ -21,7 +21,7 @@ async function keyPair() {
   const privateJwk = await webcrypto.subtle.exportKey("jwk", keys.privateKey);
   for (const jwk of [publicJwk, privateJwk]) {
     jwk.alg = "ES256";
-    jwk.kid = AGENTPASS_SIGNING_KID;
+    jwk.kid = INTENTFENCE_SIGNING_KID;
     jwk.use = "sig";
   }
   return { publicJwk, privateJwk: JSON.stringify(privateJwk) };
@@ -30,11 +30,11 @@ async function keyPair() {
 function claims(nowSeconds) {
   return {
     iss: "https://agentpass-protocol.rmalka06.chatgpt.site",
-    aud: "agentpass-verifier",
+    aud: "intentfence-verifier",
     iat: nowSeconds,
     exp: nowSeconds + 3600,
     jti: "ap_test",
-    agentpass_version: "0.4",
+    intentfence_version: "0.5",
     assurance: "declared-input-policy",
     request_id: "00000000-0000-4000-8000-000000000000",
     decision: "safe_to_proceed",
@@ -51,7 +51,7 @@ function claims(nowSeconds) {
   };
 }
 
-test("signs and verifies an ES256 AgentPass receipt", async () => {
+test("signs and verifies an ES256 IntentFence receipt", async () => {
   const now = Date.now();
   const keys = await keyPair();
   const jws = await signReceiptClaims(claims(Math.floor(now / 1000)), keys.privateJwk);
@@ -77,7 +77,7 @@ test("rejects a tampered receipt and an expired receipt", async () => {
 test("published JWKS contains the production signing key", async () => {
   const jwks = JSON.parse(await readFile(new URL("../public/.well-known/jwks.json", import.meta.url), "utf8"));
   assert.equal(jwks.keys.length, 1);
-  assert.equal(jwks.keys[0].kid, AGENTPASS_SIGNING_KID);
+  assert.equal(jwks.keys[0].kid, INTENTFENCE_SIGNING_KID);
   assert.equal(jwks.keys[0].alg, "ES256");
   assert.equal(jwks.keys[0].d, undefined);
 });

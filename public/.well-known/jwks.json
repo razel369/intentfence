@@ -4,11 +4,11 @@
       "key_ops": ["verify"],
       "ext": true,
       "kty": "EC",
-      "x": "r4swuFACq9-FdJM6p8usBxDq6sh5iB9VHhqNilHAPko",
-      "y": "qsLdtuLtN-p4-Lc1xZovk2hVadpT7wtkGXLxofjRKjs",
+      "x": "hJCzHY9kFr2LX7KqpVOtXjOKnJ43Yvap7VWoDmIuF34",
+      "y": "3YhOJX-ai6IiiYhpK8okWq-83oLoPmdFSRwuEZNp2MQ",
       "crv": "P-256",
       "alg": "ES256",
-      "kid": "agentpass-es256-2026-07",
+      "kid": "intentfence-es256-2026-07",
       "use": "sig"
     }
   ]

@@ -1,9 +1,9 @@
-# AgentPass Python SDK
+# IntentFence Python SDK
 
 ```python
-from agentpass import AgentPassClient
+from intentfence import IntentFenceClient
 
-client = AgentPassClient()
+client = IntentFenceClient()
 result = client.run_guarded(
     {
         "subject": "did:web:my-agent",

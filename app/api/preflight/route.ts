@@ -20,11 +20,11 @@ export function OPTIONS() {
 export function GET() {
   return Response.json(
     {
-      name: "AgentPass Preflight API",
-      version: "0.4",
+      name: "IntentFence Preflight API",
+      version: "0.5",
       method: "POST",
       documentation: "/openapi.json",
-      discovery: "/.well-known/agentpass.json",
+      discovery: "/.well-known/intentfence.json",
     },
     { headers: corsHeaders },
   );

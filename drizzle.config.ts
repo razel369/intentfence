@@ -1,7 +1,5 @@
-import { defineConfig } from "drizzle-kit";
-
-export default defineConfig({
+export default {
   out: "./drizzle",
   schema: "./db/schema.ts",
   dialect: "sqlite",
-});
+} as const;

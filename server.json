@@ -3,6 +3,10 @@
   "name": "io.github.razel369/intentfence",
   "title": "IntentFence Policy Gate",
   "description": "Spend, scope, data, and approval policy gate for autonomous AI actions.",
+  "repository": {
+    "url": "https://github.com/razel369/intentfence",
+    "source": "github"
+  },
   "version": "0.5.0",
   "remotes": [
     {

@@ -146,8 +146,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion: LATEST_PROTOCOL_VERSION,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "AgentPass", version: "0.4.0" },
-      instructions: "Call agentpass_preflight before an autonomous action to evaluate declared identity, scope, cost, data-retention, and approval constraints.",
+      serverInfo: { name: "IntentFence", version: "0.5.0" },
+      instructions: "Call intentfence_preflight immediately before an autonomous action, then block the downstream tool call unless the policy allows it.",
     });
   }
 
@@ -157,9 +157,9 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       tools: [
         {
-          name: "agentpass_preflight",
-          title: "AgentPass Preflight",
-          description: "Evaluate declared action constraints and return safe_to_proceed, needs_review, or denied. This free MCP tool does not prove identity or authorization.",
+          name: "intentfence_preflight",
+          title: "IntentFence Preflight",
+          description: "Evaluate spend, scope, data, and approval constraints before an agent tool call. Returns safe_to_proceed, needs_review, or denied.",
           inputSchema: preflightInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
         },
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
   }
 
   if (body.method === "tools/call") {
-    if (body.params?.name !== "agentpass_preflight") {
+    if (body.params?.name !== "intentfence_preflight") {
       return jsonRpc(request, body.id, {
         content: [{ type: "text", text: "Unknown tool name." }],
         isError: true,
@@ -185,7 +185,7 @@ export async function POST(request: Request) {
     } catch (error) {
       const message = error instanceof PreflightValidationError
         ? error.message
-        : "The AgentPass preflight could not be processed.";
+        : "The IntentFence preflight could not be processed.";
       return jsonRpc(request, body.id, {
         content: [{ type: "text", text: message }],
         isError: true,

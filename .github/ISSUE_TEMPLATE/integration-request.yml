@@ -1,0 +1,31 @@
+name: Integration request
+description: Propose an agent action that should be guarded by IntentFence.
+title: "integration: "
+labels: ["integration"]
+body:
+  - type: textarea
+    id: action
+    attributes:
+      label: Agent action
+      description: What will the agent spend, send, deploy, delete, or approve?
+    validations:
+      required: true
+  - type: textarea
+    id: policy
+    attributes:
+      label: Policy boundary
+      description: What should be allowed, reviewed, and denied?
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - TypeScript / JavaScript
+        - Python
+        - MCP client
+        - A2A client
+        - Other
+    validations:
+      required: true

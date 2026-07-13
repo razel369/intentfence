@@ -12,7 +12,7 @@ const checks = [
 ];
 
 const manifest = `{
-  "agentpass": "0.4",
+  "intentfence": "0.5",
   "subject": "did:web:crew-07",
   "action": {
     "type": "travel.booking",
@@ -79,7 +79,7 @@ export default function Home() {
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = href;
-    anchor.download = "agentpass.json";
+    anchor.download = "intentfence.json";
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -89,16 +89,16 @@ export default function Home() {
   return (
     <main>
       <header className="site-header">
-        <a className="wordmark" href="#top" aria-label="AgentPass home">
-          AgentPass<span className="wordmark-dot">.</span>
+        <a className="wordmark" href="#top" aria-label="IntentFence home">
+          IntentFence<span className="wordmark-dot">.</span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#agents">For agents</a>
+          <a href="#agents">For builders</a>
           <a href="#protocol">Protocol</a>
           <a href="#pricing">Pricing</a>
         </nav>
         <a className="header-action" href="#playground">
-          Try the handshake
+          Try the policy gate
         </a>
       </header>
 
@@ -106,19 +106,19 @@ export default function Home() {
         <div className="hero-copy">
           <div className="eyebrow">
             <span className="eyebrow-mark" aria-hidden="true" />
-            The preflight layer for autonomous AI
+            Spend and action policy for autonomous AI
           </div>
-          <h1>Before an agent acts, it checks in.</h1>
+          <h1>Stop unsafe agent actions before they execute.</h1>
           <p className="hero-intro">
-            One machine-readable handshake for identity, scope, cost, data
-            rules, and human approval.
+            IntentFence sits directly before a tool call and returns an
+            enforceable decision for spend, scope, data, and approval limits.
           </p>
           <div className="hero-actions">
             <button className="button button-primary" onClick={runFromHero}>
-              Run a live handshake
+              Run a live policy gate
             </button>
             <a className="text-link" href="#manifest">
-              Read the open spec <span aria-hidden="true">↗</span>
+              Read the open protocol <span aria-hidden="true">↗</span>
             </a>
           </div>
           <div className="proof-grid" aria-label="Protocol highlights">
@@ -127,8 +127,8 @@ export default function Home() {
               <span>call it now</span>
             </div>
             <div>
-              <strong>5 checks</strong>
-              <span>one decision</span>
+              <strong>Block by default</strong>
+              <span>guard the tool call</span>
             </div>
             <div>
               <strong>REST · MCP</strong>
@@ -194,7 +194,7 @@ export default function Home() {
                     : "SAFE TO PROCEED"}
               </strong>
               <span className="decision-code">
-                {runState === "complete" ? "PASS / AP-200" : "AWAITING RESULT"}
+                {runState === "complete" ? "PASS / IF-200" : "AWAITING RESULT"}
               </span>
             </div>
 
@@ -248,7 +248,7 @@ export default function Home() {
           <h2>The web has rules for reading. Agents need rules for acting.</h2>
           <p>
             Autonomous software is crossing the line from answering questions
-            to spending money, moving data, and committing people. AgentPass
+            to spending money, moving data, and committing people. IntentFence
             turns every action into a bounded contract before anything happens.
           </p>
         </div>
@@ -273,14 +273,14 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open draft / v0.4</div>
+          <div className="section-kicker">Open protocol / v0.5</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
-            Publish an AgentPass document at a well-known endpoint. Agents can
-            inspect it before acting; services can return a decision with x402 settlement proof.
+            Publish an IntentFence policy endpoint and wrap the downstream tool
+            call with the SDK guard. The action runs only after an allowed decision.
           </p>
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
-            <div><span>DISCOVER</span><code>GET /.well-known/agentpass.json</code></div>
+            <div><span>DISCOVER</span><code>GET /.well-known/intentfence.json</code></div>
             <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
             <div><span>PAY + VERIFY</span><code>POST /api/preflight/verified</code></div>
             <div><span>VERIFY RECEIPT</span><code>POST /api/receipts/verify</code></div>
@@ -297,7 +297,7 @@ export default function Home() {
         </div>
         <div className="code-window">
           <div className="code-topline">
-            <span>agentpass.json</span>
+            <span>intentfence.json</span>
             <span>JSON</span>
           </div>
           <pre><code>{manifest}</code></pre>
@@ -311,9 +311,9 @@ export default function Home() {
       </section>
 
       <footer>
-        <a className="wordmark wordmark-footer" href="#top">AgentPass<span className="wordmark-dot">.</span></a>
-        <p>An open preflight protocol for autonomous AI.</p>
-        <span>Draft 0.4 · ES256 receipts · x402 on Base</span>
+        <a className="wordmark wordmark-footer" href="#top">IntentFence<span className="wordmark-dot">.</span></a>
+        <p>The spend and action firewall for autonomous AI.</p>
+        <span>Protocol 0.5 · ES256 receipts · x402 on Base</span>
       </footer>
     </main>
   );

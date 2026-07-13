@@ -1,7 +1,7 @@
 {
-  "name": "@agentpass/sdk",
-  "version": "0.4.0",
-  "description": "AgentPass preflight and signed-receipt client for AI agent runtimes.",
+  "name": "intentfence",
+  "version": "0.5.0",
+  "description": "IntentFence spend-policy guard and signed-receipt client for AI agent runtimes.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

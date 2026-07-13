@@ -28,7 +28,7 @@ const free = await fetch(`${baseUrl}/api/preflight`, {
 });
 assert.equal(free.status, 200);
 const freeBody = await json(free);
-assert.equal(freeBody.agentpass, "0.4");
+assert.equal(freeBody.intentfence, "0.5");
 assert.equal(freeBody.status, "safe_to_proceed");
 assert.equal(freeBody.receipt.signed, false);
 
@@ -58,12 +58,12 @@ const initialize = await fetch(`${baseUrl}/mcp`, {
     params: {
       protocolVersion: "2025-11-25",
       capabilities: {},
-      clientInfo: { name: "agentpass-smoke", version: "1.0.0" },
+      clientInfo: { name: "intentfence-smoke", version: "1.0.0" },
     },
   }),
 });
 assert.equal(initialize.status, 200);
-assert.equal((await json(initialize)).result.serverInfo.version, "0.4.0");
+assert.equal((await json(initialize)).result.serverInfo.version, "0.5.0");
 
 const toolCall = await fetch(`${baseUrl}/mcp`, {
   method: "POST",
@@ -72,7 +72,7 @@ const toolCall = await fetch(`${baseUrl}/mcp`, {
     jsonrpc: "2.0",
     id: 2,
     method: "tools/call",
-    params: { name: "agentpass_preflight", arguments: input },
+    params: { name: "intentfence_preflight", arguments: input },
   }),
 });
 assert.equal(toolCall.status, 200);
@@ -103,17 +103,17 @@ const tasks = await fetch(`${baseUrl}/a2a/tasks`, { headers: { "A2A-Version": "1
 assert.equal(tasks.status, 200);
 assert.deepEqual((await json(tasks)).tasks, []);
 
-if (process.env.AGENTPASS_TEST_PRIVATE_JWK_PATH) {
+if (process.env.INTENTFENCE_TEST_PRIVATE_JWK_PATH) {
   const { signReceiptClaims } = await import("../lib/receipts.ts");
-  const privateJwk = await readFile(process.env.AGENTPASS_TEST_PRIVATE_JWK_PATH, "utf8");
+  const privateJwk = await readFile(process.env.INTENTFENCE_TEST_PRIVATE_JWK_PATH, "utf8");
   const now = Math.floor(Date.now() / 1000);
   const jws = await signReceiptClaims({
     iss: "https://agentpass-protocol.rmalka06.chatgpt.site",
-    aud: "agentpass-verifier",
+    aud: "intentfence-verifier",
     iat: now,
     exp: now + 3600,
     jti: "ap_smoke",
-    agentpass_version: "0.4",
+    intentfence_version: "0.5",
     assurance: "declared-input-policy",
     request_id: "00000000-0000-4000-8000-000000000001",
     decision: "safe_to_proceed",
@@ -137,4 +137,4 @@ if (process.env.AGENTPASS_TEST_PRIVATE_JWK_PATH) {
   assert.equal((await json(verify)).valid, true);
 }
 
-console.log(`AgentPass protocol smoke passed against ${baseUrl}`);
+console.log(`IntentFence protocol smoke passed against ${baseUrl}`);

@@ -45,26 +45,26 @@ const plans = [
     featured: true,
   },
   {
-    key: "high_assurance",
-    name: "High Assurance",
-    price: "0.25 USDC",
-    note: "per action - coming next",
+    key: "pilot",
+    name: "Launch Pilot",
+    price: "$750 + $149/mo",
+    note: "one guarded production workflow",
     features: [
-      "External identity proofs",
-      "Policy-set verification",
-      "Longer audit retention",
-      "External proof verification",
-      "Founding access priority",
+      "Hands-on integration",
+      "Custom spend and approval policy",
+      "Guarded SDK wrapper",
+      "Receipt verification support",
+      "Founding-customer priority",
     ],
   },
   {
-    key: "fleet",
-    name: "Agent Fleet",
-    price: "Custom",
-    note: "for high-volume agent operators",
+    key: "production",
+    name: "Production",
+    price: "$499/mo",
+    note: "for teams operating agent fleets",
     features: [
       "Volume pricing",
-      "Batch settlement",
+      "Team policy sets",
       "Custom retention and SLA",
       "Private deployment option",
     ],
@@ -72,7 +72,7 @@ const plans = [
 ];
 
 export default function GrowthSections() {
-  const [plan, setPlan] = useState("high_assurance");
+  const [plan, setPlan] = useState("pilot");
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -102,7 +102,7 @@ export default function GrowthSections() {
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Could not save your request.");
       setState("success");
-      setMessage("You are on the founding-customer list. We will use your details only for AgentPass access.");
+      setMessage("Your pilot request is saved. We will use your details only to discuss IntentFence integration.");
       event.currentTarget.reset();
     } catch (error) {
       setState("error");
@@ -117,11 +117,11 @@ export default function GrowthSections() {
           <div className="section-kicker">Machine entry points - live now</div>
           <h2 id="agents-title">One check, in the protocol your agent already speaks.</h2>
           <p>
-            AgentPass publishes standard discovery files and callable endpoints so an agent can find the service without reading this page.
+            IntentFence publishes standard discovery files and callable endpoints so an agent runtime can find and enforce the service without reading this page.
           </p>
           <div className="discovery-links">
             <a href="/.well-known/agent-card.json">A2A Agent Card</a>
-            <a href="/.well-known/agentpass.json">AgentPass manifest</a>
+            <a href="/.well-known/intentfence.json">IntentFence manifest</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
             <a href="/api/payments">x402 payment metadata</a>
@@ -167,9 +167,9 @@ export default function GrowthSections() {
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
           <div className="section-kicker">Open protocol - autonomous USDC payments</div>
-          <h2 id="pricing-title">Free to discover. Pay only when an agent uses it.</h2>
+          <h2 id="pricing-title">Start per action. Upgrade when the policy becomes critical.</h2>
           <p>
-            An agent can discover the endpoint, pay 0.05 USDC on Base, and receive the result without creating an account or asking a human to enter a card.
+            Agents can pay 0.05 USDC per signed decision. Teams that need an enforced production workflow can launch with a fixed-price integration pilot.
           </p>
         </div>
         <div className="pricing-grid">
@@ -192,14 +192,14 @@ export default function GrowthSections() {
             </article>
           ))}
         </div>
-        <p className="pricing-note">Verified x402 at 0.05 USDC now includes a signed declared-input receipt. External identity verification and fleet features remain upcoming or custom.</p>
+        <p className="pricing-note">The 0.05 USDC endpoint is live. Pilot and Production prices are launch offers and include implementation support for an enforced workflow.</p>
       </section>
 
       <section className="founding-section" id="founding-access">
         <div>
           <div className="section-kicker">Founding customer program</div>
-          <h2>Bring one real agent action. We will help make it safe and autonomously billable.</h2>
-          <p>The pay-per-use endpoint is live. Use this form for higher-assurance verification, volume pricing, or a private deployment.</p>
+          <h2>Bring one agent action that can spend, send, deploy, or delete.</h2>
+          <p>We will put IntentFence directly in the execution path, define the policy, and ship a guarded pilot around that workflow.</p>
         </div>
         <form onSubmit={submitLead}>
           <label>
@@ -211,14 +211,14 @@ export default function GrowthSections() {
             <input name="company" type="text" placeholder="Acme Agents" autoComplete="organization" />
           </label>
           <label>
-            What action should AgentPass check?
+            What action should IntentFence guard?
             <textarea name="useCase" rows={4} placeholder="Our agent books travel up to $500 after manager approval..." />
           </label>
           <label>
             Plan
             <select value={plan} onChange={(event) => setPlan(event.target.value)}>
-              <option value="high_assurance">High Assurance - 0.25 USDC/action</option>
-              <option value="fleet">Agent Fleet - custom</option>
+              <option value="pilot">Launch Pilot - $750 + $149/month</option>
+              <option value="production">Production - $499/month</option>
               <option value="enterprise">Private Enterprise - custom</option>
             </select>
           </label>
@@ -227,10 +227,10 @@ export default function GrowthSections() {
             <input name="website" type="text" tabIndex={-1} autoComplete="off" />
           </label>
           <button className="button button-primary" disabled={state === "submitting"}>
-            {state === "submitting" ? "Saving..." : "Request founding access"}
+            {state === "submitting" ? "Saving..." : "Request a paid pilot"}
           </button>
           <p className={`form-message ${state}`} aria-live="polite">
-            {message || "No card required. We will contact you only about AgentPass access."}
+            {message || "No card required now. We will contact you only about an IntentFence pilot."}
           </p>
         </form>
       </section>

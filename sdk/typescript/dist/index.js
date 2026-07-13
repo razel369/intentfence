@@ -1,22 +1,22 @@
-export class AgentPassHttpError extends Error {
+export class IntentFenceHttpError extends Error {
     status;
     response;
     constructor(message, status, response) {
         super(message);
         this.status = status;
         this.response = response;
-        this.name = "AgentPassHttpError";
+        this.name = "IntentFenceHttpError";
     }
 }
-export class AgentPassBlockedError extends Error {
+export class IntentFenceBlockedError extends Error {
     decision;
     constructor(decision) {
-        super(`AgentPass blocked the tool call with status ${decision.status}.`);
+        super(`IntentFence blocked the tool call with status ${decision.status}.`);
         this.decision = decision;
-        this.name = "AgentPassBlockedError";
+        this.name = "IntentFenceBlockedError";
     }
 }
-export class AgentPassClient {
+export class IntentFenceClient {
     baseUrl;
     request;
     constructor(options = {}) {
@@ -31,7 +31,7 @@ export class AgentPassClient {
             body: JSON.stringify(input),
         });
         if (!response.ok) {
-            throw new AgentPassHttpError(`AgentPass returned HTTP ${response.status}.`, response.status, response);
+            throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
         }
         return await response.json();
     }
@@ -43,7 +43,7 @@ export class AgentPassClient {
         });
         const result = await response.json();
         if (!response.ok || !result.valid) {
-            throw new AgentPassHttpError(`Receipt verification failed: ${result.reason ?? response.status}.`, response.status, response);
+            throw new IntentFenceHttpError(`Receipt verification failed: ${result.reason ?? response.status}.`, response.status, response);
         }
         return result;
     }
@@ -51,7 +51,7 @@ export class AgentPassClient {
         return async (input, toolCall) => {
             const decision = await this.preflight(input, { paid: options.paid });
             if (decision.status === "denied" || (options.blockOnReview !== false && decision.status === "needs_review")) {
-                throw new AgentPassBlockedError(decision);
+                throw new IntentFenceBlockedError(decision);
             }
             return await toolCall();
         };

@@ -1,15 +1,15 @@
-# AgentPass security model
+# IntentFence security model
 
 ## Trust boundaries
 
-- AgentPass treats all caller-provided identity, proofs, prices, and constraints
+- IntentFence treats all caller-provided identity, proofs, prices, and constraints
   as declarations unless an explicit external verifier is named.
 - The receipt signing key is separate from the USDC recipient wallet and is
   stored only as a production secret.
-- AgentPass never requests or receives a payer wallet seed phrase or private key.
-- x402 payment settlement and AgentPass receipt signing are independent signals.
+- IntentFence never requests or receives a payer wallet seed phrase or private key.
+- x402 payment settlement and IntentFence receipt signing are independent signals.
 
-## Controls in 0.4
+## Controls in 0.5
 
 - 16 KiB request limits for preflight, MCP, and A2A inputs.
 - Strict field bounds and finite-number validation.

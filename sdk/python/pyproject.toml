@@ -3,12 +3,12 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agentpass-sdk"
-version = "0.4.0"
-description = "AgentPass preflight and signed-receipt client for AI agent runtimes."
+name = "intentfence"
+version = "0.5.0"
+description = "IntentFence spend-policy guard and signed-receipt client for AI agent runtimes."
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "AgentPass" }]
+authors = [{ name = "IntentFence" }]
 
 [tool.hatch.build.targets.wheel]
-packages = ["agentpass"]
+packages = ["intentfence"]

@@ -1,8 +1,9 @@
-# AgentPass
+# IntentFence
 
-AgentPass is a public, machine-callable preflight layer for autonomous AI
-actions. It evaluates declared identity, scope, cost, data-retention, and
-human-approval constraints before a tool call and returns one of:
+IntentFence is an open spend and action policy gate for autonomous AI. Put it
+immediately before a tool call, evaluate declared scope, cost, data-retention,
+and approval constraints, and run the downstream action only when the decision
+allows it:
 
 - `safe_to_proceed`
 - `needs_review`
@@ -24,14 +25,18 @@ Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 
 The paid endpoint costs 0.05 USDC on Base through x402. A successful call
 returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
-AgentPass ES256 compact-JWS receipt.
+IntentFence ES256 compact-JWS receipt.
+
+For teams that need a guarded production workflow, the launch pilot is $750
+plus $149/month and includes hands-on integration of one agent action. The
+Production plan starts at $499/month.
 
 ## Important trust boundary
 
-AgentPass 0.4 attests that it evaluated the inputs supplied by the caller. It
+IntentFence 0.5 attests that it evaluated the inputs supplied by the caller. It
 does not independently prove real-world identity, authorization, or downstream
 enforcement. The receipt-signing key is separate from the USDC recipient wallet.
-AgentPass never needs a payer's seed phrase or wallet private key.
+IntentFence never needs a payer's seed phrase or wallet private key.
 
 ## Local development
 
@@ -41,10 +46,10 @@ npm run dev
 ```
 
 The production signing key is stored in Sites as the secret
-`AGENTPASS_SIGNING_PRIVATE_JWK`. Generate a separate development key with:
+`INTENTFENCE_SIGNING_PRIVATE_JWK`. Generate a separate development key with:
 
 ```bash
-node scripts/generate-signing-key.mjs /secure/path/agentpass-private-jwk.json
+node scripts/generate-signing-key.mjs /secure/path/intentfence-private-jwk.json
 ```
 
 Never commit the generated private JWK. Publish only its public coordinates in
@@ -60,16 +65,20 @@ npm run sdk:check
 npm run smoke:protocol -- http://localhost:3000
 ```
 
-Set `AGENTPASS_TEST_PRIVATE_JWK_PATH` only for a local smoke test that should
+Set `INTENTFENCE_TEST_PRIVATE_JWK_PATH` only for a local smoke test that should
 exercise the signed-receipt verifier.
 
 ## Distribution
 
-Draft TypeScript and Python SDKs live in `sdk/`. A remote-server metadata
-template for the official MCP Registry is in
-`distribution/mcp-server.template.json`. Publishing those artifacts requires a
-verified npm/PyPI namespace and a verified MCP Registry namespace; no external
-registry publication is performed by the build.
+TypeScript and Python SDKs live in `sdk/`. The root `server.json` is ready for
+the official MCP Registry under `io.github.razel369/intentfence`; the public MCP
+endpoint uses Streamable HTTP and requires no API key.
+
+## Commercial pilot
+
+The fastest path to production is one guarded action: purchase, transfer,
+booking, deployment, deletion, or another consequential tool call. Submit the
+pilot form on the production site with the real action and its policy boundary.
 
 See [docs/PROTOCOL.md](docs/PROTOCOL.md) and
 [docs/SECURITY.md](docs/SECURITY.md) for the protocol and security model.

@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "AgentPass Preflight API",
-    "version": "0.4.0",
-    "description": "Run declared-input identity, scope, cost, data-retention, and human-approval checks before an agent acts. The x402 endpoint returns an ES256-signed policy receipt."
+    "title": "IntentFence Policy API",
+    "version": "0.5.0",
+    "description": "Guard autonomous agent actions with spend, scope, data-retention, and approval checks. The x402 endpoint returns an ES256-signed policy receipt."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
@@ -86,8 +86,8 @@
                 "description": "Base64-encoded x402 settlement result, including on-chain transaction proof.",
                 "schema": { "type": "string" }
               },
-              "X-AgentPass-Request-ID": {
-                "description": "AgentPass audit correlation identifier.",
+              "X-IntentFence-Request-ID": {
+                "description": "IntentFence audit correlation identifier.",
                 "schema": { "type": "string", "format": "uuid" }
               }
             },
@@ -115,8 +115,8 @@
     },
     "/api/receipts/verify": {
       "post": {
-        "operationId": "verifyAgentPassReceipt",
-        "summary": "Verify an AgentPass ES256 compact JWS receipt",
+        "operationId": "verifyIntentFenceReceipt",
+        "summary": "Verify an IntentFence ES256 compact JWS receipt",
         "requestBody": {
           "required": true,
           "content": {
@@ -151,6 +151,18 @@
           "400": { "description": "Malformed, expired, unsupported, or invalid receipt" },
           "413": { "description": "JSON body exceeds 36 KiB" },
           "415": { "description": "Unsupported content type" }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getIntentFenceHealth",
+        "summary": "Read service and protocol availability",
+        "responses": {
+          "200": {
+            "description": "IntentFence service status",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
         }
       }
     },
@@ -221,9 +233,9 @@
       },
       "PreflightDecision": {
         "type": "object",
-        "required": ["agentpass", "request_id", "status", "checks", "receipt"],
+        "required": ["intentfence", "request_id", "status", "checks", "receipt"],
         "properties": {
-          "agentpass": { "type": "string", "const": "0.4" },
+          "intentfence": { "type": "string", "const": "0.5" },
           "request_id": { "type": "string", "format": "uuid" },
           "status": {
             "type": "string",

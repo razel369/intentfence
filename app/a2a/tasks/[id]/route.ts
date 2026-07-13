@@ -6,7 +6,7 @@ function versionError(request: Request) {
     400,
     "version-not-supported",
     "Protocol Version Not Supported",
-    "AgentPass supports A2A protocol version 1.0.",
+    "IntentFence supports A2A protocol version 1.0.",
     { supportedVersions: [A2A_VERSION] },
   );
 }
@@ -22,7 +22,7 @@ export async function GET(
   const error = versionError(request);
   if (error) return error;
   const { id } = await context.params;
-  return a2aProblem(404, "task-not-found", "Task Not Found", `No task exists with id ${id}. AgentPass preflights return synchronous Message responses.`);
+  return a2aProblem(404, "task-not-found", "Task Not Found", `No task exists with id ${id}. IntentFence preflights return synchronous Message responses.`);
 }
 
 export async function POST(
@@ -36,5 +36,5 @@ export async function POST(
     return a2aProblem(404, "operation-not-found", "Operation Not Found", "The requested task operation is not available.");
   }
   const taskId = id.slice(0, -":cancel".length);
-  return a2aProblem(404, "task-not-found", "Task Not Found", `No task exists with id ${taskId}. AgentPass preflights complete synchronously.`);
+  return a2aProblem(404, "task-not-found", "Task Not Found", `No task exists with id ${taskId}. IntentFence preflights complete synchronously.`);
 }

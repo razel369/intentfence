@@ -10,7 +10,7 @@ export function GET(request: Request) {
       400,
       "version-not-supported",
       "Protocol Version Not Supported",
-      "AgentPass supports A2A protocol version 1.0.",
+      "IntentFence supports A2A protocol version 1.0.",
       { supportedVersions: [A2A_VERSION] },
     );
   }

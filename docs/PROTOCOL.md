@@ -1,6 +1,6 @@
-# AgentPass Protocol Core 0.4
+# IntentFence Protocol Core 0.5
 
-AgentPass is a declared-input policy preflight. It evaluates the subject, action,
+IntentFence is a declared-input policy gate. It evaluates the subject, action,
 cost, data-retention, and approval constraints supplied by a caller and returns
 `safe_to_proceed`, `needs_review`, or `denied`.
 
@@ -19,13 +19,13 @@ key is published at `/.well-known/jwks.json`; the claims schema is published at
 `/protocol/receipt.schema.json`. Receipts expire after 24 hours and bind the
 decision, declared inputs, checks, and expected x402 payment terms.
 
-The JWS attests that AgentPass evaluated those declared inputs. The
+The JWS attests that IntentFence evaluated those declared inputs. The
 `PAYMENT-RESPONSE` HTTP header separately carries the facilitator's x402
 settlement result. Neither signal proves a person's identity or the caller's
 authority to perform a consequential action.
 
 ## Integration rule
 
-Call AgentPass immediately before a tool invocation. Block on `denied`. A
-runtime may also block on `needs_review`, or route it to human/policy review.
+Call IntentFence immediately before a tool invocation. Block on `denied`. By
+default, also block on `needs_review` or route it to human/policy review.
 Always enforce independent authorization at the target service.

@@ -1,24 +1,24 @@
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
-const RECEIPT_AUDIENCE = "agentpass-verifier";
+const RECEIPT_AUDIENCE = "intentfence-verifier";
 const RECEIPT_TTL_SECONDS = 86_400;
 
-export const AGENTPASS_SIGNING_KID = "agentpass-es256-2026-07";
-type AgentPassJwk = JsonWebKey & {
+export const INTENTFENCE_SIGNING_KID = "intentfence-es256-2026-07";
+type IntentFenceJwk = JsonWebKey & {
   alg: "ES256";
-  kid: typeof AGENTPASS_SIGNING_KID;
+  kid: typeof INTENTFENCE_SIGNING_KID;
   use: "sig";
   d?: string;
 };
 
-export const AGENTPASS_PUBLIC_JWK: AgentPassJwk = {
+export const INTENTFENCE_PUBLIC_JWK: IntentFenceJwk = {
   key_ops: ["verify"],
   ext: true,
   kty: "EC",
-  x: "r4swuFACq9-FdJM6p8usBxDq6sh5iB9VHhqNilHAPko",
-  y: "qsLdtuLtN-p4-Lc1xZovk2hVadpT7wtkGXLxofjRKjs",
+  x: "hJCzHY9kFr2LX7KqpVOtXjOKnJ43Yvap7VWoDmIuF34",
+  y: "3YhOJX-ai6IiiYhpK8okWq-83oLoPmdFSRwuEZNp2MQ",
   crv: "P-256",
   alg: "ES256",
-  kid: AGENTPASS_SIGNING_KID,
+  kid: INTENTFENCE_SIGNING_KID,
   use: "sig",
 };
 
@@ -40,7 +40,7 @@ export type ReceiptClaims = {
   iat: number;
   exp: number;
   jti: string;
-  agentpass_version: "0.4";
+  intentfence_version: "0.5";
   assurance: "declared-input-policy";
   request_id: string;
   decision: ReceiptDecision["status"];
@@ -68,7 +68,7 @@ export type SignedReceipt = ReceiptDecision["receipt"] & {
   signature: {
     format: "JWS Compact";
     alg: "ES256";
-    kid: typeof AGENTPASS_SIGNING_KID;
+    kid: typeof INTENTFENCE_SIGNING_KID;
     jws: string;
     verify_url: string;
     jwks_url: string;
@@ -120,16 +120,16 @@ function parsePrivateJwk(value: string) {
     jwk.kty !== "EC" ||
     jwk.crv !== "P-256" ||
     jwk.alg !== "ES256" ||
-    jwk.kid !== AGENTPASS_SIGNING_KID ||
+    jwk.kid !== INTENTFENCE_SIGNING_KID ||
     typeof jwk.d !== "string"
   ) {
     throw new ReceiptSigningError("The receipt signing key is not the configured ES256 key.");
   }
-  return jwk as unknown as AgentPassJwk;
+  return jwk as unknown as IntentFenceJwk;
 }
 
 export async function signReceiptClaims(claims: ReceiptClaims, privateJwk: string) {
-  const header = { alg: "ES256", kid: AGENTPASS_SIGNING_KID, typ: "agentpass+jws" } as const;
+  const header = { alg: "ES256", kid: INTENTFENCE_SIGNING_KID, typ: "intentfence+jws" } as const;
   const protectedHeader = stringToBase64Url(JSON.stringify(header));
   const payload = stringToBase64Url(JSON.stringify(claims));
   const signingInput = `${protectedHeader}.${payload}`;
@@ -165,7 +165,7 @@ export async function createSignedReceipt(
     iat: issuedAtSeconds,
     exp: issuedAtSeconds + RECEIPT_TTL_SECONDS,
     jti: decision.receipt.id,
-    agentpass_version: "0.4",
+    intentfence_version: "0.5",
     assurance: "declared-input-policy",
     request_id: decision.request_id,
     decision: decision.status,
@@ -194,19 +194,19 @@ export async function createSignedReceipt(
     signature: {
       format: "JWS Compact",
       alg: "ES256",
-      kid: AGENTPASS_SIGNING_KID,
+      kid: INTENTFENCE_SIGNING_KID,
       jws,
       verify_url: `${SITE_URL}/api/receipts/verify`,
       jwks_url: `${SITE_URL}/.well-known/jwks.json`,
     },
-    note: "AgentPass signed the declared-input policy decision. PAYMENT-RESPONSE separately proves x402 settlement; neither proves real-world identity or authorization.",
+    note: "IntentFence signed the declared-input policy decision. PAYMENT-RESPONSE separately proves x402 settlement; neither proves real-world identity or authorization.",
   };
 }
 
 export async function verifyReceipt(
   jws: string,
   now = Date.now(),
-  publicJwk: JsonWebKey = AGENTPASS_PUBLIC_JWK,
+  publicJwk: JsonWebKey = INTENTFENCE_PUBLIC_JWK,
 ) {
   if (jws.length < 100 || jws.length > 32_768) {
     return { valid: false as const, reason: "invalid_length" };
@@ -221,8 +221,8 @@ export async function verifyReceipt(
     if (
       !isRecord(header) ||
       header.alg !== "ES256" ||
-      header.kid !== AGENTPASS_SIGNING_KID ||
-      header.typ !== "agentpass+jws" ||
+      header.kid !== INTENTFENCE_SIGNING_KID ||
+      header.typ !== "intentfence+jws" ||
       signature.byteLength !== 64
     ) {
       return { valid: false as const, reason: "unsupported_signature" };
@@ -231,7 +231,7 @@ export async function verifyReceipt(
       !isRecord(claims) ||
       claims.iss !== SITE_URL ||
       claims.aud !== RECEIPT_AUDIENCE ||
-      claims.agentpass_version !== "0.4" ||
+      claims.intentfence_version !== "0.5" ||
       claims.assurance !== "declared-input-policy" ||
       typeof claims.iat !== "number" ||
       typeof claims.exp !== "number" ||

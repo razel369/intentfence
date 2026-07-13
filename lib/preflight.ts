@@ -21,7 +21,7 @@ export type PreflightCheck = {
 };
 
 export type PreflightDecision = {
-  agentpass: "0.4";
+  intentfence: "0.5";
   request_id: string;
   status: "safe_to_proceed" | "needs_review" | "denied";
   checks: PreflightCheck[];
@@ -232,12 +232,12 @@ export function evaluatePreflight(input: PreflightInput): PreflightDecision {
   const requestId = crypto.randomUUID();
 
   return {
-    agentpass: "0.4",
+    intentfence: "0.5",
     request_id: requestId,
     status,
     checks,
     receipt: {
-      id: `ap_${requestId}`,
+      id: `if_${requestId}`,
       issued_at: new Date().toISOString(),
       subject: subject ?? null,
       action: input.action ?? null,
@@ -246,7 +246,7 @@ export function evaluatePreflight(input: PreflightInput): PreflightDecision {
       note: "Unsigned public preview of a declared-input policy decision. Use the paid endpoint for an ES256-signed receipt.",
     },
     links: {
-      discovery: `${SITE_URL}/.well-known/agentpass.json`,
+      discovery: `${SITE_URL}/.well-known/intentfence.json`,
       openapi: `${SITE_URL}/openapi.json`,
       pricing: `${SITE_URL}/#pricing`,
     },

@@ -12,14 +12,14 @@ import { JsonRequestError, readJsonWithLimit } from "../../../../lib/request";
 import { createSignedReceipt, ReceiptSigningError } from "../../../../lib/receipts";
 import { getReceiptSigningPrivateJwk } from "../../../../lib/runtime-secrets";
 import {
-  agentpassX402Server,
-  AGENTPASS_ASSET,
-  AGENTPASS_NETWORK,
-  AGENTPASS_PAY_TO,
-  AGENTPASS_PAYMENT_TIMEOUT_SECONDS,
-  AGENTPASS_PRICE_ATOMIC,
-  AGENTPASS_PRICE_USD,
-  AGENTPASS_USDC_CONTRACT,
+  intentFenceX402Server,
+  INTENTFENCE_ASSET,
+  INTENTFENCE_NETWORK,
+  INTENTFENCE_PAY_TO,
+  INTENTFENCE_PAYMENT_TIMEOUT_SECONDS,
+  INTENTFENCE_PRICE_ATOMIC,
+  INTENTFENCE_PRICE_USD,
+  INTENTFENCE_USDC_CONTRACT,
 } from "../../../../lib/x402";
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
@@ -28,7 +28,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, PAYMENT-SIGNATURE, X-PAYMENT",
-  "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-PAYMENT-RESPONSE, X-AgentPass-Request-ID",
+  "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-PAYMENT-RESPONSE, X-IntentFence-Request-ID",
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
 };
@@ -36,20 +36,20 @@ const corsHeaders = {
 const routeConfig = {
   accepts: {
     scheme: "exact",
-    price: AGENTPASS_PRICE_USD,
-    network: AGENTPASS_NETWORK,
-    payTo: AGENTPASS_PAY_TO,
+    price: INTENTFENCE_PRICE_USD,
+    network: INTENTFENCE_NETWORK,
+    payTo: INTENTFENCE_PAY_TO,
   },
-  description: "Run a paid AgentPass preflight and receive x402 on-chain settlement proof.",
+  description: "Run a paid IntentFence preflight and receive x402 on-chain settlement proof.",
   mimeType: "application/json",
-  serviceName: "AgentPass",
+  serviceName: "IntentFence",
   tags: ["ai-agents", "preflight", "policy", "x402", "usdc"],
   iconUrl: `${SITE_URL}/favicon.svg`,
   unpaidResponseBody: () => ({
     contentType: "application/json",
     body: {
       error: "payment_required",
-      message: `Pay ${AGENTPASS_PRICE_USD} in USDC on Base to run this verified preflight.`,
+      message: `Pay ${INTENTFENCE_PRICE_USD} in USDC on Base to run this verified preflight.`,
       payment_info: `${SITE_URL}/api/payments`,
     },
   }),
@@ -70,11 +70,11 @@ function unpaidResponse(request: NextRequest) {
     accepts: [
       {
         scheme: "exact",
-        network: AGENTPASS_NETWORK,
-        amount: AGENTPASS_PRICE_ATOMIC,
-        asset: AGENTPASS_USDC_CONTRACT,
-        payTo: AGENTPASS_PAY_TO,
-        maxTimeoutSeconds: AGENTPASS_PAYMENT_TIMEOUT_SECONDS,
+        network: INTENTFENCE_NETWORK,
+        amount: INTENTFENCE_PRICE_ATOMIC,
+        asset: INTENTFENCE_USDC_CONTRACT,
+        payTo: INTENTFENCE_PAY_TO,
+        maxTimeoutSeconds: INTENTFENCE_PAYMENT_TIMEOUT_SECONDS,
         extra: { name: "USD Coin", version: "2" },
       },
     ],
@@ -83,7 +83,7 @@ function unpaidResponse(request: NextRequest) {
   return NextResponse.json(
     {
       error: "payment_required",
-      message: `Pay ${AGENTPASS_PRICE_USD} in USDC on Base to run this verified preflight.`,
+      message: `Pay ${INTENTFENCE_PRICE_USD} in USDC on Base to run this verified preflight.`,
       payment_info: `${SITE_URL}/api/payments`,
     },
     {
@@ -111,10 +111,10 @@ async function paidHandler(request: NextRequest): Promise<NextResponse<unknown>>
     const input = validatePreflightInput(await readJsonWithLimit(request));
     const decision = evaluatePreflight(input);
     const receipt = await createSignedReceipt(decision, privateJwk, {
-      network: AGENTPASS_NETWORK,
-      asset: AGENTPASS_ASSET,
-      amountAtomic: AGENTPASS_PRICE_ATOMIC,
-      payTo: AGENTPASS_PAY_TO,
+      network: INTENTFENCE_NETWORK,
+      asset: INTENTFENCE_ASSET,
+      amountAtomic: INTENTFENCE_PRICE_ATOMIC,
+      payTo: INTENTFENCE_PAY_TO,
     });
     return NextResponse.json(
       {
@@ -122,7 +122,7 @@ async function paidHandler(request: NextRequest): Promise<NextResponse<unknown>>
         verification_tier: "x402-settled",
         receipt,
       },
-      { headers: { ...corsHeaders, "X-AgentPass-Request-ID": decision.request_id } },
+      { headers: { ...corsHeaders, "X-IntentFence-Request-ID": decision.request_id } },
     );
   } catch (error) {
     if (error instanceof JsonRequestError) {
@@ -138,7 +138,7 @@ async function paidHandler(request: NextRequest): Promise<NextResponse<unknown>>
       );
     }
     if (error instanceof ReceiptSigningError) {
-      console.error("AgentPass receipt signing failed", { error: error.message });
+      console.error("IntentFence receipt signing failed", { error: error.message });
       return NextResponse.json(
         {
           error: "signing_temporarily_unavailable",
@@ -154,7 +154,7 @@ async function paidHandler(request: NextRequest): Promise<NextResponse<unknown>>
   }
 }
 
-const protectedPost = withX402<unknown>(paidHandler, routeConfig, agentpassX402Server);
+const protectedPost = withX402<unknown>(paidHandler, routeConfig, intentFenceX402Server);
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
@@ -182,13 +182,13 @@ export async function POST(request: NextRequest) {
   try {
     response = await protectedPost(request);
   } catch (error) {
-    console.error("AgentPass x402 initialization retry", {
+    console.error("IntentFence x402 initialization retry", {
       error: error instanceof Error ? error.message : "unknown_error",
     });
     response = await protectedPost(request);
   }
   const settlementResponse = response.headers.get("PAYMENT-RESPONSE");
-  const requestId = response.headers.get("X-AgentPass-Request-ID");
+  const requestId = response.headers.get("X-IntentFence-Request-ID");
 
   if (response.ok && settlementResponse && requestId) {
     try {
@@ -197,17 +197,17 @@ export async function POST(request: NextRequest) {
         .values({
           id: crypto.randomUUID(),
           requestId,
-          network: AGENTPASS_NETWORK,
-          asset: AGENTPASS_ASSET,
-          amountAtomic: AGENTPASS_PRICE_ATOMIC,
-          payTo: AGENTPASS_PAY_TO,
+          network: INTENTFENCE_NETWORK,
+          asset: INTENTFENCE_ASSET,
+          amountAtomic: INTENTFENCE_PRICE_ATOMIC,
+          payTo: INTENTFENCE_PAY_TO,
           settlementResponse: settlementResponse.slice(0, 4096),
           status: "settled",
           createdAt: new Date(),
         })
         .onConflictDoNothing({ target: paymentAudits.requestId });
     } catch (error) {
-      console.error("AgentPass payment audit write failed", {
+      console.error("IntentFence payment audit write failed", {
         requestId,
         error: error instanceof Error ? error.message : "unknown_error",
       });

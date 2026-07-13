@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 
 @dataclass
-class AgentPassError(RuntimeError):
+class IntentFenceError(RuntimeError):
     message: str
     status: int | None = None
     body: dict[str, Any] | None = None
@@ -19,7 +19,7 @@ class AgentPassError(RuntimeError):
         return self.message
 
 
-class AgentPassClient:
+class IntentFenceClient:
     def __init__(
         self,
         base_url: str = "https://agentpass-protocol.rmalka06.chatgpt.site",
@@ -43,8 +43,8 @@ class AgentPassClient:
                 body = json.loads(error.read().decode("utf-8"))
             except (json.JSONDecodeError, UnicodeDecodeError):
                 body = None
-            raise AgentPassError(
-                f"AgentPass returned HTTP {error.code}.",
+            raise IntentFenceError(
+                f"IntentFence returned HTTP {error.code}.",
                 status=error.code,
                 body=body,
             ) from error
@@ -68,8 +68,11 @@ class AgentPassClient:
         if decision.get("status") == "denied" or (
             block_on_review and decision.get("status") == "needs_review"
         ):
-            raise AgentPassError(f"AgentPass blocked the tool call: {decision.get('status')}.", body=decision)
+            raise IntentFenceError(
+                f"IntentFence blocked the tool call: {decision.get('status')}.",
+                body=decision,
+            )
         return tool_call()
 
 
-__all__ = ["AgentPassClient", "AgentPassError"]
+__all__ = ["IntentFenceClient", "IntentFenceError"]

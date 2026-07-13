@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentpass-protocol.rmalka06.chatgpt.site"),
-  title: "AgentPass — Preflight infrastructure for AI agents",
+  title: "IntentFence — Spend and action policy for AI agents",
   description:
-    "A callable REST, MCP, and A2A preflight layer for agent identity, scope, cost, data rules, and human approval.",
+    "An enforceable REST, MCP, and A2A policy gate for agent spend, scope, data rules, and human approval.",
   keywords: [
     "AI agent authorization",
-    "agent preflight",
+    "agent policy gateway",
     "MCP server",
     "A2A agent card",
     "agent policy",
@@ -23,25 +23,25 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "AgentPass — Before an agent acts, it checks in.",
+    title: "IntentFence — Stop unsafe agent actions before they execute.",
     description:
-      "One callable preflight for identity, scope, cost, data rules, and human approval — via REST, MCP, and A2A.",
+      "One enforceable gate for spend, scope, data rules, and human approval — via REST, MCP, and A2A.",
     url: "/",
-    siteName: "AgentPass",
+    siteName: "IntentFence",
     type: "website",
     images: [
       {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "AgentPass — Before an agent acts, it checks in.",
+        alt: "IntentFence — Stop unsafe agent actions before they execute.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AgentPass — Before an agent acts, it checks in.",
-    description: "REST, MCP, and A2A preflight infrastructure for autonomous agents.",
+    title: "IntentFence — Stop unsafe agent actions before they execute.",
+    description: "REST, MCP, and A2A spend-policy infrastructure for autonomous agents.",
     images: ["/og.png"],
   },
 };
@@ -49,15 +49,16 @@ export const metadata: Metadata = {
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "AgentPass",
+  name: "IntentFence",
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Web",
   url: "https://agentpass-protocol.rmalka06.chatgpt.site/",
   description:
-    "Preflight infrastructure for autonomous AI actions, available through REST, MCP, and A2A.",
+    "Spend and action policy infrastructure for autonomous AI, available through REST, MCP, and A2A.",
   offers: [
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
     { "@type": "Offer", name: "Verified x402", price: "0.05", priceCurrency: "USDC" },
+    { "@type": "Offer", name: "Launch Pilot", price: "750", priceCurrency: "USD" },
   ],
 };
 

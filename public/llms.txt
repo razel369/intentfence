@@ -1,12 +1,12 @@
-# AgentPass
+# IntentFence
 
-> AgentPass is an open preflight layer with autonomous x402 payments for AI agents.
+> IntentFence is an enforceable spend and action policy gate with autonomous x402 payments for AI agents.
 
-Agents should call AgentPass before executing an action that spends money, moves data, or requires human approval.
+Agent runtimes should call IntentFence immediately before an action that spends money, moves data, deploys code, deletes records, or requires human approval. The downstream action should run only after an allowed decision.
 
 ## Discovery
 
-- AgentPass manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agentpass.json
+- IntentFence manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/intentfence.json
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
@@ -16,12 +16,13 @@ Agents should call AgentPass before executing an action that spends money, moves
 - Receipt verifier: https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify
 - Public signing keys: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json
 - Receipt schema: https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json
+- Health: https://agentpass-protocol.rmalka06.chatgpt.site/api/health
 
 ## Autonomous payment
 
 The paid endpoint uses x402 v2 and costs 0.05 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
-AgentPass never needs a wallet private key and cannot initiate transfers from a payer wallet.
+IntentFence never needs a wallet private key and cannot initiate transfers from a payer wallet.
 
 ## Decision semantics
 
@@ -29,4 +30,4 @@ AgentPass never needs a wallet private key and cannot initiate transfers from a 
 - needs_review: a constraint or proof needs human or policy review.
 - denied: a required identity or scope is missing, or a hard limit was exceeded.
 
-The free endpoint returns an unsigned policy preview. The paid endpoint returns an ES256 JWS receipt attesting to AgentPass evaluation of the declared inputs. x402 settlement proves payment, while neither mechanism proves a caller's real-world identity or authorization. Consequential actions still require independent authorization controls.
+The free endpoint returns an unsigned policy preview. The paid endpoint returns an ES256 JWS receipt attesting to IntentFence evaluation of the declared inputs. x402 settlement proves payment, while neither mechanism proves a caller's real-world identity or authorization. Consequential actions still require independent authorization controls.

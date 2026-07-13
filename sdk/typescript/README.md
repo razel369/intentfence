@@ -1,13 +1,13 @@
-# AgentPass TypeScript SDK
+# IntentFence TypeScript SDK
 
 ```ts
-import { AgentPassClient } from "@agentpass/sdk";
+import { IntentFenceClient } from "intentfence";
 
-const agentpass = new AgentPassClient({
+const intentFence = new IntentFenceClient({
   // For paid calls, inject a fetch implementation wrapped by your x402 wallet client.
   fetch,
 });
-const guard = agentpass.guard({ paid: false, blockOnReview: true });
+const guard = intentFence.guard({ paid: false, blockOnReview: true });
 
 const result = await guard(
   {
@@ -19,6 +19,6 @@ const result = await guard(
 );
 ```
 
-AgentPass does not need your wallet private key. For paid calls, the injected
+IntentFence does not need your wallet private key. For paid calls, the injected
 `fetch` implementation should handle the x402 challenge and sign in the payer's
 own wallet environment.

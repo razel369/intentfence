@@ -6,7 +6,7 @@ if (!privateKeyPath) {
   throw new Error("Pass a destination path for the private JWK.");
 }
 
-const kid = "agentpass-es256-2026-07";
+const kid = "intentfence-es256-2026-07";
 const keyPair = await webcrypto.subtle.generateKey(
   { name: "ECDSA", namedCurve: "P-256" },
   true,
