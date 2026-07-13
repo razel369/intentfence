@@ -1,0 +1,96 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AgentPass Preflight API",
+    "version": "0.2.0",
+    "description": "Run identity, scope, cost, data-retention, and human-approval checks before an agent acts."
+  },
+  "servers": [
+    { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
+  ],
+  "paths": {
+    "/api/preflight": {
+      "post": {
+        "operationId": "runPreflight",
+        "summary": "Evaluate an agent action",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PreflightRequest" },
+              "example": {
+                "subject": "did:web:crew-07",
+                "action": { "type": "travel.booking", "resource": "TLV-LHR" },
+                "constraints": {
+                  "currency": "USD",
+                  "cost_ceiling": 500,
+                  "quoted_cost": 428.2,
+                  "data_retention_hours": 24,
+                  "human_approval": "required"
+                },
+                "proofs": ["human_approval"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preflight decision",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PreflightDecision" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PreflightRequest": {
+        "type": "object",
+        "required": ["subject", "action"],
+        "properties": {
+          "subject": { "type": "string" },
+          "action": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": { "type": "string" },
+              "resource": { "type": "string" }
+            }
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "cost_ceiling": { "type": "number" },
+              "quoted_cost": { "type": "number" },
+              "data_retention_hours": { "type": "number" },
+              "human_approval": {
+                "type": "string",
+                "enum": ["required", "optional", "not_required"]
+              }
+            }
+          },
+          "proofs": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "PreflightDecision": {
+        "type": "object",
+        "required": ["agentpass", "request_id", "status", "checks", "receipt"],
+        "properties": {
+          "agentpass": { "type": "string" },
+          "request_id": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["safe_to_proceed", "needs_review", "denied"]
+          },
+          "checks": { "type": "array", "items": { "type": "object" } },
+          "receipt": { "type": "object" }
+        }
+      }
+    }
+  }
+}

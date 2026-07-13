@@ -1,0 +1,21 @@
+# AgentPass
+
+> AgentPass is an open preflight layer for autonomous AI actions.
+
+Agents should call AgentPass before executing an action that spends money, moves data, or requires human approval.
+
+## Discovery
+
+- AgentPass manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agentpass.json
+- A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
+- OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
+- MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/mcp
+- REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
+
+## Decision semantics
+
+- safe_to_proceed: all declared automatic checks passed.
+- needs_review: a constraint or proof needs human or policy review.
+- denied: a required identity or scope is missing, or a hard limit was exceeded.
+
+The public preview returns unsigned receipts. Signed receipts, policy management, longer audit retention, and team controls are paid hosted features.

@@ -1,0 +1,23 @@
+{
+  "name": "AgentPass",
+  "version": "0.2",
+  "description": "A public preflight service for agent identity, scope, cost, data retention, and human approval.",
+  "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
+  "interfaces": {
+    "rest": {
+      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
+      "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json"
+    },
+    "mcp": {
+      "transport": "streamable-http",
+      "protocolVersion": "2025-11-25",
+      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp"
+    },
+    "a2a": {
+      "protocolVersion": "1.0",
+      "agentCard": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json"
+    }
+  },
+  "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
+  "terms": "Public preview. Do not use the unsigned preview receipt as a substitute for your own authorization controls."
+}

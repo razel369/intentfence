@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import GrowthSections from "./GrowthSections";
 
 const checks = [
   { label: "Identity", value: "did:web:crew-07", detail: "Verified issuer" },
@@ -92,9 +93,9 @@ export default function Home() {
           AgentPass<span className="wordmark-dot">.</span>
         </a>
         <nav aria-label="Primary navigation">
-          <a href="#why">Why now</a>
+          <a href="#agents">For agents</a>
           <a href="#protocol">Protocol</a>
-          <a href="#manifest">Open spec</a>
+          <a href="#pricing">Pricing</a>
         </nav>
         <a className="header-action" href="#playground">
           Try the handshake
@@ -122,16 +123,16 @@ export default function Home() {
           </div>
           <div className="proof-grid" aria-label="Protocol highlights">
             <div>
-              <strong>&lt;300ms</strong>
-              <span>preflight target</span>
+              <strong>Public API</strong>
+              <span>call it now</span>
             </div>
             <div>
               <strong>5 checks</strong>
               <span>one decision</span>
             </div>
             <div>
-              <strong>Vendor-neutral</strong>
-              <span>open by design</span>
+              <strong>REST · MCP</strong>
+              <span>plus A2A 1.0</span>
             </div>
             <div>
               <strong>JSON-native</strong>
@@ -239,6 +240,8 @@ export default function Home() {
         </div>
       </section>
 
+      <GrowthSections />
+
       <section className="why-section" id="why">
         <div className="section-kicker">Why the world will need it</div>
         <div className="why-heading">
@@ -278,7 +281,8 @@ export default function Home() {
           </p>
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
             <div><span>DISCOVER</span><code>GET /.well-known/agentpass.json</code></div>
-            <div><span>NEGOTIATE</span><code>POST /v1/preflight</code></div>
+            <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
+            <div><span>A2A</span><code>GET /.well-known/agent-card.json</code></div>
           </div>
           <div className="manifest-actions">
             <button className="button button-primary" onClick={copyManifest}>
@@ -301,7 +305,7 @@ export default function Home() {
       <section className="closing">
         <span>THE ACTION LAYER IS ARRIVING</span>
         <h2>Give every agent a safe way to say: “I’m allowed to do this.”</h2>
-        <a className="button button-light" href="#playground">Run the handshake</a>
+        <a className="button button-light" href="#pricing">Choose a plan</a>
       </section>
 
       <footer>

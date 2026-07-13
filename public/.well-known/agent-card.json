@@ -1,0 +1,31 @@
+{
+  "name": "AgentPass Preflight Agent",
+  "description": "Checks a proposed agent action against identity, scope, cost, data-retention, and human-approval constraints.",
+  "version": "0.2.0",
+  "supportedInterfaces": [
+    {
+      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
+      "protocolBinding": "HTTP+JSON",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "defaultInputModes": ["application/json", "text/plain"],
+  "defaultOutputModes": ["application/json", "text/plain"],
+  "skills": [
+    {
+      "id": "agentpass-preflight",
+      "name": "Agent action preflight",
+      "description": "Return safe_to_proceed, needs_review, or denied before an autonomous action is executed.",
+      "tags": ["authorization", "policy", "safety", "audit", "preflight"],
+      "examples": [
+        "Check whether did:web:crew-07 may book a 428.20 USD flight under a 500 USD ceiling."
+      ],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    }
+  ]
+}
