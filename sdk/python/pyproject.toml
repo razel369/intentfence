@@ -9,6 +9,22 @@ description = "IntentFence spend-policy guard and signed-receipt client for AI a
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "IntentFence" }]
+license = { text = "Apache-2.0" }
+keywords = ["ai-agents", "mcp", "x402", "policy", "security"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Homepage = "https://agentpass-protocol.rmalka06.chatgpt.site/"
+Repository = "https://github.com/razel369/intentfence"
+Issues = "https://github.com/razel369/intentfence/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["intentfence"]

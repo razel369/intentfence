@@ -2,9 +2,36 @@
   "name": "intentfence",
   "version": "0.5.0",
   "description": "IntentFence spend-policy guard and signed-receipt client for AI agent runtimes.",
+  "keywords": [
+    "ai-agents",
+    "mcp",
+    "x402",
+    "policy",
+    "security"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razel369/intentfence.git",
+    "directory": "sdk/typescript"
+  },
+  "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
+  "bugs": {
+    "url": "https://github.com/razel369/intentfence/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsc -p tsconfig.json"
