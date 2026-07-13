@@ -8,6 +8,8 @@ export const AGENTPASS_NETWORK_NAME = "Base mainnet";
 export const AGENTPASS_ASSET = "USDC";
 export const AGENTPASS_PRICE_USD = "$0.05";
 export const AGENTPASS_PRICE_ATOMIC = "50000";
+export const AGENTPASS_USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+export const AGENTPASS_PAYMENT_TIMEOUT_SECONDS = 300;
 export const AGENTPASS_FACILITATOR = "PayAI";
 export const AGENTPASS_FACILITATOR_URL = "https://facilitator.payai.network";
 

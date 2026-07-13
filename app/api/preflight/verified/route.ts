@@ -14,8 +14,10 @@ import {
   AGENTPASS_ASSET,
   AGENTPASS_NETWORK,
   AGENTPASS_PAY_TO,
+  AGENTPASS_PAYMENT_TIMEOUT_SECONDS,
   AGENTPASS_PRICE_ATOMIC,
   AGENTPASS_PRICE_USD,
+  AGENTPASS_USDC_CONTRACT,
 } from "../../../../lib/x402";
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
@@ -50,6 +52,47 @@ const routeConfig = {
     },
   }),
 } satisfies RouteConfig;
+
+function unpaidResponse(request: NextRequest) {
+  const paymentRequired = {
+    x402Version: 2,
+    error: "Payment required",
+    resource: {
+      url: request.url,
+      description: routeConfig.description,
+      mimeType: routeConfig.mimeType,
+      serviceName: routeConfig.serviceName,
+      tags: routeConfig.tags,
+      iconUrl: routeConfig.iconUrl,
+    },
+    accepts: [
+      {
+        scheme: "exact",
+        network: AGENTPASS_NETWORK,
+        amount: AGENTPASS_PRICE_ATOMIC,
+        asset: AGENTPASS_USDC_CONTRACT,
+        payTo: AGENTPASS_PAY_TO,
+        maxTimeoutSeconds: AGENTPASS_PAYMENT_TIMEOUT_SECONDS,
+        extra: { name: "USD Coin", version: "2" },
+      },
+    ],
+  };
+
+  return NextResponse.json(
+    {
+      error: "payment_required",
+      message: `Pay ${AGENTPASS_PRICE_USD} in USDC on Base to run this verified preflight.`,
+      payment_info: `${SITE_URL}/api/payments`,
+    },
+    {
+      status: 402,
+      headers: {
+        ...corsHeaders,
+        "PAYMENT-REQUIRED": btoa(JSON.stringify(paymentRequired)),
+      },
+    },
+  );
+}
 
 async function paidHandler(request: NextRequest) {
   try {
@@ -91,21 +134,29 @@ async function paidHandler(request: NextRequest) {
   }
 }
 
-const protectedPost = withX402(
-  paidHandler,
-  routeConfig,
-  agentpassX402Server,
-  undefined,
-  undefined,
-  false,
-);
+const protectedPost = withX402(paidHandler, routeConfig, agentpassX402Server);
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
-  const response = await protectedPost(request);
+  if (
+    !request.headers.has("PAYMENT-SIGNATURE") &&
+    !request.headers.has("X-PAYMENT")
+  ) {
+    return unpaidResponse(request);
+  }
+
+  let response: NextResponse;
+  try {
+    response = await protectedPost(request);
+  } catch (error) {
+    console.error("AgentPass x402 initialization retry", {
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+    response = await protectedPost(request);
+  }
   const settlementResponse = response.headers.get("PAYMENT-RESPONSE");
   const requestId = response.headers.get("X-AgentPass-Request-ID");
 
