@@ -1,5 +1,6 @@
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { bazaarResourceServerExtension } from "@x402/extensions/bazaar";
 import { facilitator } from "@payai/facilitator";
 
 export const INTENTFENCE_PAY_TO = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
@@ -15,7 +16,6 @@ export const INTENTFENCE_FACILITATOR_URL = "https://facilitator.payai.network";
 
 const facilitatorClient = new HTTPFacilitatorClient(facilitator);
 
-export const intentFenceX402Server = new x402ResourceServer(facilitatorClient).register(
-  INTENTFENCE_NETWORK,
-  new ExactEvmScheme(),
-);
+export const intentFenceX402Server = new x402ResourceServer(facilitatorClient)
+  .register(INTENTFENCE_NETWORK, new ExactEvmScheme())
+  .registerExtension(bazaarResourceServerExtension);

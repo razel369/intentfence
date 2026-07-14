@@ -21,6 +21,7 @@ Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 | Public ES256 keys | `GET /.well-known/jwks.json` |
 | MCP Streamable HTTP | `/mcp` |
 | A2A Agent Card | `GET /.well-known/agent-card.json` |
+| x402 service manifest | `GET /.well-known/x402` |
 | OpenAPI | `GET /openapi.json` |
 
 The paid endpoint costs 0.05 USDC on Base through x402. A successful call
@@ -73,6 +74,9 @@ exercise the signed-receipt verifier.
 TypeScript and Python SDKs live in `sdk/`. The root `server.json` is ready for
 the official MCP Registry under `io.github.razel369/intentfence`; the public MCP
 endpoint uses Streamable HTTP and requires no API key.
+
+The `/.well-known/x402` service manifest and Bazaar metadata make the paid
+endpoint crawlable by x402 indexes and autonomous tool routers.
 
 ## Commercial pilot
 

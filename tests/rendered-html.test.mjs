@@ -9,12 +9,14 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.5 protocol entry points in the site", async () => {
-  const [page, growth, layout, manifest, agentCard] = await Promise.all([
+  const [page, growth, layout, manifest, agentCard, x402Manifest, openapi] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
     source("public/.well-known/agent-card.json").then(JSON.parse),
+    source("public/.well-known/x402").then(JSON.parse),
+    source("public/openapi.json").then(JSON.parse),
   ]);
 
   assert.match(layout, /IntentFence/);
@@ -26,6 +28,9 @@ test("publishes the IntentFence 0.5 protocol entry points in the site", async ()
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(agentCard.version, "0.5.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
+  assert.equal(x402Manifest.spec, "agent402-service-manifest/1");
+  assert.equal(x402Manifest.payment.x402.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
+  assert.equal(openapi.paths["/api/preflight/verified"].post["x-x402-price"], "$0.05");
 });
 
 test("does not publish a private signing key", async () => {

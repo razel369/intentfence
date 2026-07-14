@@ -21,6 +21,12 @@ async function json(response) {
   return await response.json();
 }
 
+const x402Manifest = await fetch(`${baseUrl}/.well-known/x402`);
+assert.equal(x402Manifest.status, 200);
+const x402ManifestBody = await json(x402Manifest);
+assert.equal(x402ManifestBody.spec, "agent402-service-manifest/1");
+assert.equal(x402ManifestBody.payment.x402.network, "eip155:8453");
+
 const free = await fetch(`${baseUrl}/api/preflight`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -43,6 +49,7 @@ assert.equal(required.x402Version, 2);
 assert.equal(required.accepts[0].network, "eip155:8453");
 assert.equal(required.accepts[0].amount, "50000");
 assert.equal(required.accepts[0].payTo.toLowerCase(), "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
+assert.equal(required.extensions.bazaar.info.input.method, "POST");
 
 const mcpHeaders = {
   Accept: "application/json, text/event-stream",

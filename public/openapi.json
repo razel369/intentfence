@@ -13,6 +13,8 @@
       "post": {
         "operationId": "runFreePreflight",
         "summary": "Evaluate an agent action with an unsigned preview",
+        "tags": ["agent-policy", "security", "preflight"],
+        "x-price": "free",
         "requestBody": {
           "required": true,
           "content": {
@@ -53,6 +55,8 @@
         "operationId": "runX402Preflight",
         "summary": "Pay 0.05 USDC and receive a signed policy decision",
         "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. A successful response includes an ES256 JWS receipt; settlement is returned separately in PAYMENT-RESPONSE.",
+        "tags": ["agent-policy", "security", "x402", "agent-commerce"],
+        "x-x402-price": "$0.05",
         "x-x402": {
           "version": 2,
           "scheme": "exact",
@@ -117,6 +121,8 @@
       "post": {
         "operationId": "verifyIntentFenceReceipt",
         "summary": "Verify an IntentFence ES256 compact JWS receipt",
+        "tags": ["agent-policy", "security", "receipt-verification"],
+        "x-price": "free",
         "requestBody": {
           "required": true,
           "content": {

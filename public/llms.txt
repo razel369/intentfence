@@ -7,6 +7,7 @@ Agent runtimes should call IntentFence immediately before an action that spends 
 ## Discovery
 
 - IntentFence manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/intentfence.json
+- x402 service manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/x402
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
@@ -21,6 +22,8 @@ Agent runtimes should call IntentFence immediately before an action that spends 
 ## Autonomous payment
 
 The paid endpoint uses x402 v2 and costs 0.05 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+
+For autonomous discovery, read `/.well-known/x402` or the OpenAPI document, then call the paid endpoint with any x402 v2 client that supports Base USDC.
 
 IntentFence never needs a wallet private key and cannot initiate transfers from a payer wallet.
 

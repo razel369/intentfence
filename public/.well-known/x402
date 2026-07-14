@@ -1,0 +1,38 @@
+{
+  "spec": "agent402-service-manifest/1",
+  "version": 1,
+  "name": "IntentFence",
+  "description": "Preflight spend, scope, data-retention, and approval policy before an autonomous AI agent executes a consequential action.",
+  "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
+  "resources": [
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified"
+  ],
+  "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
+  "payment": {
+    "x402": {
+      "version": 2,
+      "scheme": "exact",
+      "primaryNetwork": "eip155:8453",
+      "network": "eip155:8453",
+      "asset": "USDC",
+      "amountAtomic": "50000",
+      "price": "0.05 USDC",
+      "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+    }
+  },
+  "capabilities": {
+    "tools": 1,
+    "rest": true,
+    "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp",
+    "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
+    "signedReceipts": "ES256"
+  },
+  "tags": [
+    "ai-agents",
+    "agent-policy",
+    "security",
+    "spend-control",
+    "x402",
+    "mcp"
+  ]
+}

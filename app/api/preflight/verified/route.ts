@@ -1,10 +1,12 @@
 import type { RouteConfig } from "@x402/core/server";
+import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { withX402 } from "@x402/next";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { paymentAudits } from "../../../../db/schema";
 import {
   evaluatePreflight,
+  preflightInputSchema,
   PreflightValidationError,
   validatePreflightInput,
 } from "../../../../lib/preflight";
@@ -28,9 +30,60 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, PAYMENT-SIGNATURE, X-PAYMENT",
-  "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, X-PAYMENT-RESPONSE, X-IntentFence-Request-ID",
+  "Access-Control-Expose-Headers": "PAYMENT-REQUIRED, PAYMENT-RESPONSE, EXTENSION-RESPONSES, X-PAYMENT-RESPONSE, X-IntentFence-Request-ID",
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
+};
+
+const discoveryExtensions = declareDiscoveryExtension({
+  input: {
+    subject: "did:web:checkout-agent",
+    action: { type: "purchase", resource: "order-1842" },
+    constraints: {
+      currency: "USD",
+      cost_ceiling: 100,
+      quoted_cost: 79,
+      data_retention_hours: 24,
+      human_approval: "not_required",
+    },
+  },
+  inputSchema: preflightInputSchema,
+  bodyType: "json",
+  output: {
+    example: {
+      intentfence: "0.5",
+      request_id: "7d7fbf44-3c39-4eca-89d6-b44d756c8df1",
+      status: "safe_to_proceed",
+      verification_tier: "x402-settled",
+      receipt: { signed: true, format: "JWS Compact", algorithm: "ES256" },
+    },
+    schema: {
+      properties: {
+        intentfence: { type: "string", const: "0.5" },
+        request_id: { type: "string", format: "uuid" },
+        status: {
+          type: "string",
+          enum: ["safe_to_proceed", "needs_review", "denied"],
+        },
+        verification_tier: { type: "string", const: "x402-settled" },
+        receipt: { type: "object" },
+      },
+      required: ["intentfence", "request_id", "status", "verification_tier", "receipt"],
+    },
+  },
+});
+
+const paymentRequiredExtensions = {
+  bazaar: {
+    ...discoveryExtensions.bazaar,
+    info: {
+      ...discoveryExtensions.bazaar.info,
+      input: {
+        ...discoveryExtensions.bazaar.info.input,
+        method: "POST" as const,
+      },
+    },
+  },
 };
 
 const routeConfig = {
@@ -45,6 +98,7 @@ const routeConfig = {
   serviceName: "IntentFence",
   tags: ["ai-agents", "preflight", "policy", "x402", "usdc"],
   iconUrl: `${SITE_URL}/favicon.svg`,
+  extensions: discoveryExtensions,
   unpaidResponseBody: () => ({
     contentType: "application/json",
     body: {
@@ -78,6 +132,7 @@ function unpaidResponse(request: NextRequest) {
         extra: { name: "USD Coin", version: "2" },
       },
     ],
+    extensions: paymentRequiredExtensions,
   };
 
   return NextResponse.json(

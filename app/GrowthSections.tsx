@@ -122,6 +122,7 @@ export default function GrowthSections() {
           <div className="discovery-links">
             <a href="/.well-known/agent-card.json">A2A Agent Card</a>
             <a href="/.well-known/intentfence.json">IntentFence manifest</a>
+            <a href="/.well-known/x402">x402 service manifest</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
             <a href="/api/payments">x402 payment metadata</a>
