@@ -12,6 +12,9 @@
     "test": "npm run build && node --experimental-strip-types --test tests/*.test.mjs",
     "test:protocol": "node --experimental-strip-types --test tests/receipt-crypto.test.mjs",
     "sdk:check": "tsc -p sdk/typescript/tsconfig.json && python -m py_compile sdk/python/intentfence/__init__.py",
+    "mcp:stdio": "node --experimental-strip-types scripts/glama-mcp-server.mjs",
+    "smoke:mcp:docker": "node scripts/smoke-stdio-mcp.mjs --docker",
+    "smoke:mcp:stdio": "node scripts/smoke-stdio-mcp.mjs",
     "smoke:protocol": "node --experimental-strip-types scripts/smoke-protocol.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
@@ -29,6 +32,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.44.0",
     "@cloudflare/workers-types": "^5.20260713.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -42,7 +46,8 @@
     "typescript": "5.9.3",
     "vinext": "0.0.50",
     "vite": "^8.1.4",
-    "wrangler": "^4.110.0"
+    "wrangler": "^4.110.0",
+    "zod": "^4.4.3"
   },
   "overrides": {
     "postcss": "8.5.14",

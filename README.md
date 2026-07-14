@@ -11,6 +11,8 @@ allows it:
 
 Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 
+[![razel369/intentfence MCP server](https://glama.ai/mcp/servers/razel369/intentfence/badges/score.svg)](https://glama.ai/mcp/servers/razel369/intentfence)
+
 ## Protocol surfaces
 
 | Surface | Endpoint |
@@ -46,6 +48,16 @@ npm install
 npm run dev
 ```
 
+For MCP clients that launch local `stdio` servers, use `npm run mcp:stdio`.
+Glama and other container-based hosts can build the root `Dockerfile`; it starts
+the same IntentFence policy engine and responds to MCP initialization,
+`tools/list`, and `tools/call` requests over standard input/output.
+
+```bash
+docker build -t intentfence-mcp .
+docker run --rm -i intentfence-mcp
+```
+
 The production signing key is stored in Sites as the secret
 `INTENTFENCE_SIGNING_PRIVATE_JWK`. Generate a separate development key with:
 
@@ -63,6 +75,8 @@ npm run test
 npm run lint
 npx tsc --noEmit
 npm run sdk:check
+npm run smoke:mcp:docker
+npm run smoke:mcp:stdio
 npm run smoke:protocol -- http://localhost:3000
 ```
 

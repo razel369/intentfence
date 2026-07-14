@@ -1,0 +1,14 @@
+{
+  "name": "intentfence-mcp-stdio-runtime",
+  "version": "0.5.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "intentfence-service": "file:..",
+    "zod": "4.4.3"
+  }
+}
