@@ -9,10 +9,11 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.5 protocol entry points in the site", async () => {
-  const [page, growth, layout, manifest, agentCard, x402Manifest, openapi] = await Promise.all([
+  const [page, growth, layout, paidRoute, manifest, agentCard, x402Manifest, openapi] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
+    source("app/api/preflight/verified/route.ts"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
     source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
@@ -23,6 +24,7 @@ test("publishes the IntentFence 0.5 protocol entry points in the site", async ()
   assert.match(page, /Open protocol \/ v0\.5/);
   assert.match(page, /POST \/api\/receipts\/verify/);
   assert.match(growth, /ES256-signed policy receipt/);
+  assert.match(paidRoute, /"POST \/api\/preflight\/verified": routeConfig/);
   assert.equal(manifest.version, "0.5");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");

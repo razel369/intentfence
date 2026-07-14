@@ -1,6 +1,6 @@
 import type { RouteConfig } from "@x402/core/server";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
-import { withX402 } from "@x402/next";
+import { withX402FromHTTPServer, x402HTTPResourceServer } from "@x402/next";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "../../../../db";
 import { paymentAudits } from "../../../../db/schema";
@@ -209,7 +209,11 @@ async function paidHandler(request: NextRequest): Promise<NextResponse<unknown>>
   }
 }
 
-const protectedPost = withX402<unknown>(paidHandler, routeConfig, intentFenceX402Server);
+const httpPaymentServer = new x402HTTPResourceServer(intentFenceX402Server, {
+  "POST /api/preflight/verified": routeConfig,
+});
+
+const protectedPost = withX402FromHTTPServer<unknown>(paidHandler, httpPaymentServer);
 
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders });
