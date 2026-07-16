@@ -17,6 +17,7 @@ const MCP_PAYMENT_META_KEY = "x402/payment";
 const MCP_PAYMENT_RESPONSE_META_KEY = "x402/payment-response";
 const LATEST_PROTOCOL_VERSION = "2025-11-25";
 const SUPPORTED_PROTOCOL_VERSIONS = new Set([
+  "2024-11-05",
   "2025-03-26",
   "2025-06-18",
   LATEST_PROTOCOL_VERSION,
@@ -33,7 +34,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function corsHeaders(request: Request) {
+function negotiatedProtocolVersion(params: Record<string, unknown> | undefined) {
+  const requested = params?.protocolVersion;
+  return typeof requested === "string" && SUPPORTED_PROTOCOL_VERSIONS.has(requested)
+    ? requested
+    : LATEST_PROTOCOL_VERSION;
+}
+
+function responseProtocolVersion(request: Request) {
+  const requested = request.headers.get("MCP-Protocol-Version");
+  return requested && SUPPORTED_PROTOCOL_VERSIONS.has(requested)
+    ? requested
+    : LATEST_PROTOCOL_VERSION;
+}
+
+function corsHeaders(request: Request, protocolVersion = responseProtocolVersion(request)) {
   const origin = request.headers.get("origin");
   return {
     "Content-Type": "application/json",
@@ -43,7 +58,7 @@ function corsHeaders(request: Request) {
     "Access-Control-Expose-Headers": "MCP-Protocol-Version",
     "Cache-Control": "no-store",
     "X-Content-Type-Options": "nosniff",
-    "MCP-Protocol-Version": LATEST_PROTOCOL_VERSION,
+    "MCP-Protocol-Version": protocolVersion,
     Vary: "Origin",
   };
 }
@@ -53,10 +68,15 @@ function validOrigin(request: Request) {
   return !origin || origin === SITE_ORIGIN;
 }
 
-function jsonRpc(request: Request, id: JsonRpcRequest["id"], result: unknown) {
+function jsonRpc(
+  request: Request,
+  id: JsonRpcRequest["id"],
+  result: unknown,
+  protocolVersion?: string,
+) {
   return new Response(JSON.stringify({ jsonrpc: "2.0", id: id ?? null, result }), {
     status: 200,
-    headers: corsHeaders(request),
+    headers: corsHeaders(request, protocolVersion),
   });
 }
 
@@ -216,12 +236,13 @@ export async function POST(request: Request) {
   }
 
   if (body.method === "initialize") {
+    const protocolVersion = negotiatedProtocolVersion(body.params);
     return jsonRpc(request, body.id, {
-      protocolVersion: LATEST_PROTOCOL_VERSION,
+      protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.6.0" },
+      serverInfo: { name: "IntentFence", version: "0.6.1" },
       instructions: "Use intentfence_preflight only as an unsigned declared-input preview. For a production payment, call intentfence_verified_preflight; proceed only when status is safe_to_proceed and the target service has independently verified authorization. x402 proves payment of the IntentFence service fee; the receipt attests only to evaluation of caller-declared inputs.",
-    });
+    }, protocolVersion);
   }
 
   if (body.method === "ping") return jsonRpc(request, body.id, {});

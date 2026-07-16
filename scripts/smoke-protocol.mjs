@@ -63,14 +63,17 @@ const initialize = await fetch(`${baseUrl}/mcp`, {
     id: 1,
     method: "initialize",
     params: {
-      protocolVersion: "2025-11-25",
+      protocolVersion: "2025-06-18",
       capabilities: {},
       clientInfo: { name: "intentfence-smoke", version: "1.0.0" },
     },
   }),
 });
 assert.equal(initialize.status, 200);
-assert.equal((await json(initialize)).result.serverInfo.version, "0.6.0");
+const initializeBody = await json(initialize);
+assert.equal(initializeBody.result.serverInfo.version, "0.6.1");
+assert.equal(initializeBody.result.protocolVersion, "2025-06-18");
+assert.equal(initialize.headers.get("mcp-protocol-version"), "2025-06-18");
 
 const toolCall = await fetch(`${baseUrl}/mcp`, {
   method: "POST",

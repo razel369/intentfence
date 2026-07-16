@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
   "description": "Preflights a proposed agent payment against declared spend, scope, data-retention, and human-approval constraints.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",

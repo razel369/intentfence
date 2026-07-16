@@ -3,7 +3,7 @@
   "name": "io.github.razel369/intentfence",
   "title": "IntentFence Payment Firewall",
   "description": "Free preview and x402-paid signed preflight receipts for autonomous-agent payments.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "remotes": [
     {
       "type": "streamable-http",

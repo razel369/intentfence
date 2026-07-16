@@ -2,9 +2,10 @@
 
 import { createInterface } from "node:readline";
 
+import { negotiateProtocolVersion } from "../lib/protocol-version.mjs";
+
 const baseUrl = (process.env.INTENTFENCE_BASE_URL ??
   "https://agentpass-protocol.rmalka06.chatgpt.site").replace(/\/$/u, "");
-const latestProtocolVersion = "2025-11-25";
 
 const inputSchema = {
   type: "object",
@@ -150,9 +151,9 @@ lines.on("line", async (line) => {
   try {
     if (request.method === "initialize") {
       result(request.id, {
-        protocolVersion: latestProtocolVersion,
+        protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.6.0" },
+        serverInfo: { name: "intentfence", version: "0.6.1" },
         instructions: "Use the free tool only as an unsigned preview. For an in-scope production payment, use the verified tool and proceed only when the returned status is safe_to_proceed and the target independently authorizes the action.",
       });
       return;

@@ -5,9 +5,20 @@ import test from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
+import {
+  latestProtocolVersion,
+  negotiateProtocolVersion,
+} from "../lib/protocol-version.mjs";
+
 function encoded(value) {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64");
 }
+
+test("negotiates protocol versions supported by older Gemini CLI releases", () => {
+  assert.equal(negotiateProtocolVersion("2024-11-05"), "2024-11-05");
+  assert.equal(negotiateProtocolVersion("2025-06-18"), "2025-06-18");
+  assert.equal(negotiateProtocolVersion("unsupported"), latestProtocolVersion);
+});
 
 test("dependency-free Gemini extension lists tools and returns an x402 challenge", async () => {
   const mock = createServer((_request, response) => {
@@ -31,7 +42,7 @@ test("dependency-free Gemini extension lists tools and returns an x402 challenge
     env: { ...process.env, INTENTFENCE_BASE_URL: `http://127.0.0.1:${address.port}` },
     stderr: "pipe",
   });
-  const client = new Client({ name: "gemini-extension-test", version: "0.6.0" });
+  const client = new Client({ name: "gemini-extension-test", version: "0.6.1" });
 
   try {
     await client.connect(transport);

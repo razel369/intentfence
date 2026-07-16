@@ -39,7 +39,7 @@ export async function GET() {
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.6.0",
+      version: "0.6.1",
       status,
       checks: {
         database,

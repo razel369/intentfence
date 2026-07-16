@@ -7,7 +7,7 @@ constraints immediately before an agent performs a consequential payment.
 ## Run
 
 ```bash
-npx -y @razel369/intentfence-mcp@0.6.0
+npx -y @razel369/intentfence-mcp@0.6.1
 ```
 
 Example MCP client configuration:
@@ -17,7 +17,7 @@ Example MCP client configuration:
   "mcpServers": {
     "intentfence": {
       "command": "npx",
-      "args": ["-y", "@razel369/intentfence-mcp@0.6.0"]
+      "args": ["-y", "@razel369/intentfence-mcp@0.6.1"]
     }
   }
 }

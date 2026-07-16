@@ -1,6 +1,6 @@
 {
   "name": "@razel369/intentfence-mcp",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "IntentFence payment-firewall MCP server with x402-paid signed preflight receipts.",
   "type": "module",
   "mcpName": "io.github.razel369/intentfence",

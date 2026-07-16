@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "description": "Guard autonomous agent actions with spend, scope, data-retention, and approval checks. The x402 endpoint returns an ES256-signed policy receipt."
   },
   "servers": [
