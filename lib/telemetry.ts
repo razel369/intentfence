@@ -17,6 +17,7 @@ export const funnelEventStages = {
 
 export type FunnelEventName = keyof typeof funnelEventStages;
 export type FunnelEventMetadataValue = string | number | boolean | null;
+const syntheticSources = new Set(["monitor", "smoke", "synthetic"]);
 
 export type FunnelEvent = {
   eventName: FunnelEventName;
@@ -97,7 +98,11 @@ function serializeMetadata(
  * payloads in subject or metadata.
  */
 export async function recordFunnelEvent(event: FunnelEvent): Promise<void> {
-  if (event.request?.headers.get("x-intentfence-source") === "monitor") return;
+  const requestSource = event.request?.headers
+    .get("x-intentfence-source")
+    ?.trim()
+    .toLowerCase();
+  if (requestSource && syntheticSources.has(requestSource)) return;
   try {
     const attribution = requestAttribution(event.request);
     await getDb()

@@ -16,7 +16,7 @@
     "smoke:mcp:docker": "node scripts/smoke-stdio-mcp.mjs --docker",
     "smoke:mcp:stdio": "node scripts/smoke-stdio-mcp.mjs",
     "smoke:protocol": "node --experimental-strip-types scripts/smoke-protocol.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
+    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern work --ignore-pattern outputs"
   },
   "dependencies": {
     "@payai/facilitator": "^2.4.3",

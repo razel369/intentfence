@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 globalThis.crypto ??= webcrypto;
 
 const baseUrl = (process.argv[2] ?? "http://127.0.0.1:3104").replace(/\/$/u, "");
+const smokeHeaders = { "X-IntentFence-Source": "smoke" };
 const input = {
   subject: "did:web:smoke-agent",
   action: { type: "purchase", resource: "order-smoke" },
@@ -29,7 +30,7 @@ assert.equal(x402ManifestBody.payment.x402.network, "eip155:8453");
 
 const free = await fetch(`${baseUrl}/api/preflight`, {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: { ...smokeHeaders, "Content-Type": "application/json" },
   body: JSON.stringify(input),
 });
 assert.equal(free.status, 200);
@@ -40,7 +41,7 @@ assert.equal(freeBody.receipt.signed, false);
 
 const unpaid = await fetch(`${baseUrl}/api/preflight/verified`, {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: { ...smokeHeaders, "Content-Type": "application/json" },
   body: JSON.stringify(input),
 });
 assert.equal(unpaid.status, 402);
@@ -54,6 +55,7 @@ assert.equal(required.extensions.bazaar.info.input.method, "POST");
 const mcpHeaders = {
   Accept: "application/json, text/event-stream",
   "Content-Type": "application/json",
+  ...smokeHeaders,
 };
 const initialize = await fetch(`${baseUrl}/mcp`, {
   method: "POST",
@@ -114,7 +116,11 @@ assert.equal((await fetch(`${baseUrl}/mcp`, { headers: { Accept: "text/event-str
 
 const a2a = await fetch(`${baseUrl}/a2a/message:send`, {
   method: "POST",
-  headers: { "Content-Type": "application/a2a+json", "A2A-Version": "1.0" },
+  headers: {
+    ...smokeHeaders,
+    "Content-Type": "application/a2a+json",
+    "A2A-Version": "1.0",
+  },
   body: JSON.stringify({
     message: {
       role: "ROLE_USER",
@@ -125,7 +131,9 @@ const a2a = await fetch(`${baseUrl}/a2a/message:send`, {
 });
 assert.equal(a2a.status, 200);
 assert.equal((await json(a2a)).message.role, "ROLE_AGENT");
-const tasks = await fetch(`${baseUrl}/a2a/tasks`, { headers: { "A2A-Version": "1.0" } });
+const tasks = await fetch(`${baseUrl}/a2a/tasks`, {
+  headers: { ...smokeHeaders, "A2A-Version": "1.0" },
+});
 assert.equal(tasks.status, 200);
 assert.deepEqual((await json(tasks)).tasks, []);
 
