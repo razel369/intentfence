@@ -5,7 +5,7 @@
   "type": "module",
   "mcpName": "io.github.razel369/intentfence",
   "bin": {
-    "intentfence-mcp": "./bin/intentfence-mcp.mjs"
+    "intentfence-mcp": "bin/intentfence-mcp.mjs"
   },
   "files": [
     "bin",
