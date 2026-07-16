@@ -45,6 +45,30 @@ jobs:
           if [ -n "$existing" ]; then
             gh issue close "$existing" --comment "Production revenue-path monitor recovered in $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           fi
+      - name: Notify the owner when a paid call settles
+        if: steps.verify.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          METRICS_URL: https://agentpass-protocol.rmalka06.chatgpt.site/api/metrics
+        run: |
+          metrics="$(curl --fail --retry 3 --retry-delay 2 --silent --show-error "$METRICS_URL")"
+          count="$(printf '%s' "$metrics" | jq -r '.settled_calls // 0')"
+          revenue="$(printf '%s' "$metrics" | jq -r '.revenue_usdc // 0')"
+          if [ "$count" -eq 0 ]; then
+            echo "No settled paid calls yet."
+            exit 0
+          fi
+          latest_body="$(gh api "repos/$GITHUB_REPOSITORY/issues?state=all&per_page=100" --jq '[.[] | select(.pull_request | not) | select(.title | startswith("IntentFence revenue received"))][0].body // ""')"
+          previous="$(printf '%s' "$latest_body" | sed -n 's/.*<!-- settled-calls:\([0-9][0-9]*\) -->.*/\1/p')"
+          previous="${previous:-0}"
+          if [ "$count" -gt "$previous" ]; then
+            gh label create revenue-notification --color 1D76DB --description "IntentFence received new settled revenue" --force
+            body="$(printf 'IntentFence has recorded new settled x402 revenue. Aggregate production metrics: %s. No payer details are included in this public issue.\n\nSettled calls: %s\nRecorded revenue: %s USDC\n\n<!-- settled-calls:%s -->' "$METRICS_URL" "$count" "$revenue" "$count")"
+            gh issue create \
+              --title "IntentFence revenue received: $revenue USDC ($count settled calls)" \
+              --label revenue-notification \
+              --body "$body"
+          fi
       - name: Notify the owner when a new lead is stored
         if: steps.verify.outcome == 'success'
         env:
