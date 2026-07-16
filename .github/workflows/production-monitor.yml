@@ -17,7 +17,7 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Verify production discovery, payment challenge, MCP, and metrics
         id: verify
         continue-on-error: true
@@ -42,4 +42,22 @@ jobs:
           existing="$(gh issue list --state open --search 'IntentFence production monitor failing in:title' --json number --jq '.[0].number // empty')"
           if [ -n "$existing" ]; then
             gh issue close "$existing" --comment "Production revenue-path monitor recovered in $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
+      - name: Notify the owner when a new lead is stored
+        if: steps.verify.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          METRICS_URL: https://agentpass-protocol.rmalka06.chatgpt.site/api/metrics
+        run: |
+          count="$(curl --fail --silent --show-error "$METRICS_URL" | jq -r '.leads_submitted // 0')"
+          latest_body="$(gh api "repos/$GITHUB_REPOSITORY/issues?state=all&per_page=100" --jq '[.[] | select(.pull_request | not) | select(.title | startswith("IntentFence lead follow-up"))][0].body // ""')"
+          previous="$(printf '%s' "$latest_body" | sed -n 's/.*<!-- lead-count:\([0-9][0-9]*\) -->.*/\1/p')"
+          previous="${previous:-0}"
+          if [ "$count" -gt "$previous" ]; then
+            gh label create lead-notification --color 0E8A16 --description "A private IntentFence lead needs follow-up" --force
+            body="$(printf 'IntentFence has stored a new private lead. No contact details are included in this public issue. Retrieve it through the authenticated admin endpoint, then close this issue after follow-up. Public aggregate metrics: %s\n\n<!-- lead-count:%s -->' "$METRICS_URL" "$count")"
+            gh issue create \
+              --title "IntentFence lead follow-up: $count total" \
+              --label lead-notification \
+              --body "$body"
           fi

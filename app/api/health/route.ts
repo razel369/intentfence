@@ -1,7 +1,11 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { usageEvents } from "../../../db/schema";
-import { getReceiptSigningPrivateJwk } from "../../../lib/runtime-secrets";
+import { MIN_ADMIN_TOKEN_LENGTH } from "../../../lib/admin-auth";
+import {
+  getIntentFenceAdminToken,
+  getReceiptSigningPrivateJwk,
+} from "../../../lib/runtime-secrets";
 import { validateReceiptSigningKey } from "../../../lib/receipts";
 import {
   INTENTFENCE_NETWORK,
@@ -13,6 +17,7 @@ export async function GET() {
   let database = false;
   let schema = false;
   let signing = false;
+  let leadAdministration = false;
 
   try {
     const db = getDb();
@@ -35,7 +40,16 @@ export async function GET() {
     });
   }
 
-  const status = database && schema && signing ? "ok" : "degraded";
+  try {
+    const adminToken = await getIntentFenceAdminToken();
+    leadAdministration = Boolean(adminToken && adminToken.length >= MIN_ADMIN_TOKEN_LENGTH);
+  } catch (error) {
+    console.error("IntentFence health admin-token check failed", {
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+  }
+
+  const status = database && schema && signing && leadAdministration ? "ok" : "degraded";
   return Response.json(
     {
       service: "IntentFence",
@@ -45,6 +59,7 @@ export async function GET() {
         database,
         revenue_schema: schema,
         receipt_signing: signing,
+        lead_administration: leadAdministration,
         x402_configuration: {
           ready: Boolean(INTENTFENCE_PAY_TO && INTENTFENCE_NETWORK && INTENTFENCE_PRICE_ATOMIC),
           network: INTENTFENCE_NETWORK,
