@@ -8,16 +8,20 @@ import {
 } from "../../../lib/runtime-secrets";
 import { validateReceiptSigningKey } from "../../../lib/receipts";
 import {
+  INTENTFENCE_FACILITATOR_URL,
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
 } from "../../../lib/x402";
+import { checkIntentFenceFacilitator } from "../../../lib/x402-health";
 
 export async function GET() {
   let database = false;
   let schema = false;
   let signing = false;
   let leadAdministration = false;
+  let facilitatorReachable = false;
+  let facilitatorSupportsRoute = false;
 
   try {
     const db = getDb();
@@ -42,14 +46,37 @@ export async function GET() {
 
   try {
     const adminToken = await getIntentFenceAdminToken();
-    leadAdministration = Boolean(adminToken && adminToken.length >= MIN_ADMIN_TOKEN_LENGTH);
+    leadAdministration = Boolean(
+      adminToken && adminToken.length >= MIN_ADMIN_TOKEN_LENGTH,
+    );
   } catch (error) {
     console.error("IntentFence health admin-token check failed", {
       error: error instanceof Error ? error.message : "unknown_error",
     });
   }
 
-  const status = database && schema && signing && leadAdministration ? "ok" : "degraded";
+  try {
+    const facilitator = await checkIntentFenceFacilitator(
+      INTENTFENCE_FACILITATOR_URL,
+      INTENTFENCE_NETWORK,
+    );
+    facilitatorReachable = facilitator.reachable;
+    facilitatorSupportsRoute = facilitator.supportsRoute;
+  } catch (error) {
+    console.error("IntentFence health facilitator check failed", {
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+  }
+
+  const x402Configured = Boolean(
+    INTENTFENCE_PAY_TO && INTENTFENCE_NETWORK && INTENTFENCE_PRICE_ATOMIC,
+  );
+  const x402Ready =
+    x402Configured && facilitatorReachable && facilitatorSupportsRoute;
+  const status =
+    database && schema && signing && leadAdministration && x402Ready
+      ? "ok"
+      : "degraded";
   return Response.json(
     {
       service: "IntentFence",
@@ -61,7 +88,10 @@ export async function GET() {
         receipt_signing: signing,
         lead_administration: leadAdministration,
         x402_configuration: {
-          ready: Boolean(INTENTFENCE_PAY_TO && INTENTFENCE_NETWORK && INTENTFENCE_PRICE_ATOMIC),
+          ready: x402Ready,
+          configured: x402Configured,
+          facilitator_reachable: facilitatorReachable,
+          facilitator_supports_route: facilitatorSupportsRoute,
           network: INTENTFENCE_NETWORK,
           amount_atomic: INTENTFENCE_PRICE_ATOMIC,
         },
