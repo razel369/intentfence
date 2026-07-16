@@ -3,12 +3,12 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentpass-protocol.rmalka06.chatgpt.site"),
-  title: "IntentFence — Spend and action policy for AI agents",
+  title: "IntentFence — Payment firewall for AI agents",
   description:
-    "An enforceable REST, MCP, and A2A policy gate for agent spend, scope, data rules, and human approval.",
+    "A REST, paid MCP, and x402 preflight gate for agent spend, scope, data rules, and approval markers.",
   keywords: [
-    "AI agent authorization",
-    "agent policy gateway",
+    "AI agent payment preflight",
+    "AI agent payment firewall",
     "MCP server",
     "A2A agent card",
     "agent policy",
@@ -23,9 +23,9 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "IntentFence — Stop unsafe agent actions before they execute.",
+    title: "IntentFence — Add a fail-closed preflight before each agent payment.",
     description:
-      "One enforceable gate for spend, scope, data rules, and human approval — via REST, MCP, and A2A.",
+      "A live preflight and paid x402 audit receipt for autonomous-agent payments — via REST and MCP.",
     url: "/",
     siteName: "IntentFence",
     type: "website",
@@ -34,14 +34,14 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "IntentFence — Stop unsafe agent actions before they execute.",
+        alt: "IntentFence — Payment firewall for AI agents.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentFence — Stop unsafe agent actions before they execute.",
-    description: "REST, MCP, and A2A spend-policy infrastructure for autonomous agents.",
+    title: "IntentFence — Payment firewall for AI agents.",
+    description: "REST, paid MCP, and x402 preflight infrastructure for autonomous-agent payments.",
     images: ["/og.png"],
   },
 };
@@ -54,11 +54,10 @@ const structuredData = {
   operatingSystem: "Web",
   url: "https://agentpass-protocol.rmalka06.chatgpt.site/",
   description:
-    "Spend and action policy infrastructure for autonomous AI, available through REST, MCP, and A2A.",
+    "Payment preflight and signed audit-receipt infrastructure for autonomous AI agents, available through REST and paid MCP.",
   offers: [
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
-    { "@type": "Offer", name: "Verified x402", price: "0.05", priceCurrency: "USDC" },
-    { "@type": "Offer", name: "Launch Pilot", price: "750", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Verified x402", price: "0.005", priceCurrency: "USDC" },
   ],
 };
 

@@ -12,7 +12,7 @@ const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.si
 
 const paidFlow = `POST /api/preflight/verified
 -> 402 + PAYMENT-REQUIRED
--> agent signs 0.05 USDC on Base
+-> agent signs 0.005 USDC on Base
 -> retry + PAYMENT-SIGNATURE
 -> 200 + PAYMENT-RESPONSE`;
 
@@ -32,12 +32,12 @@ const plans = [
   {
     key: "verified",
     name: "Verified x402",
-    price: "0.05 USDC",
-    note: "per action - live on Base",
+    price: "0.005 USDC",
+    note: "per settled preflight - live on Base",
     features: [
       "Agent pays directly",
       "No account or API key",
-      "On-chain settlement proof",
+      "IntentFence service-fee settlement proof",
       "ES256-signed policy receipt",
       "Machine-readable discovery",
       "Payment audit record",
@@ -46,27 +46,15 @@ const plans = [
   },
   {
     key: "pilot",
-    name: "Launch Pilot",
-    price: "$750 + $149/mo",
-    note: "one guarded production workflow",
+    name: "Founding Integration",
+    price: "Apply",
+    note: "one guarded payment workflow",
     features: [
-      "Hands-on integration",
-      "Custom spend and approval policy",
-      "Guarded SDK wrapper",
-      "Receipt verification support",
-      "Founding-customer priority",
-    ],
-  },
-  {
-    key: "production",
-    name: "Production",
-    price: "$499/mo",
-    note: "for teams operating agent fleets",
-    features: [
-      "Volume pricing",
-      "Team policy sets",
-      "Custom retention and SLA",
-      "Private deployment option",
+      "30-day design-partner trial",
+      "One payment-provider adapter",
+      "Spend and exception policy",
+      "Approval and audit workflow",
+      "Pricing agreed before activation",
     ],
   },
 ];
@@ -102,7 +90,7 @@ export default function GrowthSections() {
       const result = (await response.json()) as { error?: string };
       if (!response.ok) throw new Error(result.error || "Could not save your request.");
       setState("success");
-      setMessage("Your pilot request is saved. We will use your details only to discuss IntentFence integration.");
+      setMessage("Your application is saved. We will use your details only to discuss the IntentFence integration.");
       event.currentTarget.reset();
     } catch (error) {
       setState("error");
@@ -117,7 +105,7 @@ export default function GrowthSections() {
           <div className="section-kicker">Machine entry points - live now</div>
           <h2 id="agents-title">One check, in the protocol your agent already speaks.</h2>
           <p>
-            IntentFence publishes standard discovery files and callable endpoints so an agent runtime can find and enforce the service without reading this page.
+            IntentFence publishes standard discovery files and callable endpoints so an agent runtime can find the payment firewall without reading this page.
           </p>
           <div className="discovery-links">
             <a href="/.well-known/agent-card.json">A2A Agent Card</a>
@@ -126,6 +114,7 @@ export default function GrowthSections() {
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
             <a href="/api/payments">x402 payment metadata</a>
+            <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
           </div>
         </div>
@@ -139,12 +128,12 @@ export default function GrowthSections() {
           <article>
             <span>02 / x402</span>
             <h3>POST /api/preflight/verified</h3>
-            <p>Pay 0.05 USDC per successful action with settlement proof and an ES256-signed receipt.</p>
+            <p>Pay 0.005 USDC for a settled preflight with an ES256-signed audit receipt.</p>
           </article>
           <article>
-            <span>03 / MCP + A2A</span>
-            <h3>Machine-native discovery</h3>
-            <p>REST, MCP, A2A, OpenAPI, llms.txt, and Bazaar entry points.</p>
+            <span>03 / PAID MCP</span>
+            <h3>intentfence_verified_preflight</h3>
+            <p>MCP agents receive a standard x402 challenge, pay from their own wallet, and retry automatically.</p>
           </article>
         </div>
 
@@ -167,10 +156,10 @@ export default function GrowthSections() {
 
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
-          <div className="section-kicker">Open protocol - autonomous USDC payments</div>
-          <h2 id="pricing-title">Start per action. Upgrade when the policy becomes critical.</h2>
+          <div className="section-kicker">Payment preflight - autonomous x402 service-fee settlement</div>
+          <h2 id="pricing-title">Preview free. Pay only for a settled audit receipt.</h2>
           <p>
-            Agents can pay 0.05 USDC per signed decision. Teams that need an enforced production workflow can launch with a fixed-price integration pilot.
+            Agents pay 0.005 USDC per x402-settled signed preflight with no account or API key. Teams can apply to put the guard directly in a real payment path.
           </p>
         </div>
         <div className="pricing-grid">
@@ -193,14 +182,14 @@ export default function GrowthSections() {
             </article>
           ))}
         </div>
-        <p className="pricing-note">The 0.05 USDC endpoint is live. Pilot and Production prices are launch offers and include implementation support for an enforced workflow.</p>
+        <p className="pricing-note">The 0.005 USDC endpoint is live. Founding Integration is an application, not a checkout; no subscription is charged before scope and success criteria are agreed.</p>
       </section>
 
       <section className="founding-section" id="founding-access">
         <div>
-          <div className="section-kicker">Founding customer program</div>
-          <h2>Bring one agent action that can spend, send, deploy, or delete.</h2>
-          <p>We will put IntentFence directly in the execution path, define the policy, and ship a guarded pilot around that workflow.</p>
+          <div className="section-kicker">Founding integration program</div>
+          <h2>Bring one AI-agent payment that needs a hard boundary.</h2>
+          <p>We will define its merchant, amount, purpose, and exception rules, then put the guard directly before the payment call.</p>
         </div>
         <form onSubmit={submitLead}>
           <label>
@@ -218,9 +207,8 @@ export default function GrowthSections() {
           <label>
             Plan
             <select value={plan} onChange={(event) => setPlan(event.target.value)}>
-              <option value="pilot">Launch Pilot - $750 + $149/month</option>
-              <option value="production">Production - $499/month</option>
-              <option value="enterprise">Private Enterprise - custom</option>
+              <option value="pilot">Founding Integration - apply</option>
+              <option value="enterprise">Private deployment - discuss</option>
             </select>
           </label>
           <label className="honeypot" aria-hidden="true">
@@ -228,10 +216,10 @@ export default function GrowthSections() {
             <input name="website" type="text" tabIndex={-1} autoComplete="off" />
           </label>
           <button className="button button-primary" disabled={state === "submitting"}>
-            {state === "submitting" ? "Saving..." : "Request a paid pilot"}
+            {state === "submitting" ? "Saving..." : "Apply for founding integration"}
           </button>
           <p className={`form-message ${state}`} aria-live="polite">
-            {message || "No card required now. We will contact you only about an IntentFence pilot."}
+            {message || "No card required. We will contact you only about this integration application."}
           </p>
         </form>
       </section>

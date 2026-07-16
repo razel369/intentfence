@@ -153,6 +153,39 @@ export async function signReceiptClaims(claims: ReceiptClaims, privateJwk: strin
   return `${signingInput}.${bytesToBase64Url(signature)}`;
 }
 
+export async function validateReceiptSigningKey(privateJwk: string) {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const jws = await signReceiptClaims(
+      {
+        iss: SITE_URL,
+        aud: RECEIPT_AUDIENCE,
+        iat: now,
+        exp: now + 60,
+        jti: "if_healthcheck",
+        intentfence_version: "0.5",
+        assurance: "declared-input-policy",
+        request_id: "00000000-0000-4000-8000-000000000000",
+        decision: "needs_review",
+        subject: null,
+        action: { type: "healthcheck" },
+        checks: [],
+        payment: {
+          protocol: "x402-v2",
+          network: "eip155:8453",
+          asset: "USDC",
+          amount_atomic: "0",
+          pay_to: "0x0000000000000000000000000000000000000000",
+        },
+      },
+      privateJwk,
+    );
+    return (await verifyReceipt(jws)).valid;
+  } catch {
+    return false;
+  }
+}
+
 export async function createSignedReceipt(
   decision: ReceiptDecision,
   privateJwk: string,

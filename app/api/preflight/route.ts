@@ -4,6 +4,7 @@ import {
   validatePreflightInput,
 } from "../../../lib/preflight";
 import { JsonRequestError, readJsonWithLimit } from "../../../lib/request";
+import { recordFunnelEvent } from "../../../lib/telemetry";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,9 +32,18 @@ export function GET() {
 }
 
 export async function POST(request: Request) {
+  await recordFunnelEvent({ eventName: "activation_started", request });
   try {
     const input = validatePreflightInput(await readJsonWithLimit(request));
-    return Response.json(evaluatePreflight(input), { headers: corsHeaders });
+    const decision = evaluatePreflight(input);
+    await recordFunnelEvent({
+      eventName: "preview_completed",
+      request,
+      requestId: decision.request_id,
+      subject: input.subject,
+      metadata: { status: decision.status, protocol: "rest" },
+    });
+    return Response.json(decision, { headers: corsHeaders });
   } catch (error) {
     if (error instanceof JsonRequestError) {
       return Response.json(

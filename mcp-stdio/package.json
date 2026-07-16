@@ -1,14 +1,50 @@
 {
-  "name": "intentfence-mcp-stdio-runtime",
-  "version": "0.5.0",
-  "private": true,
+  "name": "@razel369/intentfence-mcp",
+  "version": "0.6.0",
+  "description": "IntentFence payment-firewall MCP server with x402-paid signed preflight receipts.",
   "type": "module",
+  "mcpName": "io.github.razel369/intentfence",
+  "bin": {
+    "intentfence-mcp": "./bin/intentfence-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "lib"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs && node --test test/*.test.mjs",
+    "prepack": "npm test"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "agent-payments",
+    "x402",
+    "payment-firewall",
+    "policy",
+    "intentfence"
+  ],
+  "license": "Apache-2.0",
+  "author": "razel369",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/razel369/intentfence.git",
+    "directory": "mcp-stdio"
+  },
+  "bugs": {
+    "url": "https://github.com/razel369/intentfence/issues"
+  },
+  "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site",
   "engines": {
     "node": ">=22.13.0"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
-    "intentfence-service": "file:..",
     "zod": "4.4.3"
   }
 }

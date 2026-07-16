@@ -15,6 +15,13 @@
       "when": 1783960651199,
       "tag": "0001_supreme_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784236811356,
+      "tag": "0002_revenue_telemetry",
+      "breakpoints": true
     }
   ]
 }

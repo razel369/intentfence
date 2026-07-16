@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "Guard autonomous agent actions with spend, scope, data-retention, and approval checks. The x402 endpoint returns an ES256-signed policy receipt."
   },
   "servers": [
@@ -53,14 +53,14 @@
     "/api/preflight/verified": {
       "post": {
         "operationId": "runX402Preflight",
-        "summary": "Pay 0.05 USDC and receive a signed policy decision",
+        "summary": "Pay 0.005 USDC and receive a signed policy decision",
         "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. A successful response includes an ES256 JWS receipt; settlement is returned separately in PAYMENT-RESPONSE.",
         "tags": ["agent-policy", "security", "x402", "agent-commerce"],
-        "x-x402-price": "$0.05",
+        "x-x402-price": "$0.005",
         "x-x402": {
           "version": 2,
           "scheme": "exact",
-          "price": "0.05 USDC",
+          "price": "0.005 USDC",
           "network": "eip155:8453",
           "asset": "USDC",
           "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
@@ -181,6 +181,19 @@
             "description": "Public payment configuration",
             "content": { "application/json": { "schema": { "type": "object" } } }
           }
+        }
+      }
+    },
+    "/api/metrics": {
+      "get": {
+        "operationId": "getPublicRevenueMetrics",
+        "summary": "Read aggregate verified usage, settlement, and revenue counters",
+        "responses": {
+          "200": {
+            "description": "Privacy-safe aggregate funnel and x402 settlement metrics",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          },
+          "503": { "description": "Metrics database is temporarily unavailable" }
         }
       }
     }

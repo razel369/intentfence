@@ -1,0 +1,46 @@
+name: Publish IntentFence MCP npm package
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type publish to release the current mcp-stdio version
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: ${{ inputs.confirm == 'publish' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-stdio
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for npm trusted publishing
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install a trusted publishing-capable npm CLI
+        run: npm install --global npm@11
+
+      - name: Install package dependencies
+        run: npm ci
+
+      - name: Verify the stdio MCP package
+        run: npm test
+
+      - name: Inspect the publish artifact
+        run: npm pack --dry-run
+
+      - name: Publish the public package with provenance
+        run: npm publish

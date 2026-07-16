@@ -8,6 +8,7 @@ globalThis.crypto ??= webcrypto;
 const {
   INTENTFENCE_SIGNING_KID,
   signReceiptClaims,
+  validateReceiptSigningKey,
   verifyReceipt,
 } = await import("../lib/receipts.ts");
 
@@ -45,7 +46,7 @@ function claims(nowSeconds) {
       protocol: "x402-v2",
       network: "eip155:8453",
       asset: "USDC",
-      amount_atomic: "50000",
+      amount_atomic: "5000",
       pay_to: "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
     },
   };
@@ -80,4 +81,10 @@ test("published JWKS contains the production signing key", async () => {
   assert.equal(jwks.keys[0].kid, INTENTFENCE_SIGNING_KID);
   assert.equal(jwks.keys[0].alg, "ES256");
   assert.equal(jwks.keys[0].d, undefined);
+});
+
+test("health validation rejects a well-formed but wrong ES256 signing key", async () => {
+  const keys = await keyPair();
+  assert.equal(await validateReceiptSigningKey(keys.privateJwk), false);
+  assert.equal(await validateReceiptSigningKey("not-json"), false);
 });

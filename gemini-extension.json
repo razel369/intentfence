@@ -1,0 +1,14 @@
+{
+  "name": "intentfence",
+  "version": "0.6.0",
+  "description": "Add free preview and x402-paid signed payment preflights to Gemini CLI agents.",
+  "mcpServers": {
+    "intentfence": {
+      "command": "node",
+      "args": [
+        "${extensionPath}/mcp-stdio/bin/intentfence-gemini.mjs"
+      ],
+      "cwd": "${extensionPath}"
+    }
+  }
+}

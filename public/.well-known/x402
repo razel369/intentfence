@@ -15,13 +15,13 @@
       "primaryNetwork": "eip155:8453",
       "network": "eip155:8453",
       "asset": "USDC",
-      "amountAtomic": "50000",
-      "price": "0.05 USDC",
+      "amountAtomic": "5000",
+      "price": "0.005 USDC",
       "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
     }
   },
   "capabilities": {
-    "tools": 1,
+    "tools": 2,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",

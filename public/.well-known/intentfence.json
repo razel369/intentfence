@@ -1,7 +1,7 @@
 {
   "name": "IntentFence",
   "version": "0.5",
-  "description": "An enforceable spend and action policy gate for autonomous AI agents, with x402 payments and ES256-signed receipts.",
+  "description": "A payment preflight and signed audit-receipt gate for autonomous AI agents, with x402 settlement.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
     "rest": {
@@ -15,7 +15,8 @@
       "transport": "streamable-http",
       "protocolVersion": "2025-11-25",
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp",
-      "tool": "intentfence_preflight"
+      "tools": ["intentfence_preflight", "intentfence_verified_preflight"],
+      "paidTool": "intentfence_verified_preflight"
     },
     "a2a": {
       "protocolVersion": "1.0",
@@ -34,8 +35,8 @@
     "version": 2,
     "scheme": "exact",
     "endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
-    "price": "0.05 USDC",
-    "amountAtomic": "50000",
+    "price": "0.005 USDC",
+    "amountAtomic": "5000",
     "network": "eip155:8453",
     "networkName": "Base mainnet",
     "asset": "USDC",

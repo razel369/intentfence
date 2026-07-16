@@ -7,6 +7,7 @@ COPY mcp-stdio/package.json mcp-stdio/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 COPY lib/preflight.ts ./lib/preflight.ts
+COPY mcp-stdio/lib/paid-preflight.mjs ./mcp-stdio/lib/paid-preflight.mjs
 COPY scripts/glama-mcp-server.mjs ./scripts/glama-mcp-server.mjs
 
 USER node

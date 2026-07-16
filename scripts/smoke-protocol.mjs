@@ -47,7 +47,7 @@ assert.equal(unpaid.status, 402);
 const required = JSON.parse(Buffer.from(unpaid.headers.get("payment-required"), "base64").toString("utf8"));
 assert.equal(required.x402Version, 2);
 assert.equal(required.accepts[0].network, "eip155:8453");
-assert.equal(required.accepts[0].amount, "50000");
+assert.equal(required.accepts[0].amount, "5000");
 assert.equal(required.accepts[0].payTo.toLowerCase(), "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
 assert.equal(required.extensions.bazaar.info.input.method, "POST");
 
@@ -70,7 +70,7 @@ const initialize = await fetch(`${baseUrl}/mcp`, {
   }),
 });
 assert.equal(initialize.status, 200);
-assert.equal((await json(initialize)).result.serverInfo.version, "0.5.0");
+assert.equal((await json(initialize)).result.serverInfo.version, "0.6.0");
 
 const toolCall = await fetch(`${baseUrl}/mcp`, {
   method: "POST",
@@ -84,6 +84,22 @@ const toolCall = await fetch(`${baseUrl}/mcp`, {
 });
 assert.equal(toolCall.status, 200);
 assert.equal((await json(toolCall)).result.structuredContent.status, "safe_to_proceed");
+
+const paidToolCall = await fetch(`${baseUrl}/mcp`, {
+  method: "POST",
+  headers: { ...mcpHeaders, "MCP-Protocol-Version": "2025-11-25" },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: 4,
+    method: "tools/call",
+    params: { name: "intentfence_verified_preflight", arguments: input },
+  }),
+});
+assert.equal(paidToolCall.status, 200);
+const paidToolBody = await json(paidToolCall);
+assert.equal(paidToolBody.result.isError, true);
+assert.equal(paidToolBody.result.structuredContent.x402Version, 2);
+assert.equal(paidToolBody.result.structuredContent.accepts[0].amount, "5000");
 
 const foreignOrigin = await fetch(`${baseUrl}/mcp`, {
   method: "POST",
@@ -131,7 +147,7 @@ if (process.env.INTENTFENCE_TEST_PRIVATE_JWK_PATH) {
       protocol: "x402-v2",
       network: "eip155:8453",
       asset: "USDC",
-      amount_atomic: "50000",
+      amount_atomic: "5000",
       pay_to: "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
     },
   }, privateJwk);

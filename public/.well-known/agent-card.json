@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
-  "description": "Guards a proposed agent action against spend, scope, data-retention, and human-approval constraints.",
-  "version": "0.5.0",
+  "description": "Preflights a proposed agent payment against declared spend, scope, data-retention, and human-approval constraints.",
+  "version": "0.6.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
@@ -18,11 +18,11 @@
   "skills": [
     {
       "id": "intentfence-preflight",
-      "name": "Agent action policy gate",
-      "description": "Return safe_to_proceed, needs_review, or denied before an autonomous action reaches the downstream tool.",
-      "tags": ["authorization", "policy", "safety", "audit", "preflight", "x402", "USDC"],
+      "name": "Agent payment preflight",
+      "description": "Evaluate caller-declared payment intent and return safe_to_proceed, needs_review, or denied before the caller invokes its downstream tool. IntentFence does not independently authorize or execute the action.",
+      "tags": ["declared-input-policy", "policy", "safety", "audit", "preflight", "x402", "USDC"],
       "examples": [
-        "Check whether did:web:crew-07 may book a 428.20 USD flight under a 500 USD ceiling."
+        "Check whether a declared 428.20 USD quote is within a declared 500 USD ceiling."
       ],
       "inputModes": ["application/json", "text/plain"],
       "outputModes": ["application/json", "text/plain"]

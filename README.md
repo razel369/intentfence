@@ -1,9 +1,9 @@
 # IntentFence
 
-IntentFence is an open spend and action policy gate for autonomous AI. Put it
-immediately before a tool call, evaluate declared scope, cost, data-retention,
-and approval constraints, and run the downstream action only when the decision
-allows it:
+IntentFence is a payment firewall for autonomous AI agents. Put it immediately
+before a payment tool call, evaluate declared merchant/purpose, cost,
+data-retention, and approval constraints, and run the downstream action only
+when the decision allows it:
 
 - `safe_to_proceed`
 - `needs_review`
@@ -21,18 +21,20 @@ Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 | Paid x402 decision | `POST /api/preflight/verified` |
 | Receipt verification | `POST /api/receipts/verify` |
 | Public ES256 keys | `GET /.well-known/jwks.json` |
-| MCP Streamable HTTP | `/mcp` |
+| MCP Streamable HTTP | `/mcp` (`intentfence_verified_preflight` is x402-paid) |
 | A2A Agent Card | `GET /.well-known/agent-card.json` |
 | x402 service manifest | `GET /.well-known/x402` |
+| Public aggregate metrics | `GET /api/metrics` |
 | OpenAPI | `GET /openapi.json` |
 
-The paid endpoint costs 0.05 USDC on Base through x402. A successful call
+The paid endpoint costs 0.005 USDC on Base through x402. A successful call
 returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
 IntentFence ES256 compact-JWS receipt.
 
-For teams that need a guarded production workflow, the launch pilot is $750
-plus $149/month and includes hands-on integration of one agent action. The
-Production plan starts at $499/month.
+For teams that need a guarded production workflow, the founding-customer form
+is an application for hands-on integration of one consequential agent action.
+No subscription is charged until the production policy and success criteria
+are agreed with the customer.
 
 ## Important trust boundary
 

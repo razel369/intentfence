@@ -14,7 +14,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client(
-  { name: "intentfence-stdio-smoke", version: "0.5.0" },
+  { name: "intentfence-stdio-smoke", version: "0.6.0" },
   { capabilities: {} },
 );
 
@@ -22,8 +22,9 @@ try {
   await client.connect(transport);
 
   const listed = await client.listTools();
-  assert.equal(listed.tools.length, 1);
+  assert.equal(listed.tools.length, 2);
   assert.equal(listed.tools[0].name, "intentfence_preflight");
+  assert.ok(listed.tools.some((tool) => tool.name === "intentfence_verified_preflight"));
   assert.deepEqual(listed.tools[0].inputSchema.required, ["subject", "action"]);
 
   const result = await client.callTool({

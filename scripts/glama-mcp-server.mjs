@@ -7,6 +7,7 @@ import {
   PreflightValidationError,
   validatePreflightInput,
 } from "../lib/preflight.ts";
+import { createPaidPreflightHandler } from "../mcp-stdio/lib/paid-preflight.mjs";
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 
@@ -14,7 +15,7 @@ const server = new McpServer(
   {
     name: "intentfence",
     title: "IntentFence Policy Gate",
-    version: "0.5.0",
+    version: "0.6.0",
     websiteUrl: SITE_URL,
     description:
       "A declared-input policy gate for autonomous AI actions, including spend, scope, data-retention, and human-approval constraints.",
@@ -150,6 +151,40 @@ server.registerTool(
       };
     }
   },
+);
+
+server.registerTool(
+  "intentfence_verified_preflight",
+  {
+    title: "Run a settled IntentFence payment preflight",
+    description:
+      "Production preflight costing 0.005 USDC on Base. On the first call, returns a standard x402 payment challenge. Retry with _meta['x402/payment']; success returns an ES256-signed receipt and _meta['x402/payment-response']. No IntentFence account or API key is required.",
+    inputSchema: {
+      subject: z.string().trim().min(1).max(200),
+      action: z.object({
+        type: z.string().trim().min(1).max(120),
+        resource: z.string().trim().max(500).optional(),
+      }),
+      constraints: z.object({
+        currency: z.string().trim().max(12).optional(),
+        cost_ceiling: z.number().min(0).max(1_000_000_000_000).optional(),
+        quoted_cost: z.number().min(0).max(1_000_000_000_000).optional(),
+        data_retention_hours: z.number().min(0).max(1_000_000_000_000).optional(),
+        human_approval: z.enum(["required", "optional", "not_required"]).optional(),
+      }).optional(),
+      proofs: z.array(z.string().trim().min(1).max(200)).max(20).optional(),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  createPaidPreflightHandler({
+    validateInput: validatePreflightInput,
+    source: "glama-mcp",
+  }),
 );
 
 const transport = new StdioServerTransport();

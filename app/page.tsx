@@ -4,12 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import GrowthSections from "./GrowthSections";
 
 const checks = [
-  { label: "Identity", value: "did:web:crew-07", detail: "Verified issuer" },
-  { label: "Scope", value: "travel.booking", detail: "Declared capability" },
+  { label: "Identity", value: "did:web:crew-07", detail: "Subject declared" },
+  { label: "Scope", value: "travel.booking", detail: "Action declared" },
   { label: "Cost", value: "$428.20 / $500", detail: "Within ceiling" },
-  { label: "Data", value: "24h retention", detail: "Auto-delete required" },
-  { label: "Approval", value: "Human required", detail: "Signed grant attached" },
+  { label: "Data", value: "24h retention", detail: "Within retention bound" },
+  { label: "Approval", value: "Human required", detail: "Approval marker supplied" },
 ];
+
+const demoInput = {
+  subject: "did:web:crew-07",
+  action: { type: "travel.booking", resource: "TLV-LHR" },
+  constraints: {
+    currency: "USD",
+    cost_ceiling: 500,
+    quoted_cost: 428.2,
+    data_retention_hours: 24,
+    human_approval: "required",
+  },
+  proofs: ["human_approval"],
+};
 
 const manifest = `{
   "intentfence": "0.5",
@@ -21,20 +34,20 @@ const manifest = `{
   "constraints": {
     "currency": "USD",
     "cost_ceiling": 500,
+    "quoted_cost": 428.2,
     "data_retention_hours": 24,
     "human_approval": "required"
   },
-  "decision": {
-    "status": "safe_to_proceed",
-    "quote": 428.20
-  }
+  "proofs": ["human_approval"]
 }`;
 
 export default function Home() {
   const [activeCheck, setActiveCheck] = useState(-1);
-  const [runState, setRunState] = useState<"idle" | "running" | "complete">(
+  const [runState, setRunState] = useState<"idle" | "running" | "complete" | "error">(
     "idle",
   );
+  const [decisionLabel, setDecisionLabel] = useState("READY FOR PREFLIGHT");
+  const [requestId, setRequestId] = useState("not started");
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
 
@@ -44,23 +57,45 @@ export default function Home() {
     };
   }, []);
 
-  function runHandshake() {
+  async function runHandshake() {
     if (timerRef.current !== null) window.clearInterval(timerRef.current);
 
     let step = 0;
     setActiveCheck(0);
     setRunState("running");
+    setDecisionLabel("CALLING LIVE API");
+    setRequestId("pending");
 
     timerRef.current = window.setInterval(() => {
-      step += 1;
-      if (step >= checks.length) {
-        if (timerRef.current !== null) window.clearInterval(timerRef.current);
-        timerRef.current = null;
-        setRunState("complete");
-        return;
+      if (step < checks.length - 1) {
+        step += 1;
+        setActiveCheck(step);
       }
-      setActiveCheck(step);
-    }, 430);
+    }, 300);
+
+    try {
+      const response = await fetch("/api/preflight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoInput),
+      });
+      const result = (await response.json()) as { request_id?: string; status?: string; message?: string };
+      if (!response.ok || !result.status) {
+        throw new Error(result.message || "The preflight API returned an error.");
+      }
+      if (timerRef.current !== null) window.clearInterval(timerRef.current);
+      timerRef.current = null;
+      setActiveCheck(checks.length);
+      setRequestId(result.request_id || "returned without id");
+      setDecisionLabel(result.status.replaceAll("_", " ").toUpperCase());
+      setRunState("complete");
+    } catch {
+      if (timerRef.current !== null) window.clearInterval(timerRef.current);
+      timerRef.current = null;
+      setRunState("error");
+      setDecisionLabel("API UNAVAILABLE — NO DECISION");
+      setRequestId("integration should fail closed");
+    }
   }
 
   function runFromHero() {
@@ -106,16 +141,15 @@ export default function Home() {
         <div className="hero-copy">
           <div className="eyebrow">
             <span className="eyebrow-mark" aria-hidden="true" />
-            Spend and action policy for autonomous AI
+            Payment firewall for autonomous AI agents
           </div>
-          <h1>Stop unsafe agent actions before they execute.</h1>
+          <h1>Add a fail-closed preflight before each in-scope agent payment.</h1>
           <p className="hero-intro">
-            IntentFence sits directly before a tool call and returns an
-            enforceable decision for spend, scope, data, and approval limits.
+            IntentFence evaluates declared spend, scope, data, and approval limits immediately before a tool call. Your integration blocks the payment unless the decision allows it.
           </p>
           <div className="hero-actions">
             <button className="button button-primary" onClick={runFromHero}>
-              Run a live policy gate
+              Call the live preflight API
             </button>
             <a className="text-link" href="#manifest">
               Read the open protocol <span aria-hidden="true">↗</span>
@@ -146,9 +180,9 @@ export default function Home() {
           <div className="handshake-card">
             <div className="handshake-topline">
               <span className="live-label">
-                <span aria-hidden="true" /> LIVE PREFLIGHT
+                <span aria-hidden="true" /> LIVE API PREFLIGHT
               </span>
-              <span className="request-id">REQ / 2026-0713-0042</span>
+              <span className="request-id">REQ / {requestId.slice(0, 18)}</span>
             </div>
 
             <div className="request-heading">
@@ -186,15 +220,9 @@ export default function Home() {
 
             <div className={`decision ${runState === "complete" ? "is-approved" : ""}`} aria-live="polite">
               <span>Decision</span>
-              <strong>
-                {runState === "idle"
-                  ? "READY FOR PREFLIGHT"
-                  : runState === "running"
-                    ? `CHECKING 0${activeCheck + 1} / 05`
-                    : "SAFE TO PROCEED"}
-              </strong>
+              <strong>{runState === "running" ? `CHECKING 0${activeCheck + 1} / 05` : decisionLabel}</strong>
               <span className="decision-code">
-                {runState === "complete" ? "PASS / IF-200" : "AWAITING RESULT"}
+                {runState === "complete" ? "LIVE RESPONSE / IF-200" : runState === "error" ? "FAIL CLOSED" : "AWAITING RESULT"}
               </span>
             </div>
 
@@ -204,10 +232,12 @@ export default function Home() {
               disabled={runState === "running"}
             >
               {runState === "running"
-                ? "Negotiating contract…"
+                ? "Calling IntentFence…"
                 : runState === "complete"
-                  ? "Run again"
-                  : "Start preflight"}
+                  ? "Run live check again"
+                  : runState === "error"
+                    ? "Retry live check"
+                    : "Start live preflight"}
             </button>
           </div>
         </section>
@@ -235,7 +265,7 @@ export default function Home() {
           <span>03</span>
           <div>
             <h2>Act</h2>
-            <p>An auditable decision and x402 settlement proof travel with the action.</p>
+            <p>A signed declared-input decision is returned alongside proof that the IntentFence service fee settled.</p>
           </div>
         </div>
       </section>
@@ -306,13 +336,13 @@ export default function Home() {
 
       <section className="closing">
         <span>THE ACTION LAYER IS ARRIVING</span>
-        <h2>Give every agent a safe way to say: “I’m allowed to do this.”</h2>
+        <h2>Give every agent a machine-readable answer: “This declared payment passed its policy check.”</h2>
         <a className="button button-light" href="#pricing">Choose a plan</a>
       </section>
 
       <footer>
         <a className="wordmark wordmark-footer" href="#top">IntentFence<span className="wordmark-dot">.</span></a>
-        <p>The spend and action firewall for autonomous AI.</p>
+        <p>Payment preflight and signed audit receipts for autonomous AI.</p>
         <span>Protocol 0.5 · ES256 receipts · x402 on Base</span>
       </footer>
     </main>

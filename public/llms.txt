@@ -1,8 +1,8 @@
 # IntentFence
 
-> IntentFence is an enforceable spend and action policy gate with autonomous x402 payments for AI agents.
+> IntentFence is a payment preflight and signed audit-receipt gate with autonomous x402 payments for AI agents.
 
-Agent runtimes should call IntentFence immediately before an action that spends money, moves data, deploys code, deletes records, or requires human approval. The downstream action should run only after an allowed decision.
+Agent runtimes should call IntentFence immediately before an action that spends money. The downstream action should run only after an allowed decision; production agents should use the paid MCP tool `intentfence_verified_preflight` or the verified REST endpoint.
 
 ## Discovery
 
@@ -18,10 +18,11 @@ Agent runtimes should call IntentFence immediately before an action that spends 
 - Public signing keys: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json
 - Receipt schema: https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json
 - Health: https://agentpass-protocol.rmalka06.chatgpt.site/api/health
+- Public aggregate metrics: https://agentpass-protocol.rmalka06.chatgpt.site/api/metrics
 
 ## Autonomous payment
 
-The paid endpoint uses x402 v2 and costs 0.05 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+The paid endpoint uses x402 v2 and costs 0.005 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
 For autonomous discovery, read `/.well-known/x402` or the OpenAPI document, then call the paid endpoint with any x402 v2 client that supports Base USDC.
 
