@@ -36,6 +36,24 @@ is an application for hands-on integration of one consequential agent action.
 No subscription is charged until the production policy and success criteria
 are agreed with the customer.
 
+## Install now
+
+The hosted MCP endpoint is available without an API key:
+
+```text
+https://agentpass-protocol.rmalka06.chatgpt.site/mcp
+```
+
+Gemini CLI can install the repository directly, without waiting for an npm
+package or gallery crawl:
+
+```bash
+gemini extensions install https://github.com/razel369/intentfence
+```
+
+The extension starts a dependency-free local MCP bridge and exposes both the
+free preview and the x402-paid verified preflight tool.
+
 ## Important trust boundary
 
 IntentFence 0.5 attests that it evaluated the inputs supplied by the caller. It
