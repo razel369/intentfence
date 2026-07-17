@@ -11,6 +11,8 @@ when the decision allows it:
 
 Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 
+x402scan: <https://www.x402scan.com/server/c495c104-dba4-4764-86b1-96b8b0cda48b>
+
 [![razel369/intentfence MCP server](https://glama.ai/mcp/servers/razel369/intentfence/badges/score.svg)](https://glama.ai/mcp/servers/razel369/intentfence)
 
 ## Protocol surfaces
@@ -110,7 +112,9 @@ the official MCP Registry under `io.github.razel369/intentfence`; the public MCP
 endpoint uses Streamable HTTP and requires no API key.
 
 The `/.well-known/x402` service manifest and Bazaar metadata make the paid
-endpoint crawlable by x402 indexes and autonomous tool routers.
+endpoint crawlable by x402 indexes and autonomous tool routers. The production
+`POST /api/preflight/verified` resource is registered and continuously checked
+on x402scan.
 
 ## Commercial pilot
 
