@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { parsePaymentRequired } from "@x402/core/schemas";
 
 const root = new URL("../", import.meta.url);
 
@@ -52,6 +53,15 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
       },
     }],
   );
+  const assessmentSchema = openapi.components.schemas.X402AssessmentRequest;
+  assert.equal(assessmentSchema.properties.policy.properties.max_price_usdc.example, "0.10");
+  const discoveryProbeChallenge = JSON.parse(
+    Buffer.from(
+      assessmentSchema.properties.payment_required.example,
+      "base64",
+    ).toString("utf8"),
+  );
+  assert.equal(parsePaymentRequired(discoveryProbeChallenge).success, true);
   assert.doesNotMatch(JSON.stringify(openapi), /"\$ref":"https?:\/\//u);
 });
 
