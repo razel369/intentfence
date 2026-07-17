@@ -16,6 +16,18 @@ export function GET() {
       version: 2,
       status: "live",
       endpoint: "/api/preflight/verified",
+      endpoints: [
+        {
+          path: "/api/x402-assessments",
+          product: "caller-observed-x402-quote-assessment",
+          recommended_for: "unfamiliar x402 merchants before target payment",
+        },
+        {
+          path: "/api/preflight/verified",
+          product: "signed-declared-input-preflight",
+          recommended_for: "general consequential agent actions",
+        },
+      ],
       price: INTENTFENCE_PRICE_USD,
       amount_atomic: INTENTFENCE_PRICE_ATOMIC,
       asset: INTENTFENCE_ASSET,

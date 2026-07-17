@@ -1,8 +1,8 @@
 # IntentFence
 
-> IntentFence is a payment preflight and signed audit-receipt gate with autonomous x402 payments for AI agents.
+> IntentFence validates the exact x402 payment challenge an agent observed and issues signed assessment or policy receipts for AI agents.
 
-Agent runtimes should call IntentFence immediately before an action that spends money. The downstream action should run only after an allowed decision; production agents should use the paid MCP tool `intentfence_verified_preflight` or the verified REST endpoint.
+Before paying an unfamiliar x402 resource, an agent should make its intended unpaid request and forward the returned base64 `PAYMENT-REQUIRED` header to the paid MCP tool `intentfence_x402_assessment` or `POST /api/x402-assessments`. IntentFence checks the official x402 v2 shape, canonical Base USDC and EIP-712 domain, price ceiling, payee allowlist, transfer method, extensions, and exact resource binding. Permit2 or unknown active extensions require review. It never fetches or pays the target. The declared-input preflight remains available for general consequential actions.
 
 ## Discovery
 
@@ -14,6 +14,7 @@ Agent runtimes should call IntentFence immediately before an action that spends 
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/mcp
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
+- Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
 - Receipt verifier: https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify
 - Public signing keys: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json
 - Receipt schema: https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json
@@ -22,9 +23,12 @@ Agent runtimes should call IntentFence immediately before an action that spends 
 
 ## Autonomous payment
 
-The paid endpoint uses x402 v2 and costs 0.005 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+Both paid endpoints use x402 v2 and cost 0.005 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
-For autonomous discovery, read `/.well-known/x402` or the OpenAPI document, then call the paid endpoint with any x402 v2 client that supports Base USDC.
+For autonomous discovery, read `/.well-known/x402` or the OpenAPI document, then call the assessment endpoint with any x402 v2 client that supports Base USDC.
+
+Assessment input fields are `subject`, `target_url`, optional `method` (`GET`, `HEAD`, or `POST`), base64 `payment_required` (maximum 16 KiB), and `policy.max_price_usdc` with optional `policy.allowed_payees`. A `safe_to_proceed` result requires an explicit allowlist entry matching the quote; an omitted `allowed_payees` list yields `needs_review`.
+Every advertised payment option must pass every automatic check. Mixed safe and unsafe option sets are denied.
 
 IntentFence never needs a wallet private key and cannot initiate transfers from a payer wallet.
 
@@ -34,4 +38,4 @@ IntentFence never needs a wallet private key and cannot initiate transfers from 
 - needs_review: a constraint or proof needs human or policy review.
 - denied: a required identity or scope is missing, or a hard limit was exceeded.
 
-The free endpoint returns an unsigned policy preview. The paid endpoint returns an ES256 JWS receipt attesting to IntentFence evaluation of the declared inputs. x402 settlement proves payment, while neither mechanism proves a caller's real-world identity or authorization. Consequential actions still require independent authorization controls.
+The free endpoint returns an unsigned policy preview. The verified preflight returns an ES256 JWS receipt over declared inputs. The quote assessment signs SHA-256 bindings for the exact caller-observed challenge and target URL with assurance `caller-observed-x402-quote-assessment` and verification tier `x402-quote-assessment+x402-settled`. IntentFence does not contact the target or prove merchant identity. x402 settlement proves payment of the 0.005 USDC IntentFence assessment fee, not the downstream merchant payment. Consequential actions still require independent authorization controls.

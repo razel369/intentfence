@@ -21,7 +21,9 @@ test("negotiates protocol versions supported by older Gemini CLI releases", () =
 });
 
 test("dependency-free Gemini extension lists tools and returns an x402 challenge", async () => {
+  let requestCount = 0;
   const mock = createServer((_request, response) => {
+    requestCount += 1;
     response.writeHead(402, {
       "Content-Type": "application/json",
       "PAYMENT-REQUIRED": encoded({
@@ -42,18 +44,39 @@ test("dependency-free Gemini extension lists tools and returns an x402 challenge
     env: { ...process.env, INTENTFENCE_BASE_URL: `http://127.0.0.1:${address.port}` },
     stderr: "pipe",
   });
-  const client = new Client({ name: "gemini-extension-test", version: "0.6.1" });
+  const client = new Client({ name: "gemini-extension-test", version: "0.7.0" });
 
   try {
     await client.connect(transport);
     const listed = await client.listTools();
-    assert.equal(listed.tools.length, 2);
+    assert.equal(listed.tools.length, 3);
+    const assessmentTool = listed.tools.find(
+      (tool) => tool.name === "intentfence_x402_assessment",
+    );
+    assert.ok(assessmentTool);
+    assert.ok(assessmentTool.inputSchema.required.includes("payment_required"));
+    assert.ok(assessmentTool.inputSchema.properties.method.enum.includes("POST"));
+    assert.equal(assessmentTool.inputSchema.properties.payment_required.maxLength, 16_384);
+
+    const invalidAssessment = await client.callTool({
+      name: "intentfence_x402_assessment",
+      arguments: {
+        subject: "agent://gemini",
+        target_url: "https://merchant.example/paid",
+        policy: { max_price_usdc: "0.02" },
+      },
+    });
+    assert.equal(invalidAssessment.isError, true);
+    assert.match(invalidAssessment.content[0].text, /payment_required/iu);
+    assert.equal(requestCount, 0);
+
     const challenge = await client.callTool({
       name: "intentfence_verified_preflight",
       arguments: { subject: "agent://gemini", action: { type: "purchase" } },
     });
     assert.equal(challenge.isError, true);
     assert.equal(challenge.structuredContent?.accepts?.[0]?.amount, "5000");
+    assert.equal(requestCount, 1);
   } finally {
     await client.close();
     await new Promise((resolve, reject) => mock.close((cause) => cause ? reject(cause) : resolve()));

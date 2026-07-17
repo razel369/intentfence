@@ -2,12 +2,17 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.6.1",
-    "description": "Guard autonomous agent actions with spend, scope, data-retention, and approval checks. The x402 endpoint returns an ES256-signed policy receipt."
+    "version": "0.7.0",
+    "description": "Guard autonomous agent payments with declared-input policy checks and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
   ],
+  "security": [],
   "paths": {
     "/api/preflight": {
       "post": {
@@ -56,6 +61,7 @@
         "summary": "Pay 0.005 USDC and receive a signed policy decision",
         "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. A successful response includes an ES256 JWS receipt; settlement is returned separately in PAYMENT-RESPONSE.",
         "tags": ["agent-policy", "security", "x402", "agent-commerce"],
+        "security": [{}, { "x402Payment": [] }],
         "x-x402-price": "$0.005",
         "x-x402": {
           "version": 2,
@@ -117,6 +123,100 @@
         }
       }
     },
+    "/api/x402-assessments": {
+      "post": {
+        "operationId": "createX402Assessment",
+        "summary": "Assess a caller-observed x402 quote before paying it",
+        "description": "Creates a signed assessment of the exact PAYMENT-REQUIRED challenge observed by the caller. IntentFence does not fetch or purchase the target resource. The assessment validates the official x402 v2 schema, exact payment, Base mainnet, canonical Base USDC and EIP-712 domain, the caller's precise price ceiling, payee policy, timeout, transfer method, extensions, and exact resource-URL binding. Permit2 or unknown active extensions require review. A decision can be safe_to_proceed only when allowed_payees is supplied and every advertised payment option satisfies every automatic check; a mixed safe and unsafe option set is denied. The IntentFence assessment itself costs 0.005 USDC through x402, with atomic EIP-3009 payer-and-nonce replay reservation.",
+        "tags": ["x402", "agent-commerce", "merchant-risk", "payment-safety"],
+        "security": [{}, { "x402Payment": [] }],
+        "x-x402-price": "$0.005",
+        "x-x402": {
+          "version": 2,
+          "scheme": "exact",
+          "price": "0.005 USDC",
+          "network": "eip155:8453",
+          "asset": "USDC",
+          "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+        },
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 payment payload. Omit on the first call to receive PAYMENT-REQUIRED.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/X402AssessmentRequest" },
+              "example": {
+                "subject": "agent:buyer-07",
+                "target_url": "https://merchant.example/api/paid-resource",
+                "method": "GET",
+                "payment_required": "eyJ4NDAyVmVyc2lvbiI6MiwicmVzb3VyY2UiOnsidXJsIjoiaHR0cHM6Ly9tZXJjaGFudC5leGFtcGxlL2FwaS9wYWlkLXJlc291cmNlIiwiZGVzY3JpcHRpb24iOiJQYWlkIHJlc291cmNlIiwibWltZVR5cGUiOiJhcHBsaWNhdGlvbi9qc29uIn0sImFjY2VwdHMiOlt7InNjaGVtZSI6ImV4YWN0IiwibmV0d29yayI6ImVpcDE1NTo4NDUzIiwiYW1vdW50IjoiMTAwMDAiLCJhc3NldCI6IjB4ODMzNTg5ZkNENmVEYjZFMDhmNGM3QzMyRDRmNzFiNTRiZEEwMjkxMyIsInBheVRvIjoiMHgxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExIiwibWF4VGltZW91dFNlY29uZHMiOjMwMCwiZXh0cmEiOnsibmFtZSI6IlVTRCBDb2luIiwidmVyc2lvbiI6IjIifX1dfQ==",
+                "policy": {
+                  "max_price_usdc": "0.10",
+                  "allowed_payees": ["0x1111111111111111111111111111111111111111"]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Caller-observed quote assessment created and the IntentFence fee settled",
+            "headers": {
+              "PAYMENT-RESPONSE": {
+                "description": "Base64-encoded x402 settlement result for the IntentFence assessment fee.",
+                "schema": { "type": "string" }
+              },
+              "X-IntentFence-Request-ID": {
+                "description": "Assessment and audit correlation identifier.",
+                "schema": { "type": "string", "format": "uuid" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/X402AssessmentDecision" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "402": {
+            "description": "Payment is required or the supplied payment could not be verified",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64-encoded x402 v2 payment requirements.",
+                "required": true,
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "409": {
+            "description": "The EIP-3009 payer and nonce authorization is already in flight or was already used",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds before a transient in-flight conflict may be retried with a fresh authorization.",
+                "schema": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/Problem" }
+              }
+            }
+          },
+          "413": { "$ref": "#/components/responses/Problem" },
+          "415": { "$ref": "#/components/responses/Problem" },
+          "500": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
     "/api/receipts/verify": {
       "post": {
         "operationId": "verifyIntentFenceReceipt",
@@ -168,7 +268,8 @@
           "200": {
             "description": "IntentFence service status",
             "content": { "application/json": { "schema": { "type": "object" } } }
-          }
+          },
+          "429": { "$ref": "#/components/responses/Problem" }
         }
       }
     },
@@ -180,7 +281,8 @@
           "200": {
             "description": "Public payment configuration",
             "content": { "application/json": { "schema": { "type": "object" } } }
-          }
+          },
+          "429": { "$ref": "#/components/responses/Problem" }
         }
       }
     },
@@ -193,13 +295,30 @@
             "description": "Privacy-safe aggregate funnel and x402 settlement metrics",
             "content": { "application/json": { "schema": { "type": "object" } } }
           },
+          "429": { "$ref": "#/components/responses/Problem" },
           "503": { "description": "Metrics database is temporarily unavailable" }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "x402Payment": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "PAYMENT-SIGNATURE",
+        "description": "Base64-encoded x402 v2 payment payload. Paid operations also allow an unauthenticated first request so the server can return PAYMENT-REQUIRED."
+      }
+    },
     "responses": {
+      "Problem": {
+        "description": "Problem Details error response",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/Problem" }
+          }
+        }
+      },
       "InvalidRequest": {
         "description": "Invalid JSON or preflight fields",
         "content": {
@@ -217,6 +336,133 @@
       }
     },
     "schemas": {
+      "Problem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "title", "status", "detail", "instance"],
+        "properties": {
+          "type": { "type": "string", "format": "uri" },
+          "title": { "type": "string" },
+          "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+          "detail": { "type": "string" },
+          "instance": { "type": "string" }
+        }
+      },
+      "X402AssessmentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["subject", "target_url", "payment_required", "policy"],
+        "properties": {
+          "subject": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "target_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "description": "HTTPS resource URL that the caller associates with the observed quote. IntentFence does not fetch this URL."
+          },
+          "method": { "type": "string", "enum": ["GET", "HEAD", "POST"], "default": "GET" },
+          "payment_required": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16384,
+            "pattern": "^[A-Za-z0-9+/_-]+={0,2}$",
+            "description": "Exact base64 or base64url PAYMENT-REQUIRED response header observed by the caller. IntentFence hashes and evaluates this quote without contacting the target."
+          },
+          "policy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["max_price_usdc"],
+            "properties": {
+              "max_price_usdc": {
+                "type": "string",
+                "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+                "description": "Precise USDC ceiling as a decimal string."
+              },
+              "allowed_payees": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "uniqueItems": true,
+                "description": "Approved EVM recipients. When omitted, the assessment cannot return safe_to_proceed and returns needs_review unless another check denies the quote.",
+                "items": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" }
+              }
+            }
+          }
+        }
+      },
+      "X402AssessmentDecision": {
+        "type": "object",
+        "required": [
+          "intentfence",
+          "request_id",
+          "status",
+          "assessed_at",
+          "target",
+          "observed",
+          "checks",
+          "verification_tier",
+          "receipt"
+        ],
+        "properties": {
+          "intentfence": { "const": "0.6" },
+          "request_id": { "type": "string", "format": "uuid" },
+          "status": {
+            "type": "string",
+            "enum": ["safe_to_proceed", "needs_review", "denied"]
+          },
+          "assessed_at": { "type": "string", "format": "date-time" },
+          "target": {
+            "type": "object",
+            "required": ["origin", "pathname", "has_query", "method", "url_sha256"],
+            "properties": {
+              "origin": { "type": "string", "format": "uri" },
+              "pathname": { "type": "string" },
+              "has_query": { "type": "boolean" },
+              "method": { "type": "string", "enum": ["GET", "HEAD", "POST"] },
+              "url_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          },
+          "observed": {
+            "type": "object",
+            "required": [
+              "challenge_source",
+              "x402_version",
+              "payment_requirements_sha256",
+              "accepts"
+            ],
+            "properties": {
+              "challenge_source": {
+                "type": "string",
+                "const": "caller-supplied-payment-required"
+              },
+              "x402_version": { "type": "integer", "const": 2 },
+              "payment_requirements_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "accepts": { "type": "array", "items": { "type": "object" } }
+            }
+          },
+          "checks": { "type": "array", "items": { "type": "object" } },
+          "verification_tier": {
+            "type": "string",
+            "const": "x402-quote-assessment+x402-settled"
+          },
+          "receipt": {
+            "type": "object",
+            "required": ["signed", "assurance", "expires_at", "signature"],
+            "properties": {
+              "signed": { "const": true },
+              "assurance": {
+                "type": "string",
+                "const": "caller-observed-x402-quote-assessment"
+              },
+              "expires_at": { "type": "string", "format": "date-time" },
+              "signature": { "type": "object" }
+            }
+          }
+        }
+      },
       "PreflightRequest": {
         "type": "object",
         "required": ["subject", "action"],

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json",
-  "title": "IntentFence 0.5 Signed Receipt Claims",
+  "title": "IntentFence 0.5/0.6 Signed Receipt Claims",
   "type": "object",
   "additionalProperties": true,
   "required": [
@@ -25,8 +25,10 @@
     "iat": { "type": "integer" },
     "exp": { "type": "integer" },
     "jti": { "type": "string", "minLength": 1, "maxLength": 200 },
-    "intentfence_version": { "const": "0.5" },
-    "assurance": { "const": "declared-input-policy" },
+    "intentfence_version": { "enum": ["0.5", "0.6"] },
+    "assurance": {
+      "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment"]
+    },
     "request_id": { "type": "string", "format": "uuid" },
     "decision": {
       "enum": ["safe_to_proceed", "needs_review", "denied"]
@@ -34,6 +36,29 @@
     "subject": { "type": ["string", "null"] },
     "action": { "type": ["object", "null"] },
     "checks": { "type": "array" },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessed_at",
+        "target_url_sha256",
+        "target_origin",
+        "target_pathname",
+        "target_method",
+        "payment_requirements_sha256"
+      ],
+      "properties": {
+        "assessed_at": { "type": "string", "format": "date-time" },
+        "target_url_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "target_origin": { "type": "string", "format": "uri" },
+        "target_pathname": { "type": "string" },
+        "target_method": { "enum": ["GET", "HEAD", "POST"] },
+        "payment_requirements_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
     "payment": {
       "type": "object",
       "additionalProperties": false,
@@ -46,5 +71,32 @@
         "pay_to": { "type": "string" }
       }
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "assurance": { "const": "caller-observed-x402-quote-assessment" }
+        }
+      },
+      "then": {
+        "required": ["evidence"],
+        "properties": {
+          "intentfence_version": { "const": "0.6" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "assurance": { "const": "declared-input-policy" }
+        }
+      },
+      "then": {
+        "properties": {
+          "intentfence_version": { "const": "0.5" }
+        }
+      }
+    }
+  ]
 }

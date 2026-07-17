@@ -1,12 +1,13 @@
 {
   "name": "IntentFence",
-  "version": "0.5",
-  "description": "A payment preflight and signed audit-receipt gate for autonomous AI agents, with x402 settlement.",
+  "version": "0.7.0",
+  "description": "Caller-observed x402 quote assessment and signed payment-policy receipts for autonomous AI agents.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
     "rest": {
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+      "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
       "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
       "health": "https://agentpass-protocol.rmalka06.chatgpt.site/api/health"
@@ -15,8 +16,12 @@
       "transport": "streamable-http",
       "protocolVersion": "2025-11-25",
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp",
-      "tools": ["intentfence_preflight", "intentfence_verified_preflight"],
-      "paidTool": "intentfence_verified_preflight"
+      "tools": [
+        "intentfence_preflight",
+        "intentfence_verified_preflight",
+        "intentfence_x402_assessment"
+      ],
+      "paidTools": ["intentfence_verified_preflight", "intentfence_x402_assessment"]
     },
     "a2a": {
       "protocolVersion": "1.0",
@@ -26,7 +31,7 @@
   "receipts": {
     "format": "JWS Compact",
     "algorithm": "ES256",
-    "assurance": "declared-input-policy",
+    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment"],
     "jwks": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json",
     "schema": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json"
   },
@@ -34,7 +39,10 @@
     "protocol": "x402",
     "version": 2,
     "scheme": "exact",
-    "endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+    "endpoints": [
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments"
+    ],
     "price": "0.005 USDC",
     "amountAtomic": "5000",
     "network": "eip155:8453",
@@ -44,5 +52,5 @@
     "instructions": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments"
   },
   "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
-  "terms": "The free result is unsigned. A signed receipt attests only to IntentFence evaluation of declared inputs. x402 proves settlement, not real-world identity or authorization. Keep independent authorization controls for consequential actions."
+  "terms": "The free preflight is unsigned. The quote assessment validates the exact caller-observed PAYMENT-REQUIRED value; IntentFence never fetches or pays the target and does not establish merchant identity. Compare the signed challenge hash immediately before payment. x402 proves settlement of the IntentFence service fee. Keep independent authorization controls for consequential actions."
 }

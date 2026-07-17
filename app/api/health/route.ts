@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { usageEvents } from "../../../db/schema";
+import { paymentReservations, usageEvents } from "../../../db/schema";
 import { MIN_ADMIN_TOKEN_LENGTH } from "../../../lib/admin-auth";
 import {
   getIntentFenceAdminToken,
@@ -18,6 +18,7 @@ import { checkIntentFenceFacilitator } from "../../../lib/x402-health";
 export async function GET() {
   let database = false;
   let schema = false;
+  let paymentReservationSchema = false;
   let signing = false;
   let leadAdministration = false;
   let facilitatorReachable = false;
@@ -29,6 +30,11 @@ export async function GET() {
     database = true;
     await db.select({ id: usageEvents.id }).from(usageEvents).limit(1);
     schema = true;
+    await db
+      .select({ authorizationHash: paymentReservations.authorizationHash })
+      .from(paymentReservations)
+      .limit(1);
+    paymentReservationSchema = true;
   } catch (error) {
     console.error("IntentFence health database check failed", {
       error: error instanceof Error ? error.message : "unknown_error",
@@ -74,17 +80,18 @@ export async function GET() {
   const x402Ready =
     x402Configured && facilitatorReachable && facilitatorSupportsRoute;
   const status =
-    database && schema && signing && leadAdministration && x402Ready
+    database && schema && paymentReservationSchema && signing && leadAdministration && x402Ready
       ? "ok"
       : "degraded";
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.6.1",
+      version: "0.7.0",
       status,
       checks: {
         database,
         revenue_schema: schema,
+        payment_reservation_schema: paymentReservationSchema,
         receipt_signing: signing,
         lead_administration: leadAdministration,
         x402_configuration: {
@@ -102,6 +109,7 @@ export async function GET() {
         paid_mcp: true,
         a2a: true,
         x402: true,
+        caller_observed_x402_quote_assessment: true,
       },
     },
     {

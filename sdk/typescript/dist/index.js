@@ -35,6 +35,22 @@ export class IntentFenceClient {
         }
         return await response.json();
     }
+    async assessX402(input, options = {}) {
+        const response = await this.request(`${this.baseUrl}/api/x402-assessments`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(options.paymentSignature
+                    ? { "PAYMENT-SIGNATURE": options.paymentSignature }
+                    : {}),
+            },
+            body: JSON.stringify(input),
+        });
+        if (!response.ok) {
+            throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
+        }
+        return await response.json();
+    }
     async verifyReceipt(jws) {
         const response = await this.request(`${this.baseUrl}/api/receipts/verify`, {
             method: "POST",

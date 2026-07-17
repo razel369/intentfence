@@ -2,8 +2,8 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.razel369/intentfence",
   "title": "IntentFence Payment Firewall",
-  "description": "Free preview and x402-paid signed preflight receipts for autonomous-agent payments.",
-  "version": "0.6.1",
+  "description": "Caller-observed x402 quote assessment plus free and x402-paid signed preflight receipts for autonomous-agent payments.",
+  "version": "0.7.0",
   "remotes": [
     {
       "type": "streamable-http",

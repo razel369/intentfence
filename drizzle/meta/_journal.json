@@ -29,6 +29,13 @@
       "when": 1784243300000,
       "tag": "0003_remove_synthetic_test_data",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784262000000,
+      "tag": "0004_payment_reservations",
+      "breakpoints": true
     }
   ]
 }

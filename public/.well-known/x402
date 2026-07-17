@@ -2,10 +2,11 @@
   "spec": "agent402-service-manifest/1",
   "version": 1,
   "name": "IntentFence",
-  "description": "Preflight spend, scope, data-retention, and approval policy before an autonomous AI agent executes a consequential action.",
+  "description": "Assess and sign an exact caller-observed x402 quote before payment, or obtain a signed policy preflight for an autonomous agent action.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "resources": [
-    "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified"
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments"
   ],
   "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
   "payment": {
@@ -21,17 +22,20 @@
     }
   },
   "capabilities": {
-    "tools": 2,
+    "tools": 3,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
-    "signedReceipts": "ES256"
+    "signedReceipts": "ES256",
+    "callerObservedX402QuoteAssessment": true
   },
   "tags": [
     "ai-agents",
     "agent-policy",
     "security",
     "spend-control",
+    "merchant-risk",
+    "quote-assessment",
     "x402",
     "mcp"
   ]

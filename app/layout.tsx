@@ -3,9 +3,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentpass-protocol.rmalka06.chatgpt.site"),
-  title: "IntentFence — Payment firewall for AI agents",
+  title: "IntentFence — Check x402 sellers before agents pay",
   description:
-    "A REST, paid MCP, and x402 preflight gate for agent spend, scope, data rules, and approval markers.",
+    "Caller-observed x402 quote assessment for AI agents: verify the Base USDC asset, price, payee, and resource binding before payment.",
   keywords: [
     "AI agent payment preflight",
     "AI agent payment firewall",
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     "agent policy",
     "AI audit receipts",
     "x402 payments",
+    "x402 quote assessment",
     "USDC agent payments",
   ],
   alternates: { canonical: "/" },
@@ -23,9 +24,9 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "IntentFence — Add a fail-closed preflight before each agent payment.",
+    title: "IntentFence — Check the x402 seller before your agent pays.",
     description:
-      "A live preflight and paid x402 audit receipt for autonomous-agent payments — via REST and MCP.",
+      "Validate and sign the exact x402 challenge an autonomous agent observed — via REST and MCP, without IntentFence contacting the target.",
     url: "/",
     siteName: "IntentFence",
     type: "website",
@@ -34,14 +35,14 @@ export const metadata: Metadata = {
         url: "/og.png",
         width: 1200,
         height: 630,
-        alt: "IntentFence — Payment firewall for AI agents.",
+        alt: "IntentFence — Caller-observed x402 quote assessment for AI agents.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentFence — Payment firewall for AI agents.",
-    description: "REST, paid MCP, and x402 preflight infrastructure for autonomous-agent payments.",
+    title: "IntentFence — Check x402 sellers before agents pay.",
+    description: "Signed assessment of an exact caller-observed x402 quote, payee, asset, price, and resource binding.",
     images: ["/og.png"],
   },
 };
@@ -54,10 +55,11 @@ const structuredData = {
   operatingSystem: "Web",
   url: "https://agentpass-protocol.rmalka06.chatgpt.site/",
   description:
-    "Payment preflight and signed audit-receipt infrastructure for autonomous AI agents, available through REST and paid MCP.",
+    "Caller-observed x402 quote assessments and signed payment-policy receipts for autonomous AI agents, available through REST and paid MCP.",
   offers: [
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
     { "@type": "Offer", name: "Verified x402", price: "0.005", priceCurrency: "USDC" },
+    { "@type": "Offer", name: "x402 quote assessment", price: "0.005", priceCurrency: "USDC" },
   ],
 };
 

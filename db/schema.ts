@@ -34,6 +34,20 @@ export const paymentAudits = sqliteTable(
   ],
 );
 
+export const paymentReservations = sqliteTable(
+  "payment_reservations",
+  {
+    authorizationHash: text("authorization_hash").primaryKey(),
+    product: text("product").notNull(),
+    status: text("status").notNull().default("reserved"),
+    reservedAt: integer("reserved_at", { mode: "timestamp" }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => [
+    index("payment_reservations_expires_at_idx").on(table.expiresAt),
+  ],
+);
+
 export const usageEvents = sqliteTable(
   "usage_events",
   {

@@ -143,13 +143,13 @@ export default function Home() {
             <span className="eyebrow-mark" aria-hidden="true" />
             Payment firewall for autonomous AI agents
           </div>
-          <h1>Add a fail-closed preflight before each in-scope agent payment.</h1>
+          <h1>Check the x402 seller before your agent pays.</h1>
           <p className="hero-intro">
-            IntentFence evaluates declared spend, scope, data, and approval limits immediately before a tool call. Your integration blocks the payment unless the decision allows it.
+            Forward the exact x402 challenge your agent just received. IntentFence validates its Base USDC quote, price ceiling, payee, and URL binding, then returns signed evidence your agent can enforce.
           </p>
           <div className="hero-actions">
             <button className="button button-primary" onClick={runFromHero}>
-              Call the live preflight API
+              Try the free policy preview
             </button>
             <a className="text-link" href="#manifest">
               Read the open protocol <span aria-hidden="true">↗</span>
@@ -248,24 +248,24 @@ export default function Home() {
         <div className="protocol-step">
           <span>01</span>
           <div>
-            <h2>Declare</h2>
-            <p>Agent and service publish identity, intent, and hard boundaries.</p>
+            <h2>Observe</h2>
+            <p>Your agent makes its intended unpaid request and receives the target&apos;s <code>PAYMENT-REQUIRED</code> challenge.</p>
           </div>
         </div>
         <div className="protocol-arrow" aria-hidden="true">→</div>
         <div className="protocol-step">
           <span>02</span>
           <div>
-            <h2>Negotiate</h2>
-            <p>Both sides resolve cost, scope, data rules, and approvals.</p>
+            <h2>Verify</h2>
+            <p>It forwards that exact challenge; IntentFence checks network, USDC asset, amount, payee, and resource binding without contacting the target.</p>
           </div>
         </div>
         <div className="protocol-arrow" aria-hidden="true">→</div>
         <div className="protocol-step">
           <span>03</span>
           <div>
-            <h2>Act</h2>
-            <p>A signed declared-input decision is returned alongside proof that the IntentFence service fee settled.</p>
+            <h2>Pay or stop</h2>
+            <p>A signed assessment tells the agent whether to continue, review, or deny the downstream payment.</p>
           </div>
         </div>
       </section>
@@ -303,15 +303,17 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open protocol / v0.5</div>
+          <div className="section-kicker">Open protocol / v0.7</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
-            Publish an IntentFence policy endpoint and wrap the downstream tool
-            call with the SDK guard. The action runs only after an allowed decision.
+            Forward the caller-observed x402 challenge for assessment before an
+            unfamiliar payment, then wrap the downstream tool call with the SDK
+            guard. The action runs only after an allowed decision.
           </p>
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
             <div><span>DISCOVER</span><code>GET /.well-known/intentfence.json</code></div>
             <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
+            <div><span>ASSESS x402</span><code>POST /api/x402-assessments</code></div>
             <div><span>PAY + VERIFY</span><code>POST /api/preflight/verified</code></div>
             <div><span>VERIFY RECEIPT</span><code>POST /api/receipts/verify</code></div>
             <div><span>A2A</span><code>GET /.well-known/agent-card.json</code></div>
@@ -336,14 +338,14 @@ export default function Home() {
 
       <section className="closing">
         <span>THE ACTION LAYER IS ARRIVING</span>
-        <h2>Give every agent a machine-readable answer: “This declared payment passed its policy check.”</h2>
+        <h2>Give every agent a machine-readable answer: “This exact x402 quote passed its payment checks.”</h2>
         <a className="button button-light" href="#pricing">Choose a plan</a>
       </section>
 
       <footer>
         <a className="wordmark wordmark-footer" href="#top">IntentFence<span className="wordmark-dot">.</span></a>
-        <p>Payment preflight and signed audit receipts for autonomous AI.</p>
-        <span>Protocol 0.5 · ES256 receipts · x402 on Base</span>
+        <p>Caller-observed x402 quote assessments and signed payment receipts for autonomous AI.</p>
+        <span>Protocol 0.7 · ES256 receipts · x402 on Base</span>
       </footer>
     </main>
   );

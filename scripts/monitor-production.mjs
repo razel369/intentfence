@@ -37,6 +37,7 @@ const health = await json(healthResponse);
 assert.equal(health.status, "ok");
 assert.equal(health.checks.database, true);
 assert.equal(health.checks.revenue_schema, true);
+assert.equal(health.checks.payment_reservation_schema, true);
 assert.equal(health.checks.receipt_signing, true);
 assert.equal(health.checks.x402_configuration.ready, true);
 assert.equal(health.checks.x402_configuration.facilitator_reachable, true);
@@ -60,6 +61,37 @@ const paymentRequired = JSON.parse(
 assert.equal(paymentRequired.accepts[0].amount, "5000");
 assert.equal(paymentRequired.accepts[0].network, "eip155:8453");
 
+const assessmentInput = {
+  subject: "agent:intentfence-monitor",
+  target_url: paymentRequired.resource.url,
+  method: "POST",
+  payment_required: paymentRequiredHeader,
+  policy: {
+    max_price_usdc: "0.01",
+    allowed_payees: [paymentRequired.accepts[0].payTo],
+  },
+};
+
+const assessmentRequiredResponse = await fetchWithTimeout(
+  `${baseUrl}/api/x402-assessments`,
+  {
+    method: "POST",
+    headers: { ...monitorHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify(assessmentInput),
+  },
+);
+assert.equal(assessmentRequiredResponse.status, 402);
+const assessmentRequiredHeader = assessmentRequiredResponse.headers.get("payment-required");
+assert.ok(assessmentRequiredHeader, "assessment PAYMENT-REQUIRED header missing");
+const assessmentPaymentRequired = JSON.parse(
+  Buffer.from(assessmentRequiredHeader, "base64").toString("utf8"),
+);
+assert.equal(assessmentPaymentRequired.accepts[0].amount, "5000");
+assert.equal(
+  assessmentPaymentRequired.resource.url,
+  `${baseUrl}/api/x402-assessments`,
+);
+
 const mcpResponse = await fetchWithTimeout(`${baseUrl}/mcp`, {
   method: "POST",
   headers: {
@@ -82,6 +114,12 @@ assert.ok(
     (tool) => tool.name === "intentfence_verified_preflight",
   ),
   "paid MCP tool missing",
+);
+assert.ok(
+  mcp.result.tools.some(
+    (tool) => tool.name === "intentfence_x402_assessment",
+  ),
+  "caller-observed x402 quote assessment MCP tool missing",
 );
 
 const mcpChallengeResponse = await fetchWithTimeout(`${baseUrl}/mcp`, {
@@ -166,6 +204,7 @@ console.log(
       base_url: baseUrl,
       health: health.status,
       paid_mcp_challenge: true,
+      x402_assessment_challenge: true,
       x402_amount_atomic: paymentRequired.accepts[0].amount,
       settled_calls: metrics.settled_calls,
       revenue_usdc: metrics.revenue_usdc,

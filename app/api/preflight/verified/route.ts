@@ -1,16 +1,14 @@
 import { withX402FromHTTPServer, x402HTTPResourceServer } from "@x402/next";
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "../../../../db";
-import { paymentAudits } from "../../../../db/schema";
 import { evaluatePreflight, PreflightValidationError, validatePreflightInput } from "../../../../lib/preflight";
 import { JsonRequestError, readJsonWithLimit } from "../../../../lib/request";
 import { createSignedReceipt, ReceiptSigningError } from "../../../../lib/receipts";
 import { getReceiptSigningPrivateJwk } from "../../../../lib/runtime-secrets";
 import { recordFunnelEvent } from "../../../../lib/telemetry";
+import { finalizeIntentFenceSettlement } from "../../../../lib/x402-settlement";
 import {
   intentFenceX402Server,
   INTENTFENCE_ASSET,
-  INTENTFENCE_FACILITATOR,
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
@@ -18,7 +16,6 @@ import {
 } from "../../../../lib/x402";
 import {
   createIntentFencePaymentRequired,
-  decodeX402Header,
   encodeX402Header,
   INTENTFENCE_SITE_URL,
   intentFencePaidRouteConfig,
@@ -152,113 +149,5 @@ export async function POST(request: NextRequest) {
     });
     response = await protectedPost(request);
   }
-  const settlementResponse = response.headers.get("PAYMENT-RESPONSE");
-  const requestId = response.headers.get("X-IntentFence-Request-ID");
-
-  if (response.ok && settlementResponse && requestId) {
-    let auditWritten = false;
-    try {
-      const decodedSettlement = decodeX402Header(settlementResponse);
-      const paymentHeader = request.headers.get("PAYMENT-SIGNATURE") ?? request.headers.get("X-PAYMENT");
-      const decodedPayment = decodeX402Header(paymentHeader);
-      const settlement = decodedSettlement && typeof decodedSettlement === "object"
-        ? decodedSettlement as Record<string, unknown>
-        : {};
-      const payment = decodedPayment && typeof decodedPayment === "object"
-        ? decodedPayment as Record<string, unknown>
-        : {};
-      const payload = payment.payload && typeof payment.payload === "object"
-        ? payment.payload as Record<string, unknown>
-        : {};
-      const authorization = payload.authorization && typeof payload.authorization === "object"
-        ? payload.authorization as Record<string, unknown>
-        : {};
-      const payerAddress = typeof settlement.payer === "string"
-        ? settlement.payer
-        : typeof payment.payer === "string"
-          ? payment.payer
-          : typeof authorization.from === "string"
-            ? authorization.from
-            : null;
-      const transactionHash = typeof settlement.transaction === "string"
-        ? settlement.transaction
-        : null;
-      let decisionStatus: string | null = null;
-      let receiptId: string | null = null;
-      try {
-        const paidBody = await response.clone().json() as Record<string, unknown>;
-        decisionStatus = typeof paidBody.status === "string" ? paidBody.status : null;
-        const receipt = paidBody.receipt && typeof paidBody.receipt === "object"
-          ? paidBody.receipt as Record<string, unknown>
-          : {};
-        receiptId = typeof receipt.id === "string" ? receipt.id : null;
-      } catch {
-        // The settlement record is still authoritative when response metadata is unavailable.
-      }
-      let lastAuditError: unknown;
-      for (let attempt = 1; attempt <= 3; attempt += 1) {
-        try {
-          await getDb()
-            .insert(paymentAudits)
-            .values({
-              id: crypto.randomUUID(),
-              requestId,
-              network: INTENTFENCE_NETWORK,
-              asset: INTENTFENCE_ASSET,
-              amountAtomic: INTENTFENCE_PRICE_ATOMIC,
-              payTo: INTENTFENCE_PAY_TO,
-              settlementResponse: settlementResponse.slice(0, 4096),
-              status: "settled",
-              payerAddress,
-              transactionHash,
-              facilitator: INTENTFENCE_FACILITATOR,
-              decisionStatus,
-              receiptId,
-              createdAt: new Date(),
-            })
-            .onConflictDoNothing({ target: paymentAudits.requestId });
-          auditWritten = true;
-          break;
-        } catch (error) {
-          lastAuditError = error;
-          if (attempt < 3) {
-            await new Promise((resolve) => setTimeout(resolve, attempt * 50));
-          }
-        }
-      }
-      if (!auditWritten) throw lastAuditError;
-    } catch (error) {
-      console.error("IntentFence payment audit write failed", {
-        requestId,
-        error: error instanceof Error ? error.message : "unknown_error",
-      });
-    }
-    response.headers.set("X-IntentFence-Audit-Status", auditWritten ? "persisted" : "failed");
-    await Promise.all([
-      recordFunnelEvent({
-        eventName: "payment_settled",
-        request,
-        requestId,
-        metadata: {
-          amount_atomic: INTENTFENCE_PRICE_ATOMIC,
-          protocol: "x402-v2",
-          audit_persisted: auditWritten,
-        },
-      }),
-      recordFunnelEvent({
-        eventName: "receipt_issued",
-        request,
-        requestId,
-        metadata: { format: "JWS Compact", algorithm: "ES256" },
-      }),
-    ]);
-  } else if (response.status === 402) {
-    await recordFunnelEvent({
-      eventName: "payment_required",
-      request,
-      metadata: { reason: "payment_not_verified", protocol: "rest-x402" },
-    });
-  }
-
-  return response;
+  return finalizeIntentFenceSettlement(request, response, "verified-preflight");
 }

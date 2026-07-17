@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
-  "description": "Preflights a proposed agent payment against declared spend, scope, data-retention, and human-approval constraints.",
-  "version": "0.6.1",
+  "description": "Assesses exact caller-observed x402 quotes before payment and preflights declared agent spend policy.",
+  "version": "0.7.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
@@ -23,6 +23,17 @@
       "tags": ["declared-input-policy", "policy", "safety", "audit", "preflight", "x402", "USDC"],
       "examples": [
         "Check whether a declared 428.20 USD quote is within a declared 500 USD ceiling."
+      ],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
+    {
+      "id": "intentfence-x402-assessment",
+      "name": "Caller-observed x402 quote assessment",
+      "description": "Validate and sign the exact PAYMENT-REQUIRED quote observed by the caller against a Base USDC ceiling, explicit payee allowlist, timeout, and resource binding. IntentFence never fetches or pays the target.",
+      "tags": ["x402", "merchant-risk", "payment-safety", "quote-assessment", "USDC"],
+      "examples": [
+        "Check that this exact x402 quote is canonical Base USDC, at most 0.10 USDC, pays an approved address, and is bound to the requested URL."
       ],
       "inputModes": ["application/json", "text/plain"],
       "outputModes": ["application/json", "text/plain"]

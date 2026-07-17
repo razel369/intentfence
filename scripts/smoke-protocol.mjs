@@ -27,6 +27,7 @@ assert.equal(x402Manifest.status, 200);
 const x402ManifestBody = await json(x402Manifest);
 assert.equal(x402ManifestBody.spec, "agent402-service-manifest/1");
 assert.equal(x402ManifestBody.payment.x402.network, "eip155:8453");
+assert.ok(x402ManifestBody.resources.some((resource) => resource.endsWith("/api/x402-assessments")));
 
 const free = await fetch(`${baseUrl}/api/preflight`, {
   method: "POST",
@@ -52,6 +53,48 @@ assert.equal(required.accepts[0].amount, "5000");
 assert.equal(required.accepts[0].payTo.toLowerCase(), "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
 assert.equal(required.extensions.bazaar.info.input.method, "POST");
 
+const assessmentInput = {
+  subject: "agent:smoke-buyer",
+  target_url: "https://merchant.example/api/paid-resource",
+  method: "POST",
+  payment_required: Buffer.from(
+    JSON.stringify({
+      x402Version: 2,
+      resource: { url: "https://merchant.example/api/paid-resource" },
+      accepts: [
+        {
+          scheme: "exact",
+          network: "eip155:8453",
+          amount: "10000",
+          asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          payTo: "0x1111111111111111111111111111111111111111",
+          maxTimeoutSeconds: 300,
+          extra: {
+            name: "USD Coin",
+            version: "2",
+          },
+        },
+      ],
+    }),
+  ).toString("base64"),
+  policy: {
+    max_price_usdc: "0.02",
+    allowed_payees: ["0x1111111111111111111111111111111111111111"],
+  },
+};
+const assessmentUnpaid = await fetch(`${baseUrl}/api/x402-assessments`, {
+  method: "POST",
+  headers: { ...smokeHeaders, "Content-Type": "application/json" },
+  body: JSON.stringify(assessmentInput),
+});
+assert.equal(assessmentUnpaid.status, 402);
+const assessmentRequired = JSON.parse(
+  Buffer.from(assessmentUnpaid.headers.get("payment-required"), "base64").toString("utf8"),
+);
+assert.equal(assessmentRequired.x402Version, 2);
+assert.equal(assessmentRequired.resource.url, `${baseUrl}/api/x402-assessments`);
+assert.equal(assessmentRequired.extensions.bazaar.info.input.method, "POST");
+
 const mcpHeaders = {
   Accept: "application/json, text/event-stream",
   "Content-Type": "application/json",
@@ -73,7 +116,7 @@ const initialize = await fetch(`${baseUrl}/mcp`, {
 });
 assert.equal(initialize.status, 200);
 const initializeBody = await json(initialize);
-assert.equal(initializeBody.result.serverInfo.version, "0.6.1");
+assert.equal(initializeBody.result.serverInfo.version, "0.7.0");
 assert.equal(initializeBody.result.protocolVersion, "2025-06-18");
 assert.equal(initialize.headers.get("mcp-protocol-version"), "2025-06-18");
 
@@ -105,6 +148,22 @@ const paidToolBody = await json(paidToolCall);
 assert.equal(paidToolBody.result.isError, true);
 assert.equal(paidToolBody.result.structuredContent.x402Version, 2);
 assert.equal(paidToolBody.result.structuredContent.accepts[0].amount, "5000");
+
+const assessmentToolCall = await fetch(`${baseUrl}/mcp`, {
+  method: "POST",
+  headers: { ...mcpHeaders, "MCP-Protocol-Version": "2025-11-25" },
+  body: JSON.stringify({
+    jsonrpc: "2.0",
+    id: 5,
+    method: "tools/call",
+    params: { name: "intentfence_x402_assessment", arguments: assessmentInput },
+  }),
+});
+assert.equal(assessmentToolCall.status, 200);
+const assessmentToolBody = await json(assessmentToolCall);
+assert.equal(assessmentToolBody.result.isError, true);
+assert.equal(assessmentToolBody.result.structuredContent.x402Version, 2);
+assert.equal(assessmentToolBody.result.structuredContent.accepts[0].amount, "5000");
 
 const foreignOrigin = await fetch(`${baseUrl}/mcp`, {
   method: "POST",

@@ -1,6 +1,7 @@
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 const RECEIPT_AUDIENCE = "intentfence-verifier";
 const RECEIPT_TTL_SECONDS = 86_400;
+const ASSESSMENT_RECEIPT_TTL_SECONDS = 300;
 
 export const INTENTFENCE_SIGNING_KID = "intentfence-es256-2026-07";
 type IntentFenceJwk = JsonWebKey & {
@@ -56,6 +57,24 @@ export type ReceiptClaims = {
   };
 };
 
+export type AssessmentReceiptClaims = Omit<
+  ReceiptClaims,
+  "intentfence_version" | "assurance"
+> & {
+  intentfence_version: "0.6";
+  assurance: "caller-observed-x402-quote-assessment";
+  evidence: {
+    assessed_at: string;
+    target_url_sha256: string;
+    target_origin: string;
+    target_pathname: string;
+    target_method: "GET" | "HEAD" | "POST";
+    payment_requirements_sha256: string;
+  };
+};
+
+export type VerifiableReceiptClaims = ReceiptClaims | AssessmentReceiptClaims;
+
 export type SignedReceipt = ReceiptDecision["receipt"] & {
   signed: true;
   assurance: "declared-input-policy";
@@ -73,6 +92,14 @@ export type SignedReceipt = ReceiptDecision["receipt"] & {
     verify_url: string;
     jwks_url: string;
   };
+  note: string;
+};
+
+export type SignedAssessmentReceipt = Omit<
+  SignedReceipt,
+  "assurance" | "note"
+> & {
+  assurance: "caller-observed-x402-quote-assessment";
   note: string;
 };
 
@@ -128,7 +155,7 @@ function parsePrivateJwk(value: string) {
   return jwk as unknown as IntentFenceJwk;
 }
 
-export async function signReceiptClaims(claims: ReceiptClaims, privateJwk: string) {
+export async function signReceiptClaims(claims: VerifiableReceiptClaims, privateJwk: string) {
   const header = { alg: "ES256", kid: INTENTFENCE_SIGNING_KID, typ: "intentfence+jws" } as const;
   const protectedHeader = stringToBase64Url(JSON.stringify(header));
   const payload = stringToBase64Url(JSON.stringify(claims));
@@ -236,6 +263,75 @@ export async function createSignedReceipt(
   };
 }
 
+export async function createSignedAssessmentReceipt(
+  decision: ReceiptDecision & {
+    assessed_at: string;
+    target: {
+      origin: string;
+      pathname: string;
+      method: "GET" | "HEAD" | "POST";
+      url_sha256: string;
+    };
+    observed: {
+      payment_requirements_sha256: string;
+    };
+  },
+  privateJwk: string,
+  payment: { network: string; asset: string; amountAtomic: string; payTo: string },
+): Promise<SignedAssessmentReceipt> {
+  const issuedAtSeconds = Math.floor(new Date(decision.receipt.issued_at).getTime() / 1000);
+  const claims: AssessmentReceiptClaims = {
+    iss: SITE_URL,
+    aud: RECEIPT_AUDIENCE,
+    iat: issuedAtSeconds,
+    exp: issuedAtSeconds + ASSESSMENT_RECEIPT_TTL_SECONDS,
+    jti: decision.receipt.id,
+    intentfence_version: "0.6",
+    assurance: "caller-observed-x402-quote-assessment",
+    request_id: decision.request_id,
+    decision: decision.status,
+    subject: decision.receipt.subject,
+    action: decision.receipt.action,
+    checks: decision.checks,
+    evidence: {
+      assessed_at: decision.assessed_at,
+      target_url_sha256: decision.target.url_sha256,
+      target_origin: decision.target.origin,
+      target_pathname: decision.target.pathname,
+      target_method: decision.target.method,
+      payment_requirements_sha256: decision.observed.payment_requirements_sha256,
+    },
+    payment: {
+      protocol: "x402-v2",
+      network: payment.network,
+      asset: payment.asset,
+      amount_atomic: payment.amountAtomic,
+      pay_to: payment.payTo,
+    },
+  };
+  const jws = await signReceiptClaims(claims, privateJwk);
+  return {
+    ...decision.receipt,
+    signed: true,
+    assurance: "caller-observed-x402-quote-assessment",
+    expires_at: new Date(claims.exp * 1000).toISOString(),
+    payment_assurance: "x402-settled",
+    payment_network: payment.network,
+    payment_asset: payment.asset,
+    payment_amount_atomic: payment.amountAtomic,
+    pay_to: payment.payTo,
+    signature: {
+      format: "JWS Compact",
+      alg: "ES256",
+      kid: INTENTFENCE_SIGNING_KID,
+      jws,
+      verify_url: `${SITE_URL}/api/receipts/verify`,
+      jwks_url: `${SITE_URL}/.well-known/jwks.json`,
+    },
+    note: "IntentFence signed the SHA-256 of the exact caller-supplied x402 challenge for five minutes. Compare that hash with the current PAYMENT-REQUIRED value before signing the target payment. PAYMENT-RESPONSE separately proves settlement of the IntentFence assessment fee.",
+  };
+}
+
 export async function verifyReceipt(
   jws: string,
   now = Date.now(),
@@ -260,12 +356,20 @@ export async function verifyReceipt(
     ) {
       return { valid: false as const, reason: "unsupported_signature" };
     }
+    const policyReceipt =
+      isRecord(claims) &&
+      claims.intentfence_version === "0.5" &&
+      claims.assurance === "declared-input-policy";
+    const assessmentReceipt =
+      isRecord(claims) &&
+      claims.intentfence_version === "0.6" &&
+      claims.assurance === "caller-observed-x402-quote-assessment" &&
+      isRecord(claims.evidence);
     if (
       !isRecord(claims) ||
       claims.iss !== SITE_URL ||
       claims.aud !== RECEIPT_AUDIENCE ||
-      claims.intentfence_version !== "0.5" ||
-      claims.assurance !== "declared-input-policy" ||
+      (!policyReceipt && !assessmentReceipt) ||
       typeof claims.iat !== "number" ||
       typeof claims.exp !== "number" ||
       typeof claims.jti !== "string" ||
@@ -276,7 +380,10 @@ export async function verifyReceipt(
     const nowSeconds = Math.floor(now / 1000);
     if (claims.iat > nowSeconds + 300) return { valid: false as const, reason: "issued_in_future" };
     if (claims.exp <= nowSeconds) return { valid: false as const, reason: "expired" };
-    if (claims.exp - claims.iat > RECEIPT_TTL_SECONDS) {
+    const maxLifetime = assessmentReceipt
+      ? ASSESSMENT_RECEIPT_TTL_SECONDS
+      : RECEIPT_TTL_SECONDS;
+    if (claims.exp - claims.iat > maxLifetime) {
       return { valid: false as const, reason: "invalid_lifetime" };
     }
 
@@ -294,7 +401,7 @@ export async function verifyReceipt(
       new TextEncoder().encode(`${segments[0]}.${segments[1]}`),
     );
     return verified
-      ? { valid: true as const, claims: claims as ReceiptClaims }
+      ? { valid: true as const, claims: claims as VerifiableReceiptClaims }
       : { valid: false as const, reason: "invalid_signature" };
   } catch {
     return { valid: false as const, reason: "malformed_receipt" };

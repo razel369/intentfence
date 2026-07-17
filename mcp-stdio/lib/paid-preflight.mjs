@@ -1,6 +1,5 @@
 const SITE_URL = (process.env.INTENTFENCE_BASE_URL ??
   "https://agentpass-protocol.rmalka06.chatgpt.site").replace(/\/$/u, "");
-const PAID_ENDPOINT = `${SITE_URL}/api/preflight/verified`;
 const PAYMENT_META_KEY = "x402/payment";
 const PAYMENT_RESPONSE_META_KEY = "x402/payment-response";
 
@@ -34,7 +33,13 @@ function paymentRequiredResult(paymentRequired) {
   };
 }
 
-export function createPaidPreflightHandler({ validateInput, source }) {
+export function createPaidIntentFenceHandler({
+  validateInput,
+  source,
+  endpoint,
+  failureMessage,
+}) {
+  const paidEndpoint = `${SITE_URL}${endpoint}`;
   return async (arguments_, extra) => {
     try {
       const input = validateInput(arguments_);
@@ -47,7 +52,7 @@ export function createPaidPreflightHandler({ validateInput, source }) {
         headers["PAYMENT-SIGNATURE"] = encode(payment);
       }
 
-      const response = await fetch(PAID_ENDPOINT, {
+      const response = await fetch(paidEndpoint, {
         method: "POST",
         headers,
         body: JSON.stringify(input),
@@ -66,7 +71,7 @@ export function createPaidPreflightHandler({ validateInput, source }) {
             type: "text",
             text: typeof body?.message === "string"
               ? body.message
-              : "The verified IntentFence preflight could not be processed.",
+              : failureMessage,
           }],
           isError: true,
         };
@@ -87,10 +92,19 @@ export function createPaidPreflightHandler({ validateInput, source }) {
           type: "text",
           text: error instanceof Error
             ? error.message
-            : "The verified IntentFence preflight could not be processed.",
+            : failureMessage,
         }],
         isError: true,
       };
     }
   };
+}
+
+export function createPaidPreflightHandler({ validateInput, source }) {
+  return createPaidIntentFenceHandler({
+    validateInput,
+    source,
+    endpoint: "/api/preflight/verified",
+    failureMessage: "The verified IntentFence preflight could not be processed.",
+  });
 }

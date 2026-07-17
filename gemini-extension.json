@@ -1,7 +1,7 @@
 {
   "name": "intentfence",
-  "version": "0.6.1",
-  "description": "Add free preview and x402-paid signed payment preflights to Gemini CLI agents.",
+  "version": "0.7.0",
+  "description": "Add caller-observed x402 quote assessment and signed payment preflights to Gemini CLI agents.",
   "mcpServers": {
     "intentfence": {
       "command": "node",

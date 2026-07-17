@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.5",
+  "version": "0.7.0",
   "deprecatedAlias": true,
   "canonicalManifest": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/intentfence.json",
   "description": "IntentFence is the successor name for this spend and action policy gateway.",
@@ -9,6 +9,7 @@
     "rest": {
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+      "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
       "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json"
     },
@@ -25,7 +26,7 @@
   "receipts": {
     "format": "JWS Compact",
     "algorithm": "ES256",
-    "assurance": "declared-input-policy",
+    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment"],
     "jwks": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json",
     "schema": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json"
   },
@@ -33,7 +34,10 @@
     "protocol": "x402",
     "version": 2,
     "scheme": "exact",
-    "endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+    "endpoints": [
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments"
+    ],
     "price": "0.005 USDC",
     "amountAtomic": "5000",
     "network": "eip155:8453",

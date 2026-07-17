@@ -3,6 +3,7 @@
 import { createInterface } from "node:readline";
 
 import { negotiateProtocolVersion } from "../lib/protocol-version.mjs";
+import { validateX402AssessmentInput } from "../lib/x402-assessment.mjs";
 
 const baseUrl = (process.env.INTENTFENCE_BASE_URL ??
   "https://agentpass-protocol.rmalka06.chatgpt.site").replace(/\/$/u, "");
@@ -41,6 +42,41 @@ const inputSchema = {
   },
 };
 
+const assessmentInputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["subject", "target_url", "payment_required", "policy"],
+  properties: {
+    subject: { type: "string", minLength: 1, maxLength: 200 },
+    target_url: { type: "string", format: "uri", maxLength: 2048 },
+    method: { type: "string", enum: ["GET", "HEAD", "POST"], default: "GET" },
+    payment_required: {
+      type: "string",
+      minLength: 1,
+      maxLength: 16384,
+      pattern: "^[A-Za-z0-9+/_-]+={0,2}$",
+      description: "Exact base64 or base64url PAYMENT-REQUIRED header observed by the caller.",
+    },
+    policy: {
+      type: "object",
+      additionalProperties: false,
+      required: ["max_price_usdc"],
+      properties: {
+        max_price_usdc: {
+          type: "string",
+          pattern: "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+        },
+        allowed_payees: {
+          type: "array",
+          minItems: 1,
+          maxItems: 20,
+          items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" },
+        },
+      },
+    },
+  },
+};
+
 const tools = [
   {
     name: "intentfence_preflight",
@@ -54,6 +90,13 @@ const tools = [
     title: "IntentFence Verified Preflight",
     description: "Paid production preflight costing 0.005 USDC on Base. Uses x402 and returns a signed declared-input receipt plus service-fee settlement metadata.",
     inputSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  {
+    name: "intentfence_x402_assessment",
+    title: "IntentFence x402 Quote Assessment",
+    description: "Paid assessment costing 0.005 USDC on Base. The caller forwards its exact PAYMENT-REQUIRED header; IntentFence validates the quote, payee, asset, price, timeout, and resource binding without contacting the target, then returns a short-lived signed receipt bound to the quote hash.",
+    inputSchema: assessmentInputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   },
 ];
@@ -89,7 +132,11 @@ async function callTool(params) {
     return { content: [{ type: "text", text: "Unknown tool name." }], isError: true };
   }
 
-  const paid = name === "intentfence_verified_preflight";
+  const assessment = name === "intentfence_x402_assessment";
+  const paid = name === "intentfence_verified_preflight" || assessment;
+  const arguments_ = assessment
+    ? validateX402AssessmentInput(params?.arguments ?? {})
+    : params?.arguments ?? {};
   const payment = params?._meta?.["x402/payment"];
   const headers = {
     "Content-Type": "application/json",
@@ -100,8 +147,8 @@ async function callTool(params) {
   }
 
   const response = await fetch(
-    `${baseUrl}${paid ? "/api/preflight/verified" : "/api/preflight"}`,
-    { method: "POST", headers, body: JSON.stringify(params?.arguments ?? {}) },
+    `${baseUrl}${assessment ? "/api/x402-assessments" : paid ? "/api/preflight/verified" : "/api/preflight"}`,
+    { method: "POST", headers, body: JSON.stringify(arguments_) },
   );
   const text = await response.text();
   let body;
@@ -153,8 +200,8 @@ lines.on("line", async (line) => {
       result(request.id, {
         protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.6.1" },
-        instructions: "Use the free tool only as an unsigned preview. For an in-scope production payment, use the verified tool and proceed only when the returned status is safe_to_proceed and the target independently authorizes the action.",
+        serverInfo: { name: "intentfence", version: "0.7.0" },
+        instructions: "Before paying an unfamiliar x402 resource, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates and hashes that quote without contacting the target, then returns a signed assessment. The free preflight remains an unsigned declared-input preview.",
       });
       return;
     }

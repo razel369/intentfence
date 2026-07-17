@@ -7,7 +7,13 @@ import {
 import { JsonRequestError, readJsonWithLimit } from "../../lib/request";
 import { recordFunnelEvent } from "../../lib/telemetry";
 import {
+  validateX402AssessmentInput,
+  x402AssessmentInputSchema,
+  X402AssessmentValidationError,
+} from "../../lib/x402-assessment";
+import {
   createIntentFencePaymentRequired,
+  createX402AssessmentPaymentRequired,
   decodeX402Header,
   encodeX402Header,
 } from "../../lib/x402-payment";
@@ -134,18 +140,25 @@ function x402PaymentFromParams(params: Record<string, unknown> | undefined) {
   return isRecord(payment) ? payment : null;
 }
 
-async function callVerifiedPreflight(
+async function callPaidIntentFenceTool(
   request: Request,
-  input: ReturnType<typeof validatePreflightInput>,
+  input: unknown,
   payment: Record<string, unknown>,
+  options: {
+    path: "/api/preflight/verified" | "/api/x402-assessments";
+    source: "mcp" | "mcp-x402-assessment";
+    invalidResponseMessage: string;
+    failedMessage: string;
+    paymentRequired: (resourceUrl: string, error?: string) => Record<string, unknown>;
+  },
 ) {
-  const paidEndpoint = new URL("/api/preflight/verified", request.url).toString();
+  const paidEndpoint = new URL(options.path, request.url).toString();
   const response = await fetch(paidEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "PAYMENT-SIGNATURE": encodeX402Header(payment),
-      "X-IntentFence-Source": "mcp",
+      "X-IntentFence-Source": options.source,
     },
     body: JSON.stringify(input),
   });
@@ -154,21 +167,23 @@ async function callVerifiedPreflight(
   try {
     body = JSON.parse(rawBody) as unknown;
   } catch {
-    body = { error: "upstream_invalid_response", message: "The verified preflight returned invalid JSON." };
+    body = { error: "upstream_invalid_response", message: options.invalidResponseMessage };
   }
 
   if (response.status === 402) {
     const required = decodeX402Header(response.headers.get("PAYMENT-REQUIRED"));
     const paymentRequired = isRecord(required)
       ? required
-      : createIntentFencePaymentRequired(paidEndpoint, "Payment verification failed");
+      : options.paymentRequired(paidEndpoint, "Payment verification failed");
     return toolError("Payment verification failed", paymentRequired);
   }
 
   if (!response.ok || !isRecord(body)) {
     const message = isRecord(body) && typeof body.message === "string"
       ? body.message
-      : "The verified preflight could not be processed.";
+      : isRecord(body) && typeof body.detail === "string"
+        ? body.detail
+      : options.failedMessage;
     return toolError(message);
   }
 
@@ -182,6 +197,34 @@ async function callVerifiedPreflight(
       ? { [MCP_PAYMENT_RESPONSE_META_KEY]: paymentResponse }
       : undefined,
   };
+}
+
+function callVerifiedPreflight(
+  request: Request,
+  input: ReturnType<typeof validatePreflightInput>,
+  payment: Record<string, unknown>,
+) {
+  return callPaidIntentFenceTool(request, input, payment, {
+    path: "/api/preflight/verified",
+    source: "mcp",
+    invalidResponseMessage: "The verified preflight returned invalid JSON.",
+    failedMessage: "The verified preflight could not be processed.",
+    paymentRequired: createIntentFencePaymentRequired,
+  });
+}
+
+function callX402Assessment(
+  request: Request,
+  input: ReturnType<typeof validateX402AssessmentInput>,
+  payment: Record<string, unknown>,
+) {
+  return callPaidIntentFenceTool(request, input, payment, {
+    path: "/api/x402-assessments",
+    source: "mcp-x402-assessment",
+    invalidResponseMessage: "The x402 quote assessment returned invalid JSON.",
+    failedMessage: "The x402 quote assessment could not be processed.",
+    paymentRequired: createX402AssessmentPaymentRequired,
+  });
 }
 
 export function OPTIONS(request: Request) {
@@ -220,7 +263,7 @@ export async function POST(request: Request) {
 
   let value: unknown;
   try {
-    value = await readJsonWithLimit(request);
+    value = await readJsonWithLimit(request, 24_576);
   } catch (error) {
     if (error instanceof JsonRequestError) {
       return errorRpc(request, null, -32700, error.message, error.status);
@@ -240,8 +283,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.6.1" },
-      instructions: "Use intentfence_preflight only as an unsigned declared-input preview. For a production payment, call intentfence_verified_preflight; proceed only when status is safe_to_proceed and the target service has independently verified authorization. x402 proves payment of the IntentFence service fee; the receipt attests only to evaluation of caller-declared inputs.",
+      serverInfo: { name: "IntentFence", version: "0.7.0" },
+      instructions: "Before paying an unfamiliar x402 resource, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a Base USDC ceiling and payee allowlist, binds the signed receipt to the quote hash, and never contacts the target. Supply allowed_payees for safe_to_proceed; omission yields needs_review. intentfence_preflight remains a free declared-input preview; intentfence_verified_preflight returns a paid signed policy decision.",
     }, protocolVersion);
   }
 
@@ -251,7 +294,7 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 2 },
+      metadata: { protocol: "mcp", tools: 3 },
     });
     return jsonRpc(request, body.id, {
       tools: [
@@ -269,6 +312,13 @@ export async function POST(request: Request) {
           inputSchema: preflightInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
         },
+        {
+          name: "intentfence_x402_assessment",
+          title: "IntentFence x402 Quote Assessment",
+          description: "Paid assessment ($0.005 USDC on Base). Forward the exact base64 or base64url PAYMENT-REQUIRED header observed by the caller. IntentFence validates the quote, canonical Base USDC asset, price ceiling, payee allowlist, timeout, and resource binding without contacting the target, then returns a short-lived ES256 receipt bound to the quote hash. Supply allowed_payees for safe_to_proceed; omission yields needs_review.",
+          inputSchema: x402AssessmentInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+        },
       ],
     });
   }
@@ -276,13 +326,34 @@ export async function POST(request: Request) {
   if (body.method === "tools/call") {
     const toolParams = body.params ?? {};
     const toolName = toolParams.name;
-    if (toolName !== "intentfence_preflight" && toolName !== "intentfence_verified_preflight") {
+    if (
+      toolName !== "intentfence_preflight" &&
+      toolName !== "intentfence_verified_preflight" &&
+      toolName !== "intentfence_x402_assessment"
+    ) {
       return jsonRpc(request, body.id, {
         content: [{ type: "text", text: "Unknown tool name." }],
         isError: true,
       });
     }
     try {
+      if (toolName === "intentfence_x402_assessment") {
+        const input = validateX402AssessmentInput(toolParams.arguments ?? {});
+        const payment = x402PaymentFromParams(toolParams);
+        if (!payment) {
+          const paidEndpoint = new URL("/api/x402-assessments", request.url).toString();
+          const paymentRequired = createX402AssessmentPaymentRequired(paidEndpoint);
+          await recordFunnelEvent({
+            eventName: "payment_required",
+            request,
+            subject: input.subject,
+            metadata: { protocol: "mcp-x402", product: "x402-assessment" },
+          });
+          return jsonRpc(request, body.id, toolError("Payment required", paymentRequired));
+        }
+        return jsonRpc(request, body.id, await callX402Assessment(request, input, payment));
+      }
+
       const input = validatePreflightInput(toolParams.arguments ?? {});
       if (toolName === "intentfence_verified_preflight") {
         const payment = x402PaymentFromParams(toolParams);
@@ -313,9 +384,10 @@ export async function POST(request: Request) {
         isError: false,
       });
     } catch (error) {
-      const message = error instanceof PreflightValidationError
+      const message = error instanceof PreflightValidationError ||
+          error instanceof X402AssessmentValidationError
         ? error.message
-        : "The IntentFence preflight could not be processed.";
+        : "The IntentFence request could not be processed.";
       return jsonRpc(request, body.id, {
         content: [{ type: "text", text: message }],
         isError: true,
