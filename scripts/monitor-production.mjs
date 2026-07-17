@@ -166,7 +166,10 @@ assert.ok(
   "official MCP Registry listing missing",
 );
 
-const paidResourceUrl = `${baseUrl}/api/preflight/verified`;
+const paidResourceUrls = [
+  `${baseUrl}/api/preflight/verified`,
+  `${baseUrl}/api/x402-assessments`,
+];
 const x402scanUrl = new URL(
   "https://www.x402scan.com/api/trpc/public.resources.checkRegistered",
 );
@@ -176,7 +179,7 @@ x402scanUrl.searchParams.set(
   JSON.stringify({
     0: {
       json: {
-        resources: [{ url: paidResourceUrl, method: "POST" }],
+        resources: paidResourceUrls.map((url) => ({ url, method: "POST" })),
       },
     },
   }),
@@ -184,9 +187,10 @@ x402scanUrl.searchParams.set(
 const x402scanResponse = await fetchWithTimeout(x402scanUrl);
 assert.equal(x402scanResponse.status, 200);
 const x402scan = await json(x402scanResponse);
+const registeredResources = x402scan?.[0]?.result?.data?.json?.registered ?? [];
 assert.ok(
-  x402scan?.[0]?.result?.data?.json?.registered?.includes(paidResourceUrl),
-  "x402scan paid-resource listing missing",
+  paidResourceUrls.every((url) => registeredResources.includes(url)),
+  "one or more x402scan paid-resource listings are missing",
 );
 
 let bazaarListed = false;
