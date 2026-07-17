@@ -7,18 +7,24 @@
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
-    }
+    },
+    "contact": { "url": "https://github.com/razel369/intentfence" },
+    "x-guidance": "Use the free preflight for a declared-input preview. Before paying an unfamiliar x402 merchant, forward the exact caller-observed PAYMENT-REQUIRED header to the paid quote assessment with an explicit payee allowlist."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
   ],
   "security": [],
+  "x-agentcash-guidance": {
+    "llmsTxtUrl": "https://agentpass-protocol.rmalka06.chatgpt.site/llms.txt"
+  },
   "paths": {
     "/api/preflight": {
       "post": {
         "operationId": "runFreePreflight",
         "summary": "Evaluate an agent action with an unsigned preview",
         "tags": ["agent-policy", "security", "preflight"],
+        "security": [],
         "x-price": "free",
         "requestBody": {
           "required": true,
@@ -61,7 +67,20 @@
         "summary": "Pay 0.005 USDC and receive a signed policy decision",
         "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. A successful response includes an ES256 JWS receipt; settlement is returned separately in PAYMENT-RESPONSE.",
         "tags": ["agent-policy", "security", "x402", "agent-commerce"],
-        "security": [{}, { "x402Payment": [] }],
+        "security": [],
+        "x-payment-info": {
+          "price": { "mode": "fixed", "currency": "USD", "amount": "0.005" },
+          "protocols": [
+            {
+              "x402": {
+                "version": 2,
+                "network": "eip155:8453",
+                "asset": "USDC",
+                "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+              }
+            }
+          ]
+        },
         "x-x402-price": "$0.005",
         "x-x402": {
           "version": 2,
@@ -129,7 +148,20 @@
         "summary": "Assess a caller-observed x402 quote before paying it",
         "description": "Creates a signed assessment of the exact PAYMENT-REQUIRED challenge observed by the caller. IntentFence does not fetch or purchase the target resource. The assessment validates the official x402 v2 schema, exact payment, Base mainnet, canonical Base USDC and EIP-712 domain, the caller's precise price ceiling, payee policy, timeout, transfer method, extensions, and exact resource-URL binding. Permit2 or unknown active extensions require review. A decision can be safe_to_proceed only when allowed_payees is supplied and every advertised payment option satisfies every automatic check; a mixed safe and unsafe option set is denied. The IntentFence assessment itself costs 0.005 USDC through x402, with atomic EIP-3009 payer-and-nonce replay reservation.",
         "tags": ["x402", "agent-commerce", "merchant-risk", "payment-safety"],
-        "security": [{}, { "x402Payment": [] }],
+        "security": [],
+        "x-payment-info": {
+          "price": { "mode": "fixed", "currency": "USD", "amount": "0.005" },
+          "protocols": [
+            {
+              "x402": {
+                "version": 2,
+                "network": "eip155:8453",
+                "asset": "USDC",
+                "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+              }
+            }
+          ]
+        },
         "x-x402-price": "$0.005",
         "x-x402": {
           "version": 2,
@@ -222,6 +254,7 @@
         "operationId": "verifyIntentFenceReceipt",
         "summary": "Verify an IntentFence ES256 compact JWS receipt",
         "tags": ["agent-policy", "security", "receipt-verification"],
+        "security": [],
         "x-price": "free",
         "requestBody": {
           "required": true,
@@ -248,7 +281,7 @@
                   "required": ["valid", "claims"],
                   "properties": {
                     "valid": { "const": true },
-                    "claims": { "$ref": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json" }
+                    "claims": { "$ref": "#/components/schemas/ReceiptClaims" }
                   }
                 }
               }
@@ -264,6 +297,7 @@
       "get": {
         "operationId": "getIntentFenceHealth",
         "summary": "Read service and protocol availability",
+        "security": [],
         "responses": {
           "200": {
             "description": "IntentFence service status",
@@ -277,6 +311,7 @@
       "get": {
         "operationId": "getPaymentMetadata",
         "summary": "Read live x402 price, network, recipient, and flow",
+        "security": [],
         "responses": {
           "200": {
             "description": "Public payment configuration",
@@ -290,6 +325,7 @@
       "get": {
         "operationId": "getPublicRevenueMetrics",
         "summary": "Read aggregate verified usage, settlement, and revenue counters",
+        "security": [],
         "responses": {
           "200": {
             "description": "Privacy-safe aggregate funnel and x402 settlement metrics",
@@ -302,14 +338,6 @@
     }
   },
   "components": {
-    "securitySchemes": {
-      "x402Payment": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "PAYMENT-SIGNATURE",
-        "description": "Base64-encoded x402 v2 payment payload. Paid operations also allow an unauthenticated first request so the server can return PAYMENT-REQUIRED."
-      }
-    },
     "responses": {
       "Problem": {
         "description": "Problem Details error response",
@@ -336,6 +364,77 @@
       }
     },
     "schemas": {
+      "ReceiptClaims": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "iss",
+          "aud",
+          "iat",
+          "exp",
+          "jti",
+          "intentfence_version",
+          "assurance",
+          "request_id",
+          "decision",
+          "subject",
+          "action",
+          "checks",
+          "payment"
+        ],
+        "properties": {
+          "iss": { "type": "string", "const": "https://agentpass-protocol.rmalka06.chatgpt.site" },
+          "aud": { "type": "string", "const": "intentfence-verifier" },
+          "iat": { "type": "integer" },
+          "exp": { "type": "integer" },
+          "jti": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "intentfence_version": { "type": "string", "enum": ["0.5", "0.6"] },
+          "assurance": {
+            "type": "string",
+            "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment"]
+          },
+          "request_id": { "type": "string", "format": "uuid" },
+          "decision": {
+            "type": "string",
+            "enum": ["safe_to_proceed", "needs_review", "denied"]
+          },
+          "subject": { "type": ["string", "null"] },
+          "action": { "type": ["object", "null"] },
+          "checks": { "type": "array", "items": { "type": "object" } },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "assessed_at",
+              "target_url_sha256",
+              "target_origin",
+              "target_pathname",
+              "target_method",
+              "payment_requirements_sha256"
+            ],
+            "properties": {
+              "assessed_at": { "type": "string", "format": "date-time" },
+              "target_url_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "target_origin": { "type": "string", "format": "uri" },
+              "target_pathname": { "type": "string" },
+              "target_method": { "type": "string", "enum": ["GET", "HEAD", "POST"] },
+              "payment_requirements_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          },
+          "payment": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["protocol", "network", "asset", "amount_atomic", "pay_to"],
+            "properties": {
+              "protocol": { "type": "string", "const": "x402-v2" },
+              "network": { "type": "string" },
+              "asset": { "type": "string" },
+              "amount_atomic": { "type": "string" },
+              "pay_to": { "type": "string" }
+            }
+          }
+        }
+      },
       "Problem": {
         "type": "object",
         "additionalProperties": false,
