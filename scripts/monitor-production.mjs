@@ -156,6 +156,8 @@ assert.equal(metrics.currency, "USDC");
 
 const registryResponse = await fetchWithTimeout(
   "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.razel369%2Fintentfence",
+  {},
+  20_000,
 );
 assert.equal(registryResponse.status, 200);
 const registry = await json(registryResponse);
