@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Caller-observed x402 quote assessment and signed payment-policy receipts for autonomous AI agents.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {

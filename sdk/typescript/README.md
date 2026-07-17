@@ -1,5 +1,13 @@
 # IntentFence TypeScript SDK
 
+The npm package is not public yet. Install the SDK from this repository until
+the first npm release is completed:
+
+```bash
+git clone https://github.com/razel369/intentfence.git
+npm install ./intentfence/sdk/typescript
+```
+
 ```ts
 import { IntentFenceClient } from "intentfence";
 

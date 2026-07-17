@@ -2,14 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.7.0",
+    "version": "0.7.1",
     "description": "Guard autonomous agent payments with declared-input policy checks and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
     },
     "contact": { "url": "https://github.com/razel369/intentfence" },
-    "x-guidance": "Use the free preflight for a declared-input preview. Before paying an unfamiliar x402 merchant, forward the exact caller-observed PAYMENT-REQUIRED header to the paid quote assessment with an explicit payee allowlist."
+    "x-guidance": "Use the free preflight for a declared-input preview. Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to the paid quote assessment with an explicit caller-approved payee allowlist."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }

@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "deprecatedAlias": true,
   "canonicalManifest": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/intentfence.json",
   "description": "IntentFence is the successor name for this spend and action policy gateway.",

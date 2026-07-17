@@ -1,0 +1,28 @@
+{
+  "name": "intentfence-x402-buyer-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dry-run": "node --experimental-strip-types index.ts --dry-run",
+    "pay": "node --experimental-strip-types index.ts --pay",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run typecheck && npm run dry-run"
+  },
+  "dependencies": {
+    "@x402/core": "2.18.0",
+    "@x402/evm": "2.18.0",
+    "@x402/fetch": "2.18.0",
+    "viem": "2.48.11"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.19",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "ws": "8.21.0"
+  }
+}

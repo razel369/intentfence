@@ -1,11 +1,13 @@
 # IntentFence
 
-IntentFence is a payment firewall for autonomous AI agents. Before an agent
-pays an unfamiliar x402 resource, it can forward the exact `PAYMENT-REQUIRED`
+IntentFence is a payment-policy firewall for autonomous AI agents. Before an
+agent signs an x402 payment, it can forward the exact `PAYMENT-REQUIRED`
 challenge it just observed. IntentFence validates the Base USDC quote against
-the agent's ceiling and payee allowlist, binds the challenge with SHA-256, and
-returns a signed assessment. It also supports declared merchant/purpose, cost,
-data-retention, and approval policy preflights.
+the agent's ceiling and pre-approved payee allowlist, binds the challenge with
+SHA-256, and returns a signed assessment. It checks quote integrity and policy
+fit; it does not verify merchant identity, reputation, or delivery. It also
+supports declared merchant/purpose, cost, data-retention, and approval policy
+preflights.
 
 - `safe_to_proceed`
 - `needs_review`
@@ -14,6 +16,8 @@ data-retention, and approval policy preflights.
 Production: <https://agentpass-protocol.rmalka06.chatgpt.site>
 
 x402scan: <https://www.x402scan.com/server/c495c104-dba4-4764-86b1-96b8b0cda48b>
+
+Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.razel369%2Fintentfence>
 
 [![razel369/intentfence MCP server](https://glama.ai/mcp/servers/razel369/intentfence/badges/score.svg)](https://glama.ai/mcp/servers/razel369/intentfence)
 
@@ -36,8 +40,8 @@ Each paid endpoint costs 0.005 USDC on Base through x402. A successful call
 returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
 IntentFence ES256 compact-JWS receipt.
 
-The quote assessment is the recommended check after an unfamiliar x402 merchant
-returns its unpaid challenge and before the agent signs that merchant's payment.
+The quote assessment is the recommended check after an x402 merchant returns
+its unpaid challenge and before the agent signs the merchant payment.
 The agent supplies `subject`, `target_url`, optional `method` (`GET`, `HEAD`, or
 `POST`), the base64 `payment_required` header (maximum 16 KiB), and a policy with
 `max_price_usdc` plus an optional `allowed_payees` list. IntentFence validates
@@ -61,6 +65,11 @@ The hosted MCP endpoint is available without an API key:
 ```text
 https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ```
+
+The official x402 client buyer example verifies the live fee challenge before
+creating a signer and is payment-disabled by default:
+
+<https://github.com/razel369/intentfence/tree/main/examples/x402-buyer>
 
 Gemini CLI can install the repository directly, without waiting for an npm
 package or gallery crawl:

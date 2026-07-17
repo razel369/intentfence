@@ -2,7 +2,7 @@
 
 > IntentFence validates the exact x402 payment challenge an agent observed and issues signed assessment or policy receipts for AI agents.
 
-Before paying an unfamiliar x402 resource, an agent should make its intended unpaid request and forward the returned base64 `PAYMENT-REQUIRED` header to the paid MCP tool `intentfence_x402_assessment` or `POST /api/x402-assessments`. IntentFence checks the official x402 v2 shape, canonical Base USDC and EIP-712 domain, price ceiling, payee allowlist, transfer method, extensions, and exact resource binding. Permit2 or unknown active extensions require review. It never fetches or pays the target. The declared-input preflight remains available for general consequential actions.
+Before signing an x402 payment, an agent should make its intended unpaid request and forward the returned base64 `PAYMENT-REQUIRED` header to the paid MCP tool `intentfence_x402_assessment` or `POST /api/x402-assessments`. IntentFence checks the official x402 v2 shape, canonical Base USDC and EIP-712 domain, price ceiling, caller-approved payee allowlist, transfer method, extensions, and exact resource binding. Permit2 or unknown active extensions require review. It never fetches or pays the target and does not verify merchant identity or delivery. The declared-input preflight remains available for general consequential actions.
 
 ## Discovery
 

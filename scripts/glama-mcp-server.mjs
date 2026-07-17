@@ -19,14 +19,14 @@ const server = new McpServer(
   {
     name: "intentfence",
     title: "IntentFence Policy Gate",
-    version: "0.7.0",
+    version: "0.7.1",
     websiteUrl: SITE_URL,
     description:
       "A declared-input policy gate for autonomous AI actions, including spend, scope, data-retention, and human-approval constraints.",
   },
   {
     instructions:
-      "Before paying an unfamiliar x402 resource, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates and hashes that quote without contacting the target, then returns a signed assessment. intentfence_preflight remains a free declared-input preview.",
+      "Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a caller-approved payment policy without contacting the target or verifying merchant identity, then returns a signed assessment. intentfence_preflight remains a free declared-input preview.",
   },
 );
 

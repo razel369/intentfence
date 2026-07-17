@@ -1,6 +1,6 @@
 {
   "name": "intentfence",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "IntentFence x402 quote-assessment, spend-policy, and signed-receipt client for AI agent runtimes.",
   "keywords": [
     "ai-agents",

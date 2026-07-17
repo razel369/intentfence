@@ -283,8 +283,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.7.0" },
-      instructions: "Before paying an unfamiliar x402 resource, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a Base USDC ceiling and payee allowlist, binds the signed receipt to the quote hash, and never contacts the target. Supply allowed_payees for safe_to_proceed; omission yields needs_review. intentfence_preflight remains a free declared-input preview; intentfence_verified_preflight returns a paid signed policy decision.",
+      serverInfo: { name: "IntentFence", version: "0.7.1" },
+      instructions: "Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a Base USDC ceiling and caller-approved payee allowlist, binds the signed receipt to the quote hash, and never contacts the target or verifies merchant identity. Supply allowed_payees for safe_to_proceed; omission yields needs_review. intentfence_preflight remains a free declared-input preview; intentfence_verified_preflight returns a paid signed policy decision.",
     }, protocolVersion);
   }
 

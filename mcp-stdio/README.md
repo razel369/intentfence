@@ -4,23 +4,21 @@ IntentFence is a payment firewall for autonomous AI agents. The MCP server
 checks declared identity, scope, spend, data-retention, and human-approval
 constraints immediately before an agent performs a consequential payment.
 
-## Run
+## Connect now
 
-```bash
-npx -y @razel369/intentfence-mcp@0.7.0
+The hosted Streamable HTTP server is published in the official MCP Registry:
+
+```text
+https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ```
 
-Example MCP client configuration:
+The npm package is not public yet. For a local stdio server, install this source
+checkout instead of relying on an unavailable package name:
 
-```json
-{
-  "mcpServers": {
-    "intentfence": {
-      "command": "npx",
-      "args": ["-y", "@razel369/intentfence-mcp@0.7.0"]
-    }
-  }
-}
+```bash
+git clone https://github.com/razel369/intentfence.git
+npm --prefix intentfence/mcp-stdio ci
+node intentfence/mcp-stdio/bin/intentfence-mcp.mjs
 ```
 
 The server exposes three tools:

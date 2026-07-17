@@ -98,11 +98,6 @@ export default function Home() {
     }
   }
 
-  function runFromHero() {
-    document.getElementById("playground")?.scrollIntoView({ behavior: "smooth" });
-    window.setTimeout(runHandshake, 450);
-  }
-
   async function copyManifest() {
     await navigator.clipboard?.writeText(manifest);
     setCopied(true);
@@ -143,14 +138,14 @@ export default function Home() {
             <span className="eyebrow-mark" aria-hidden="true" />
             Payment firewall for autonomous AI agents
           </div>
-          <h1>Check the x402 seller before your agent pays.</h1>
+          <h1>Verify an x402 quote matches your payment policy before signing.</h1>
           <p className="hero-intro">
-            Forward the exact x402 challenge your agent just received. IntentFence validates its Base USDC quote, price ceiling, payee, and URL binding, then returns signed evidence your agent can enforce.
+            Forward the exact x402 challenge your agent just received. IntentFence checks Base USDC, amount, your pre-approved payee list, timeout, transfer metadata, and exact URL binding, then signs the result. It does not verify merchant identity.
           </p>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={runFromHero}>
-              Try the free policy preview
-            </button>
+            <a className="button button-primary" href="#agents">
+              Run the x402 quickstart
+            </a>
             <a className="text-link" href="#manifest">
               Read the open protocol <span aria-hidden="true">↗</span>
             </a>
@@ -180,7 +175,7 @@ export default function Home() {
           <div className="handshake-card">
             <div className="handshake-topline">
               <span className="live-label">
-                <span aria-hidden="true" /> LIVE API PREFLIGHT
+                <span aria-hidden="true" /> LIVE GENERAL POLICY PREFLIGHT
               </span>
               <span className="request-id">REQ / {requestId.slice(0, 18)}</span>
             </div>
@@ -306,9 +301,9 @@ export default function Home() {
           <div className="section-kicker">Open protocol / v0.7</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
-            Forward the caller-observed x402 challenge for assessment before an
-            unfamiliar payment, then wrap the downstream tool call with the SDK
-            guard. The action runs only after an allowed decision.
+            Forward the caller-observed x402 challenge before signing a payment
+            to a payee already approved by policy, then wrap the downstream tool
+            call with the SDK guard. The action runs only after an allowed decision.
           </p>
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
             <div><span>DISCOVER</span><code>GET /.well-known/intentfence.json</code></div>

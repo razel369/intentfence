@@ -14,7 +14,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client(
-  { name: "intentfence-stdio-smoke", version: "0.7.0" },
+  { name: "intentfence-stdio-smoke", version: "0.7.1" },
   { capabilities: {} },
 );
 

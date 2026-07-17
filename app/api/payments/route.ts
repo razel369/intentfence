@@ -20,7 +20,7 @@ export function GET() {
         {
           path: "/api/x402-assessments",
           product: "caller-observed-x402-quote-assessment",
-          recommended_for: "unfamiliar x402 merchants before target payment",
+          recommended_for: "caller-observed x402 quotes before signing an approved target payment",
         },
         {
           path: "/api/preflight/verified",

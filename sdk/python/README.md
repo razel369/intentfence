@@ -1,5 +1,12 @@
 # IntentFence Python SDK
 
+Install the SDK from this repository:
+
+```bash
+git clone https://github.com/razel369/intentfence.git
+python -m pip install ./intentfence/sdk/python
+```
+
 ```python
 from intentfence import IntentFenceClient
 

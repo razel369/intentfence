@@ -46,7 +46,7 @@ authority to perform a consequential action.
 
 ## Integration rule
 
-For an unfamiliar x402 merchant, first make the intended unpaid request, then
+For an x402 merchant, first make the intended unpaid request, then
 send the returned `PAYMENT-REQUIRED` challenge to the quote-assessment endpoint
 immediately before signing the target payment. IntentFence validates and signs
 the exact caller-observed challenge, then settles its 0.005 USDC assessment fee;

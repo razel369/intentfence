@@ -200,8 +200,8 @@ lines.on("line", async (line) => {
       result(request.id, {
         protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.7.0" },
-        instructions: "Before paying an unfamiliar x402 resource, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates and hashes that quote without contacting the target, then returns a signed assessment. The free preflight remains an unsigned declared-input preview.",
+        serverInfo: { name: "intentfence", version: "0.7.1" },
+        instructions: "Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a caller-approved payment policy without contacting the target or verifying merchant identity, then returns a signed assessment. The free preflight remains an unsigned declared-input preview.",
       });
       return;
     }

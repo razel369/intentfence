@@ -111,9 +111,9 @@ export default function GrowthSections() {
       <section className="agent-gateway" id="agents" aria-labelledby="agents-title">
         <div className="gateway-intro">
           <div className="section-kicker">Machine entry points - live now</div>
-          <h2 id="agents-title">Check the seller before your agent signs the payment.</h2>
+          <h2 id="agents-title">Verify the quote before your agent signs the payment.</h2>
           <p>
-            IntentFence publishes standard discovery files and callable endpoints so an agent runtime can forward the exact x402 quote it observed for validation before signing the target payment.
+            IntentFence lets an agent compare the exact x402 quote it observed with its own price ceiling, pre-approved payees, transfer rules, and target URL before signing.
           </p>
           <div className="discovery-links">
             <a href="/.well-known/agent-card.json">A2A Agent Card</a>
@@ -131,7 +131,7 @@ export default function GrowthSections() {
           <article>
             <span>01 / x402 QUOTE</span>
             <h3>POST /api/x402-assessments</h3>
-            <p>Send the base64 <code>PAYMENT-REQUIRED</code> challenge (up to 16 KiB) and validate Base USDC, price, payee, and URL binding.</p>
+            <p>Send the base64 <code>PAYMENT-REQUIRED</code> challenge (up to 16 KiB) and validate Base USDC, price, caller-approved payee, and URL binding.</p>
           </article>
           <article>
             <span>02 / PAID MCP</span>
@@ -191,7 +191,7 @@ export default function GrowthSections() {
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
               ) : item.key === "verified" ? (
-                <a className="plan-button" href="/api/payments">Inspect the live payment flow</a>
+                <a className="plan-button" href="https://github.com/razel369/intentfence/tree/main/examples/x402-buyer">Run the paid buyer example</a>
               ) : (
                 <button className="plan-button" onClick={() => selectPlan(item.key)}>Request founding access</button>
               )}
