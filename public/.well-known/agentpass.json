@@ -16,7 +16,7 @@
     "mcp": {
       "transport": "streamable-http",
       "protocolVersion": "2025-11-25",
-      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp"
+      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp"
     },
     "a2a": {
       "protocolVersion": "1.0",

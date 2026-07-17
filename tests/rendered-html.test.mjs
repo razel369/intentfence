@@ -30,6 +30,7 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.equal(manifest.version, "0.7.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
+  assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
   assert.equal(agentCard.version, "0.7.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(x402Manifest.spec, "agent402-service-manifest/1");

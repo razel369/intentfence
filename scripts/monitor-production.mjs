@@ -92,7 +92,7 @@ assert.equal(
   `${baseUrl}/api/x402-assessments`,
 );
 
-const mcpResponse = await fetchWithTimeout(`${baseUrl}/mcp`, {
+const mcpResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: {
     ...monitorHeaders,
@@ -122,7 +122,7 @@ assert.ok(
   "caller-observed x402 quote assessment MCP tool missing",
 );
 
-const mcpChallengeResponse = await fetchWithTimeout(`${baseUrl}/mcp`, {
+const mcpChallengeResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: {
     ...monitorHeaders,

@@ -7,7 +7,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp"
+      "url": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp"
     }
   ]
 }

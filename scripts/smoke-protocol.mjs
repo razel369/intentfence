@@ -100,7 +100,7 @@ const mcpHeaders = {
   "Content-Type": "application/json",
   ...smokeHeaders,
 };
-const initialize = await fetch(`${baseUrl}/mcp`, {
+const initialize = await fetch(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: mcpHeaders,
   body: JSON.stringify({
@@ -120,7 +120,7 @@ assert.equal(initializeBody.result.serverInfo.version, "0.7.0");
 assert.equal(initializeBody.result.protocolVersion, "2025-06-18");
 assert.equal(initialize.headers.get("mcp-protocol-version"), "2025-06-18");
 
-const toolCall = await fetch(`${baseUrl}/mcp`, {
+const toolCall = await fetch(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: { ...mcpHeaders, "MCP-Protocol-Version": "2025-11-25" },
   body: JSON.stringify({
@@ -133,7 +133,7 @@ const toolCall = await fetch(`${baseUrl}/mcp`, {
 assert.equal(toolCall.status, 200);
 assert.equal((await json(toolCall)).result.structuredContent.status, "safe_to_proceed");
 
-const paidToolCall = await fetch(`${baseUrl}/mcp`, {
+const paidToolCall = await fetch(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: { ...mcpHeaders, "MCP-Protocol-Version": "2025-11-25" },
   body: JSON.stringify({
@@ -149,7 +149,7 @@ assert.equal(paidToolBody.result.isError, true);
 assert.equal(paidToolBody.result.structuredContent.x402Version, 2);
 assert.equal(paidToolBody.result.structuredContent.accepts[0].amount, "5000");
 
-const assessmentToolCall = await fetch(`${baseUrl}/mcp`, {
+const assessmentToolCall = await fetch(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: { ...mcpHeaders, "MCP-Protocol-Version": "2025-11-25" },
   body: JSON.stringify({
@@ -165,13 +165,13 @@ assert.equal(assessmentToolBody.result.isError, true);
 assert.equal(assessmentToolBody.result.structuredContent.x402Version, 2);
 assert.equal(assessmentToolBody.result.structuredContent.accepts[0].amount, "5000");
 
-const foreignOrigin = await fetch(`${baseUrl}/mcp`, {
+const foreignOrigin = await fetch(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: { ...mcpHeaders, Origin: "https://attacker.example" },
   body: JSON.stringify({ jsonrpc: "2.0", id: 3, method: "ping" }),
 });
 assert.equal(foreignOrigin.status, 403);
-assert.equal((await fetch(`${baseUrl}/mcp`, { headers: { Accept: "text/event-stream" } })).status, 405);
+assert.equal((await fetch(`${baseUrl}/api/mcp`, { headers: { Accept: "text/event-stream" } })).status, 405);
 
 const a2a = await fetch(`${baseUrl}/a2a/message:send`, {
   method: "POST",

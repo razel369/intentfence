@@ -24,7 +24,7 @@
   "capabilities": {
     "tools": 3,
     "rest": true,
-    "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/mcp",
+    "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
     "signedReceipts": "ES256",
     "callerObservedX402QuoteAssessment": true

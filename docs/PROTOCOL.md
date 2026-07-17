@@ -18,7 +18,7 @@ target resource.
 - x402 paid decision: `POST /api/preflight/verified`
 - x402 paid caller-observed quote assessment: `POST /api/x402-assessments`
 - Receipt verification: `POST /api/receipts/verify`
-- MCP Streamable HTTP: `/mcp`
+- MCP Streamable HTTP: `/api/mcp`
 - A2A HTTP+JSON base URL: `/a2a`
 
 ## Signed receipts

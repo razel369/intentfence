@@ -11,7 +11,7 @@ Before paying an unfamiliar x402 resource, an agent should make its intended unp
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
-- MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/mcp
+- MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments

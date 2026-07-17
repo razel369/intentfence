@@ -26,7 +26,7 @@ x402scan: <https://www.x402scan.com/server/c495c104-dba4-4764-86b1-96b8b0cda48b>
 | Paid caller-observed x402 quote assessment | `POST /api/x402-assessments` |
 | Receipt verification | `POST /api/receipts/verify` |
 | Public ES256 keys | `GET /.well-known/jwks.json` |
-| MCP Streamable HTTP | `/mcp` (`intentfence_verified_preflight` is x402-paid) |
+| MCP Streamable HTTP | `/api/mcp` (`intentfence_verified_preflight` is x402-paid) |
 | A2A Agent Card | `GET /.well-known/agent-card.json` |
 | x402 service manifest | `GET /.well-known/x402` |
 | Public aggregate metrics | `GET /api/metrics` |
@@ -59,7 +59,7 @@ are agreed with the customer.
 The hosted MCP endpoint is available without an API key:
 
 ```text
-https://agentpass-protocol.rmalka06.chatgpt.site/mcp
+https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ```
 
 Gemini CLI can install the repository directly, without waiting for an npm
