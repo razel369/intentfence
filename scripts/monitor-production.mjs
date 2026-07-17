@@ -157,13 +157,19 @@ assert.equal(metrics.currency, "USDC");
 const registryResponse = await fetchWithTimeout(
   "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.razel369%2Fintentfence",
   {},
-  20_000,
+  45_000,
 );
 assert.equal(registryResponse.status, 200);
 const registry = await json(registryResponse);
+const currentRegistryEntry = registry.servers?.find(
+  (entry) => entry.server?.version === health.version,
+);
+assert.ok(currentRegistryEntry, "current production version is missing from the official MCP Registry");
 assert.ok(
-  registry.servers?.length > 0,
-  "official MCP Registry listing missing",
+  currentRegistryEntry.server.remotes?.some(
+    (remote) => remote.url === `${baseUrl}/api/mcp`,
+  ),
+  "current MCP Registry entry does not advertise the working hosted endpoint",
 );
 
 const paidResourceUrls = [
