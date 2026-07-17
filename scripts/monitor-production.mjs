@@ -80,7 +80,11 @@ const assessmentRequiredResponse = await fetchWithTimeout(
     body: JSON.stringify(assessmentInput),
   },
 );
-assert.equal(assessmentRequiredResponse.status, 402);
+if (assessmentRequiredResponse.status !== 402) {
+  throw new Error(
+    `Unexpected quote-assessment status ${assessmentRequiredResponse.status}: ${await assessmentRequiredResponse.text()}`,
+  );
+}
 const assessmentRequiredHeader = assessmentRequiredResponse.headers.get("payment-required");
 assert.ok(assessmentRequiredHeader, "assessment PAYMENT-REQUIRED header missing");
 const assessmentPaymentRequired = JSON.parse(

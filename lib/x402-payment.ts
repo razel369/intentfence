@@ -74,7 +74,7 @@ export const intentFencePaidRouteConfig = {
   description: "Run a paid IntentFence preflight and receive x402 on-chain settlement proof.",
   mimeType: "application/json",
   serviceName: "IntentFence",
-  tags: ["ai-agents", "payment-firewall", "preflight", "policy", "x402", "usdc"],
+  tags: ["ai-agents", "payment-firewall", "preflight", "x402", "usdc"],
   iconUrl: `${INTENTFENCE_SITE_URL}/favicon.svg`,
   unpaidResponseBody: () => ({
     contentType: "application/json",
@@ -178,7 +178,6 @@ export const x402AssessmentRouteConfig = {
     "payment-safety",
     "quote-assessment",
     "x402",
-    "usdc",
   ],
   iconUrl: `${INTENTFENCE_SITE_URL}/favicon.svg`,
   unpaidResponseBody: () => ({

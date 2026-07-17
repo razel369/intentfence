@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { parsePaymentRequired } from "@x402/core/schemas";
 
 globalThis.crypto ??= webcrypto;
 
@@ -47,6 +48,7 @@ const unpaid = await fetch(`${baseUrl}/api/preflight/verified`, {
 });
 assert.equal(unpaid.status, 402);
 const required = JSON.parse(Buffer.from(unpaid.headers.get("payment-required"), "base64").toString("utf8"));
+assert.equal(parsePaymentRequired(required).success, true);
 assert.equal(required.x402Version, 2);
 assert.equal(required.accepts[0].network, "eip155:8453");
 assert.equal(required.accepts[0].amount, "5000");
@@ -91,6 +93,7 @@ assert.equal(assessmentUnpaid.status, 402);
 const assessmentRequired = JSON.parse(
   Buffer.from(assessmentUnpaid.headers.get("payment-required"), "base64").toString("utf8"),
 );
+assert.equal(parsePaymentRequired(assessmentRequired).success, true);
 assert.equal(assessmentRequired.x402Version, 2);
 assert.equal(assessmentRequired.resource.url, `${baseUrl}/api/x402-assessments`);
 assert.equal(assessmentRequired.extensions.bazaar.info.input.method, "POST");
