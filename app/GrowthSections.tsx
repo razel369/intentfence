@@ -131,14 +131,15 @@ export default function GrowthSections() {
           </div>
         </div>
 
-        <div className="mcp-install-card">
+        <div className="mcp-install-card" id="vscode-install">
           <div className="mcp-install-copy">
             <span>ONE-CLICK MCP INSTALL</span>
             <h3>Connect the live IntentFence server to VS Code.</h3>
             <p>
-              VS Code opens its own review screen before installation. The free
-              policy preview works without an API key; paid tools still require
-              an x402-capable wallet flow controlled by the caller.
+              VS Code asks you to review and trust the server before its first
+              start. The free policy preview works without an API key; paid
+              tools still require an x402-capable wallet flow controlled by the
+              caller.
             </p>
             <div className="mcp-install-actions">
               <a className="button mcp-install-button" href={INTENTFENCE_VSCODE_INSTALL_URL}>

@@ -68,12 +68,13 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 
 ### Install in VS Code
 
-[Install IntentFence in VS Code](vscode:mcp/install?%7B%22name%22%3A%22IntentFence%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fagentpass-protocol.rmalka06.chatgpt.site%2Fapi%2Fmcp%22%7D)
+[Open the live install panel](https://agentpass-protocol.rmalka06.chatgpt.site/#vscode-install),
+then select **Install IntentFence in VS Code**.
 
-The link contains only the public server name, transport, and URL. VS Code opens
-its review screen before installation. The free policy-preview tool works with
-no API key; paid tools still need an x402-capable wallet flow controlled by the
-caller.
+The install action contains only the public server name, transport, and URL. VS
+Code asks you to review and trust the server before its first start. The free
+policy-preview tool works with no API key; paid tools still need an
+x402-capable wallet flow controlled by the caller.
 
 Manual `.vscode/mcp.json` or user-profile fallback:
 
@@ -87,6 +88,8 @@ Manual `.vscode/mcp.json` or user-profile fallback:
   }
 }
 ```
+
+Review the server details yourself before starting a manually configured server.
 
 See the [official VS Code MCP installation documentation](https://code.visualstudio.com/api/extension-guides/ai/mcp#create-an-mcp-installation-url).
 

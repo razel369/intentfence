@@ -16,7 +16,7 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.7 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, manifest, agentCard, x402Manifest, openapi, readme, server] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
@@ -28,6 +28,7 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
     source("public/openapi.json").then(JSON.parse),
     source("README.md"),
     source("server.json").then(JSON.parse),
+    readFile(new URL("public/intentfence-social.png", root)),
   ]);
 
   assert.match(layout, /IntentFence/);
@@ -35,10 +36,13 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.match(page, /POST \/api\/receipts\/verify/);
   assert.match(growth, /ES256-signed policy receipt/);
   assert.match(growth, /Install IntentFence in VS Code/);
-  assert.match(growth, /paid tools still require/);
+  assert.match(growth, /paid\s+tools still require/);
   assert.match(layout, /intentfence-social\.png/);
   assert.match(readme, /## Install now/);
-  assert.match(readme, /vscode:mcp\/install\?/);
+  assert.match(readme, /#vscode-install/);
+  assert.deepEqual([...socialImage.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.equal(socialImage.readUInt32BE(16), 1200);
+  assert.equal(socialImage.readUInt32BE(20), 630);
   assert.match(paidRoute, /"POST \/api\/preflight\/verified": intentFencePaidRouteConfig/);
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
   assert.equal(manifest.version, "0.7.1");
