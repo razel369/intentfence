@@ -2,6 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { parsePaymentRequired } from "@x402/core/schemas";
+import {
+  INTENTFENCE_MCP_URL,
+  INTENTFENCE_VSCODE_INSTALL_URL,
+  INTENTFENCE_VSCODE_MANUAL_CONFIG,
+  INTENTFENCE_VSCODE_SERVER,
+} from "../lib/mcp-install.ts";
 
 const root = new URL("../", import.meta.url);
 
@@ -10,7 +16,7 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.7 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, manifest, agentCard, x402Manifest, openapi] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, manifest, agentCard, x402Manifest, openapi, readme, server] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
@@ -20,12 +26,19 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
     source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
     source("public/openapi.json").then(JSON.parse),
+    source("README.md"),
+    source("server.json").then(JSON.parse),
   ]);
 
   assert.match(layout, /IntentFence/);
   assert.match(page, /Open protocol \/ v0\.7/);
   assert.match(page, /POST \/api\/receipts\/verify/);
   assert.match(growth, /ES256-signed policy receipt/);
+  assert.match(growth, /Install IntentFence in VS Code/);
+  assert.match(growth, /paid tools still require/);
+  assert.match(layout, /intentfence-social\.png/);
+  assert.match(readme, /## Install now/);
+  assert.match(readme, /vscode:mcp\/install\?/);
   assert.match(paidRoute, /"POST \/api\/preflight\/verified": intentFencePaidRouteConfig/);
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
   assert.equal(manifest.version, "0.7.1");
@@ -34,6 +47,8 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
   assert.equal(agentCard.version, "0.7.1");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
+  assert.equal(server.remotes[0].type, "streamable-http");
+  assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
   assert.equal(x402Manifest.spec, "agent402-service-manifest/1");
   assert.equal(x402Manifest.payment.x402.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
   assert.equal(openapi.paths["/api/preflight/verified"].post["x-x402-price"], "$0.005");
@@ -63,6 +78,23 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   );
   assert.equal(parsePaymentRequired(discoveryProbeChallenge).success, true);
   assert.doesNotMatch(JSON.stringify(openapi), /"\$ref":"https?:\/\//u);
+});
+
+test("encodes a reviewable VS Code remote MCP installation", () => {
+  const prefix = "vscode:mcp/install?";
+  assert.equal(INTENTFENCE_VSCODE_INSTALL_URL.startsWith(prefix), true);
+  assert.deepEqual(
+    JSON.parse(decodeURIComponent(INTENTFENCE_VSCODE_INSTALL_URL.slice(prefix.length))),
+    INTENTFENCE_VSCODE_SERVER,
+  );
+  assert.deepEqual(JSON.parse(INTENTFENCE_VSCODE_MANUAL_CONFIG), {
+    servers: {
+      IntentFence: {
+        type: "http",
+        url: INTENTFENCE_MCP_URL,
+      },
+    },
+  });
 });
 
 test("does not publish a private signing key", async () => {

@@ -12,6 +12,9 @@ The hosted Streamable HTTP server is published in the official MCP Registry:
 https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ```
 
+For the verified one-click VS Code link and manual remote-server configuration,
+see the root README's **Install in VS Code** section.
+
 The npm package is not public yet. For a local stdio server, install this source
 checkout instead of relying on an unavailable package name:
 

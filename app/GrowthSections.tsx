@@ -1,6 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import {
+  INTENTFENCE_VSCODE_INSTALL_URL,
+  INTENTFENCE_VSCODE_MANUAL_CONFIG,
+} from "../lib/mcp-install";
 
 const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight \\
   -H "Content-Type: application/json" \\
@@ -124,6 +128,38 @@ export default function GrowthSections() {
             <a href="/api/payments">x402 payment metadata</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
+          </div>
+        </div>
+
+        <div className="mcp-install-card">
+          <div className="mcp-install-copy">
+            <span>ONE-CLICK MCP INSTALL</span>
+            <h3>Connect the live IntentFence server to VS Code.</h3>
+            <p>
+              VS Code opens its own review screen before installation. The free
+              policy preview works without an API key; paid tools still require
+              an x402-capable wallet flow controlled by the caller.
+            </p>
+            <div className="mcp-install-actions">
+              <a className="button mcp-install-button" href={INTENTFENCE_VSCODE_INSTALL_URL}>
+                Install IntentFence in VS Code
+              </a>
+              <a
+                className="mcp-install-docs"
+                href="https://code.visualstudio.com/api/extension-guides/ai/mcp#create-an-mcp-installation-url"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Review VS Code MCP setup <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+          </div>
+          <div className="mcp-install-config">
+            <div className="code-topline">
+              <span>Manual fallback</span>
+              <span>.vscode/mcp.json</span>
+            </div>
+            <pre><code>{INTENTFENCE_VSCODE_MANUAL_CONFIG}</code></pre>
           </div>
         </div>
 

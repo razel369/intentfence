@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const socialImage =
+  "https://agentpass-protocol.rmalka06.chatgpt.site/intentfence-social.png";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentpass-protocol.rmalka06.chatgpt.site"),
   title: "IntentFence — Verify x402 quotes before agents pay",
@@ -30,11 +33,20 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "IntentFence",
     type: "website",
+    images: [
+      {
+        url: socialImage,
+        width: 1200,
+        height: 630,
+        alt: "IntentFence verifies an x402 quote before an AI agent signs",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "IntentFence — Verify x402 quotes before agents pay.",
     description: "Signed assessment of an exact caller-observed x402 quote, payee, asset, price, and resource binding.",
+    images: [socialImage],
   },
 };
 
