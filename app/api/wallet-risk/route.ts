@@ -226,9 +226,28 @@ export function OPTIONS() {
 }
 
 export async function GET(request: NextRequest) {
-  let address: string;
+  if (!request.headers.has("PAYMENT-SIGNATURE") && !request.headers.has("X-PAYMENT")) {
+    try {
+      const address = addressFromRequest(request);
+      await recordFunnelEvent({
+        eventName: "payment_required",
+        request,
+        subject: address,
+        metadata: {
+          amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+          protocol: "rest-x402",
+          product: "wallet-risk",
+        },
+      });
+    } catch {
+      // Discovery probes intentionally reach the machine-readable 402 challenge.
+      // Invalid or missing input is still rejected before any paid request can settle.
+    }
+    return unpaidResponse(request);
+  }
+
   try {
-    address = addressFromRequest(request);
+    addressFromRequest(request);
   } catch (error) {
     return problem(
       request,
@@ -239,20 +258,6 @@ export async function GET(request: NextRequest) {
         ? error.message
         : "address must be a 20-byte EVM address.",
     );
-  }
-
-  if (!request.headers.has("PAYMENT-SIGNATURE") && !request.headers.has("X-PAYMENT")) {
-    await recordFunnelEvent({
-      eventName: "payment_required",
-      request,
-      subject: address,
-      metadata: {
-        amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
-        protocol: "rest-x402",
-        product: "wallet-risk",
-      },
-    });
-    return unpaidResponse(request);
   }
 
   if (!(await getReceiptSigningPrivateJwk())) {

@@ -101,6 +101,22 @@ assert.equal(
 );
 
 const walletRiskAddress = settlementWallet;
+const walletRiskDiscoveryUrl = `${baseUrl}/api/wallet-risk`;
+const walletRiskDiscoveryResponse = await fetchWithTimeout(walletRiskDiscoveryUrl, {
+  headers: monitorHeaders,
+});
+assert.equal(
+  walletRiskDiscoveryResponse.status,
+  402,
+  "wallet-risk discovery probe must reach a payment challenge before query validation",
+);
+const walletRiskDiscoveryHeader = walletRiskDiscoveryResponse.headers.get("payment-required");
+assert.ok(walletRiskDiscoveryHeader, "wallet-risk discovery PAYMENT-REQUIRED header missing");
+const walletRiskDiscoveryChallenge = JSON.parse(
+  Buffer.from(walletRiskDiscoveryHeader, "base64").toString("utf8"),
+);
+assert.equal(walletRiskDiscoveryChallenge.accepts[0].amount, "2000");
+assert.equal(walletRiskDiscoveryChallenge.resource.url, walletRiskDiscoveryUrl);
 const walletRiskUrl = `${baseUrl}/api/wallet-risk?address=${walletRiskAddress}`;
 const walletRiskRequiredResponse = await fetchWithTimeout(walletRiskUrl, {
   headers: monitorHeaders,
@@ -358,6 +374,7 @@ console.log(
       paid_mcp_challenge: true,
       x402_assessment_challenge: true,
       wallet_risk_challenge: true,
+      wallet_risk_discovery_probe: true,
       wallet_risk_amount_atomic: walletRiskPaymentRequired.accepts[0].amount,
       x402_amount_atomic: paymentRequired.accepts[0].amount,
       settled_calls: metrics.settled_calls,
