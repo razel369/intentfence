@@ -5,6 +5,9 @@ const baseUrl = (
   "https://agentpass-protocol.rmalka06.chatgpt.site"
 ).replace(/\/$/u, "");
 const monitorHeaders = { "X-IntentFence-Source": "monitor" };
+const payanAgentAgentId = "j57d8w639k1c1d33k0hf5g7d5h8atk9g";
+const payanAgentOfferId = "kh7bwc280yqjr5607mejn1e1ks8atesm";
+const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const input = {
   subject: "did:web:intentfence-monitor",
   action: { type: "payment.healthcheck", resource: "synthetic" },
@@ -232,6 +235,63 @@ try {
   // A pending or unavailable directory listing does not fail core production health.
 }
 
+let payanAgentOfferListed = false;
+let payanAgentChallengeReady = false;
+let payanAgentSales = 0;
+let payanAgentDistinctBuyers = 0;
+let payanAgentRevenueUsdc = 0;
+try {
+  const [offerResponse, agentResponse] = await Promise.all([
+    fetchWithTimeout(
+      `https://payanagent.com/api/v1/offers/${payanAgentOfferId}`,
+    ),
+    fetchWithTimeout(
+      `https://payanagent.com/api/v1/agents/${payanAgentAgentId}`,
+    ),
+  ]);
+  if (offerResponse.ok) {
+    const offerPayload = await json(offerResponse);
+    const offer = offerPayload.offer ?? offerPayload;
+    payanAgentOfferListed =
+      offer._id === payanAgentOfferId &&
+      offer.isActive !== false &&
+      offer.sellerId === payanAgentAgentId &&
+      offer.title === "AI action policy preflight";
+  }
+  if (agentResponse.ok) {
+    const agent = await json(agentResponse);
+    payanAgentSales = Number(agent.reputation?.sales ?? 0);
+    payanAgentDistinctBuyers = Number(
+      agent.reputation?.distinctBuyers ?? 0,
+    );
+    payanAgentRevenueUsdc =
+      Number(agent.reputation?.volumeMicroUsd ?? 0) / 1_000_000;
+  }
+  if (payanAgentOfferListed) {
+    const challengeResponse = await fetchWithTimeout(
+      `https://payanagent.com/x402/${payanAgentOfferId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      },
+    );
+    const challengeHeader = challengeResponse.headers.get("payment-required");
+    if (challengeResponse.status === 402 && challengeHeader) {
+      const challenge = JSON.parse(
+        Buffer.from(challengeHeader, "base64").toString("utf8"),
+      );
+      payanAgentChallengeReady =
+        challenge.accepts?.[0]?.amount === "10000" &&
+        challenge.accepts?.[0]?.network === "eip155:8453" &&
+        challenge.accepts?.[0]?.payTo?.toLowerCase() ===
+          settlementWallet.toLowerCase();
+    }
+  }
+} catch {
+  // Marketplace distribution is reported but does not fail core production health.
+}
+
 console.log(
   JSON.stringify(
     {
@@ -247,6 +307,11 @@ console.log(
       x402scan_registered: true,
       coinbase_bazaar_listed: bazaarListed,
       jaypay_directory_listed: jaypayDirectoryListed,
+      payanagent_offer_listed: payanAgentOfferListed,
+      payanagent_challenge_ready: payanAgentChallengeReady,
+      payanagent_sales: payanAgentSales,
+      payanagent_distinct_buyers: payanAgentDistinctBuyers,
+      payanagent_revenue_usdc: payanAgentRevenueUsdc,
     },
     null,
     2,
