@@ -211,9 +211,10 @@ assert.ok(
   "current MCP Registry entry does not advertise the working hosted endpoint",
 );
 
-const paidResourceUrls = [
-  `${baseUrl}/api/preflight/verified`,
-  `${baseUrl}/api/x402-assessments`,
+const paidResources = [
+  { url: `${baseUrl}/api/preflight/verified`, method: "POST" },
+  { url: `${baseUrl}/api/x402-assessments`, method: "POST" },
+  { url: walletRiskDiscoveryUrl, method: "GET" },
 ];
 const x402scanUrl = new URL(
   "https://www.x402scan.com/api/trpc/public.resources.checkRegistered",
@@ -224,7 +225,7 @@ x402scanUrl.searchParams.set(
   JSON.stringify({
     0: {
       json: {
-        resources: paidResourceUrls.map((url) => ({ url, method: "POST" })),
+        resources: paidResources,
       },
     },
   }),
@@ -234,7 +235,7 @@ assert.equal(x402scanResponse.status, 200);
 const x402scan = await json(x402scanResponse);
 const registeredResources = x402scan?.[0]?.result?.data?.json?.registered ?? [];
 assert.ok(
-  paidResourceUrls.every((url) => registeredResources.includes(url)),
+  paidResources.every(({ url }) => registeredResources.includes(url)),
   "one or more x402scan paid-resource listings are missing",
 );
 
