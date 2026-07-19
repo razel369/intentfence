@@ -26,12 +26,13 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.7 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
     source("app/api/preflight/verified/route.ts"),
     source("app/api/x402-assessments/route.ts"),
+    source("app/api/x402-assessments/preview/route.ts"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
     source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
@@ -55,6 +56,7 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.equal(socialImage.readUInt32BE(20), 630);
   assert.match(paidRoute, /"POST \/api\/preflight\/verified": intentFencePaidRouteConfig/);
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
+  assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
   assert.equal(manifest.version, "0.7.1");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
@@ -67,6 +69,10 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.equal(x402Manifest.payment.x402.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
   assert.equal(openapi.paths["/api/preflight/verified"].post["x-x402-price"], "$0.005");
   assert.equal(openapi.paths["/api/x402-assessments"].post["x-x402-price"], "$0.005");
+  assert.equal(
+    openapi.paths["/api/x402-assessments/preview"].post["x-marketplace"].name,
+    "PayanAgent",
+  );
   assert.equal(
     openapi.paths["/api/x402-assessments"].post["x-payment-info"].price.amount,
     "0.005",

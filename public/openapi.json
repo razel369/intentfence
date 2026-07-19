@@ -142,6 +142,41 @@
         }
       }
     },
+    "/api/x402-assessments/preview": {
+      "post": {
+        "operationId": "previewX402Assessment",
+        "summary": "Preview a caller-observed x402 quote assessment",
+        "description": "Validates the exact caller-observed PAYMENT-REQUIRED challenge without contacting or paying the target. The response is unsigned. PayanAgent exposes this preview as a paid marketplace offer and attaches its own settlement receipt; use /api/x402-assessments for an IntentFence ES256-signed receipt.",
+        "tags": ["x402", "agent-commerce", "merchant-risk", "payment-safety"],
+        "security": [],
+        "x-marketplace": {
+          "name": "PayanAgent",
+          "price": "0.01 USDC",
+          "catalog": "https://payanagent.com/marketplace"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/X402AssessmentRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unsigned caller-observed quote assessment",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/X402AssessmentDecision" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "413": { "description": "JSON body exceeds 24 KiB" },
+          "415": { "description": "Unsupported content type" }
+        }
+      }
+    },
     "/api/x402-assessments": {
       "post": {
         "operationId": "createX402Assessment",

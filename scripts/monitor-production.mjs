@@ -237,6 +237,9 @@ try {
 
 let payanAgentOfferListed = false;
 let payanAgentChallengeReady = false;
+let payanAgentQuoteOfferId = null;
+let payanAgentQuoteOfferListed = false;
+let payanAgentQuoteChallengeReady = false;
 let payanAgentSales = 0;
 let payanAgentDistinctBuyers = 0;
 let payanAgentRevenueUsdc = 0;
@@ -288,6 +291,49 @@ try {
           settlementWallet.toLowerCase();
     }
   }
+  const quoteSearchResponse = await fetchWithTimeout(
+    "https://payanagent.com/api/v1/offers?q=x402%20quote%20safety%20assessment&limit=20",
+  );
+  if (quoteSearchResponse.ok) {
+    const quoteSearch = await json(quoteSearchResponse);
+    const candidate = quoteSearch.offers?.find(
+      (offer) => offer.title === "x402 quote safety assessment",
+    );
+    if (candidate?._id) {
+      const detailResponse = await fetchWithTimeout(
+        `https://payanagent.com/api/v1/offers/${candidate._id}`,
+      );
+      if (detailResponse.ok) {
+        const detailPayload = await json(detailResponse);
+        const detail = detailPayload.offer ?? detailPayload;
+        payanAgentQuoteOfferListed =
+          detail.sellerId === payanAgentAgentId && detail.isActive !== false;
+        payanAgentQuoteOfferId = payanAgentQuoteOfferListed ? detail._id : null;
+      }
+    }
+  }
+  if (payanAgentQuoteOfferId) {
+    const quoteChallengeResponse = await fetchWithTimeout(
+      `https://payanagent.com/x402/${payanAgentQuoteOfferId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assessmentInput),
+      },
+    );
+    const quoteChallengeHeader =
+      quoteChallengeResponse.headers.get("payment-required");
+    if (quoteChallengeResponse.status === 402 && quoteChallengeHeader) {
+      const quoteChallenge = JSON.parse(
+        Buffer.from(quoteChallengeHeader, "base64").toString("utf8"),
+      );
+      payanAgentQuoteChallengeReady =
+        quoteChallenge.accepts?.[0]?.amount === "10000" &&
+        quoteChallenge.accepts?.[0]?.network === "eip155:8453" &&
+        quoteChallenge.accepts?.[0]?.payTo?.toLowerCase() ===
+          settlementWallet.toLowerCase();
+    }
+  }
 } catch {
   // Marketplace distribution is reported but does not fail core production health.
 }
@@ -309,6 +355,9 @@ console.log(
       jaypay_directory_listed: jaypayDirectoryListed,
       payanagent_offer_listed: payanAgentOfferListed,
       payanagent_challenge_ready: payanAgentChallengeReady,
+      payanagent_quote_offer_id: payanAgentQuoteOfferId,
+      payanagent_quote_offer_listed: payanAgentQuoteOfferListed,
+      payanagent_quote_challenge_ready: payanAgentQuoteChallengeReady,
       payanagent_sales: payanAgentSales,
       payanagent_distinct_buyers: payanAgentDistinctBuyers,
       payanagent_revenue_usdc: payanAgentRevenueUsdc,

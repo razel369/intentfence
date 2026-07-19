@@ -1,0 +1,21 @@
+name: Sync PayanAgent offers
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create or update IntentFence marketplace offers
+        env:
+          PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
+          PAYANAGENT_AGENT_ID: ${{ vars.PAYANAGENT_AGENT_ID }}
+        run: node scripts/sync-payanagent-offers.mjs
