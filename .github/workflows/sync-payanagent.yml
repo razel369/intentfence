@@ -18,4 +18,7 @@ jobs:
         env:
           PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
           PAYANAGENT_AGENT_ID: ${{ vars.PAYANAGENT_AGENT_ID }}
+          PAYANAGENT_PRIMARY_OFFER_ID: ${{ vars.PAYANAGENT_OFFER_ID }}
+          PAYANAGENT_QUOTE_OFFER_ID: ${{ vars.PAYANAGENT_QUOTE_OFFER_ID }}
+          PAYANAGENT_OBSOLETE_OFFER_IDS: ${{ vars.PAYANAGENT_OBSOLETE_OFFER_IDS }}
         run: node scripts/sync-payanagent-offers.mjs

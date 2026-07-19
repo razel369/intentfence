@@ -7,6 +7,7 @@ const baseUrl = (
 const monitorHeaders = { "X-IntentFence-Source": "monitor" };
 const payanAgentAgentId = "j57d8w639k1c1d33k0hf5g7d5h8atk9g";
 const payanAgentOfferId = "kh7bwc280yqjr5607mejn1e1ks8atesm";
+const payanAgentQuoteOfferIdConfigured = "kh7d72cgr8csya3n8pwgky0r258at4qa";
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const input = {
   subject: "did:web:intentfence-monitor",
@@ -291,26 +292,17 @@ try {
           settlementWallet.toLowerCase();
     }
   }
-  const quoteSearchResponse = await fetchWithTimeout(
-    "https://payanagent.com/api/v1/offers?q=x402%20quote%20safety%20assessment&limit=20",
+  const quoteDetailResponse = await fetchWithTimeout(
+    `https://payanagent.com/api/v1/offers/${payanAgentQuoteOfferIdConfigured}`,
   );
-  if (quoteSearchResponse.ok) {
-    const quoteSearch = await json(quoteSearchResponse);
-    const candidate = quoteSearch.offers?.find(
-      (offer) => offer.title === "x402 quote safety assessment",
-    );
-    if (candidate?._id) {
-      const detailResponse = await fetchWithTimeout(
-        `https://payanagent.com/api/v1/offers/${candidate._id}`,
-      );
-      if (detailResponse.ok) {
-        const detailPayload = await json(detailResponse);
-        const detail = detailPayload.offer ?? detailPayload;
-        payanAgentQuoteOfferListed =
-          detail.sellerId === payanAgentAgentId && detail.isActive !== false;
-        payanAgentQuoteOfferId = payanAgentQuoteOfferListed ? detail._id : null;
-      }
-    }
+  if (quoteDetailResponse.ok) {
+    const detailPayload = await json(quoteDetailResponse);
+    const detail = detailPayload.offer ?? detailPayload;
+    payanAgentQuoteOfferListed =
+      detail.sellerId === payanAgentAgentId &&
+      detail.title === "x402 quote safety assessment" &&
+      detail.isActive !== false;
+    payanAgentQuoteOfferId = payanAgentQuoteOfferListed ? detail._id : null;
   }
   if (payanAgentQuoteOfferId) {
     const quoteChallengeResponse = await fetchWithTimeout(
