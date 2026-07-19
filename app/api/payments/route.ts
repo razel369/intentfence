@@ -9,6 +9,7 @@ import {
   INTENTFENCE_PRICE_USD,
 } from "../../../lib/x402";
 import { AGENTIC_WALLET_CHECKOUT } from "../../../lib/agentic-wallet-checkout";
+import { COINBASE_AGENTKIT_CHECKOUT } from "../../../lib/coinbase-agentkit-checkout";
 
 export function GET() {
   return Response.json(
@@ -45,6 +46,7 @@ export function GET() {
         "Retry with PAYMENT-SIGNATURE; a successful response includes PAYMENT-RESPONSE.",
       ],
       buyer_quickstart: AGENTIC_WALLET_CHECKOUT,
+      coinbase_agentkit: COINBASE_AGENTKIT_CHECKOUT,
       custody: "IntentFence never receives wallet private keys and cannot initiate transfers.",
       documentation: "/openapi.json",
     },

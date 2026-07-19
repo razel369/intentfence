@@ -13,6 +13,10 @@ import {
   AGENTIC_WALLET_CHECKOUT_COMMAND,
   AGENTIC_WALLET_CHECKOUT_REQUEST,
 } from "../lib/agentic-wallet-checkout.ts";
+import {
+  COINBASE_AGENTKIT_CHECKOUT,
+  COINBASE_AGENTKIT_VERSION,
+} from "../lib/coinbase-agentkit-checkout.ts";
 import { validatePreflightInput } from "../lib/preflight.ts";
 
 const root = new URL("../", import.meta.url);
@@ -147,6 +151,45 @@ test("publishes a directly executable and strictly capped agent checkout", async
   assert.match(x402Manifest.buyerQuickstart, /\/api\/payments/u);
   assert.match(llms, /buyer_quickstart/u);
   assert.match(readme, /--max-amount 5000/u);
+});
+
+test("publishes a quote-pinned Coinbase AgentKit adapter", async () => {
+  const [adapter, adapterReadme, paymentRoute, growth, manifest, integration, llms, readme] = await Promise.all([
+    source("integrations/coinbase-agentkit/intentfence-checkout.ts"),
+    source("integrations/coinbase-agentkit/README.md"),
+    source("app/api/payments/route.ts"),
+    source("app/GrowthSections.tsx"),
+    source("public/.well-known/intentfence.json").then(JSON.parse),
+    source("public/integrations/coinbase-agentkit.json").then(JSON.parse),
+    source("public/llms.txt"),
+    source("README.md"),
+  ]);
+
+  assert.equal(COINBASE_AGENTKIT_VERSION, "0.10.4");
+  assert.equal(COINBASE_AGENTKIT_CHECKOUT.payment.amount_atomic, "5000");
+  assert.deepEqual(COINBASE_AGENTKIT_CHECKOUT.quote_pins, [
+    "resource",
+    "network",
+    "asset",
+    "amount",
+    "pay_to",
+  ]);
+  assert.equal(COINBASE_AGENTKIT_CHECKOUT.requires_explicit_authorization, true);
+  assert.equal(COINBASE_AGENTKIT_CHECKOUT.requires_settlement_proof, true);
+  assert.match(adapter, /registerPolicy/u);
+  assert.match(adapter, /paymentRequired\.resource\.url/u);
+  assert.match(adapter, /pinnedRequirement\.amount/u);
+  assert.match(adapter, /await authorize/u);
+  assert.match(adapter, /payment-response/u);
+  assert.doesNotMatch(adapter, /make_http_request_with_x402/u);
+  assert.match(adapterReadme, /Never hard-code `true`/u);
+  assert.match(paymentRoute, /coinbase_agentkit: COINBASE_AGENTKIT_CHECKOUT/u);
+  assert.match(growth, /PINNED AGENTKIT CHECKOUT/u);
+  assert.match(manifest.payments.coinbaseAgentKit, /coinbase-agentkit\.json/u);
+  assert.equal(integration.payment.amountAtomic, "5000");
+  assert.equal(integration.payment.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
+  assert.match(llms, /Pinned Coinbase AgentKit checkout/u);
+  assert.match(readme, /pinned AgentKit adapter/u);
 });
 
 test("does not publish a private signing key", async () => {

@@ -9,6 +9,7 @@ import {
   AGENTIC_WALLET_CHECKOUT_COMMAND,
   AGENTIC_WALLET_CLI_VERSION,
 } from "../lib/agentic-wallet-checkout";
+import { COINBASE_AGENTKIT_VERSION } from "../lib/coinbase-agentkit-checkout";
 
 const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight \\
   -H "Content-Type: application/json" \\
@@ -141,6 +142,7 @@ export default function GrowthSections() {
             <a href="/llms.txt">llms.txt</a>
             <a href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments">Agent Skill</a>
             <a href="/api/payments">x402 payment metadata</a>
+            <a href="/integrations/coinbase-agentkit.json">Coinbase AgentKit adapter</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
           </div>
@@ -241,6 +243,39 @@ export default function GrowthSections() {
               <span>MAX 0.005 USDC</span>
             </div>
             <pre><code>{AGENTIC_WALLET_CHECKOUT_COMMAND}</code></pre>
+          </div>
+        </div>
+
+        <div className="mcp-install-card" id="coinbase-agentkit-checkout">
+          <div className="mcp-install-copy">
+            <span>PINNED AGENTKIT CHECKOUT</span>
+            <h3>Use an existing Coinbase AgentKit wallet without trusting a changing quote.</h3>
+            <p>
+              The open adapter pins the IntentFence URL, Base network, canonical
+              USDC asset, exact 0.005 amount, and recipient before it asks your
+              own authorization callback to sign. It rejects mismatches and
+              requires on-chain settlement proof.
+            </p>
+            <div className="mcp-install-actions">
+              <a
+                className="button mcp-install-button"
+                href="https://github.com/razel369/intentfence/tree/main/integrations/coinbase-agentkit"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Review the AgentKit adapter
+              </a>
+              <a className="mcp-install-docs" href="/integrations/coinbase-agentkit.json">
+                Read machine integration metadata <span aria-hidden="true">&#8599;</span>
+              </a>
+            </div>
+          </div>
+          <div className="mcp-install-config">
+            <div className="code-topline">
+              <span>Coinbase AgentKit v{COINBASE_AGENTKIT_VERSION}</span>
+              <span>5 QUOTE PINS</span>
+            </div>
+            <pre><code>resource + network + asset + amount + payTo{"\n"}approval callback -&gt; sign -&gt; settlement proof</code></pre>
           </div>
         </div>
 

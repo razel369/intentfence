@@ -122,6 +122,14 @@ sets `--max-amount 5000` so it cannot authorize more than the 0.005 USDC
 IntentFence fee. Review the body and explicitly authorize the real payment
 before running it.
 
+Projects that already own a Coinbase AgentKit EVM wallet can use the
+[pinned AgentKit adapter](https://github.com/razel369/intentfence/tree/main/integrations/coinbase-agentkit).
+Unlike an automatic retry, it binds the payment to the exact IntentFence URL,
+Base network, canonical USDC asset, 5000-atomic-unit amount, and recipient,
+then calls the buyer's own authorization function before signing. The matching
+machine-readable manifest is published at
+<https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json>.
+
 Gemini CLI can install the repository directly, without waiting for an npm
 package or gallery crawl:
 

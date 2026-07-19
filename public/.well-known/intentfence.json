@@ -50,7 +50,8 @@
     "asset": "USDC",
     "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
     "instructions": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
-    "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments"
+    "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
+    "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json"
   },
   "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
   "terms": "The free preflight is unsigned. The quote assessment validates the exact caller-observed PAYMENT-REQUIRED value; IntentFence never fetches or pays the target and does not establish merchant identity. Compare the signed challenge hash immediately before payment. x402 proves settlement of the IntentFence service fee. Keep independent authorization controls for consequential actions."
