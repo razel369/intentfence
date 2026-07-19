@@ -128,7 +128,7 @@ export default function GrowthSections() {
             <a href="/.well-known/x402">x402 service manifest</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
-            <a href="https://skills.sh/razel369/intentfence">Agent Skill</a>
+            <a href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments">Agent Skill</a>
             <a href="/api/payments">x402 payment metadata</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
@@ -180,11 +180,11 @@ export default function GrowthSections() {
             <div className="mcp-install-actions">
               <a
                 className="button mcp-install-button"
-                href="https://skills.sh/razel369/intentfence"
+                href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments"
                 target="_blank"
                 rel="noreferrer"
               >
-                Install the x402 guard skill
+                Review and install the x402 guard
               </a>
               <a
                 className="mcp-install-docs"

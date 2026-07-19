@@ -21,8 +21,6 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 
 [![razel369/intentfence MCP server](https://glama.ai/mcp/servers/razel369/intentfence/badges/score.svg)](https://glama.ai/mcp/servers/razel369/intentfence)
 
-[![skills.sh](https://skills.sh/b/razel369/intentfence)](https://skills.sh/razel369/intentfence)
-
 ## Protocol surfaces
 
 | Surface | Endpoint |
@@ -103,6 +101,8 @@ Copilot, and other skills-compatible agents:
 ```bash
 npx skills add razel369/intentfence --skill guard-x402-payments
 ```
+
+[Review the complete skill before installing it](https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments).
 
 The skill triggers when an agent is about to sign an x402 payment. It teaches
 the agent to capture the exact quote, enforce a caller-defined ceiling and
