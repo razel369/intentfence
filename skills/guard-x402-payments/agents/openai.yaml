@@ -1,0 +1,4 @@
+interface:
+  display_name: "Guard x402 Payments"
+  short_description: "Verify x402 quotes before an agent signs"
+  default_prompt: "Use $guard-x402-payments to validate this x402 quote before I approve payment."

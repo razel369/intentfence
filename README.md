@@ -21,6 +21,8 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 
 [![razel369/intentfence MCP server](https://glama.ai/mcp/servers/razel369/intentfence/badges/score.svg)](https://glama.ai/mcp/servers/razel369/intentfence)
 
+[![skills.sh](https://skills.sh/b/razel369/intentfence)](https://skills.sh/razel369/intentfence)
+
 ## Protocol surfaces
 
 | Surface | Endpoint |
@@ -92,6 +94,21 @@ Manual `.vscode/mcp.json` or user-profile fallback:
 Review the server details yourself before starting a manually configured server.
 
 See the [official VS Code MCP installation documentation](https://code.visualstudio.com/api/extension-guides/ai/mcp#create-an-mcp-installation-url).
+
+### Install the cross-agent payment guard
+
+Install the open Agent Skill in Codex, Claude Code, Cursor, Gemini CLI, GitHub
+Copilot, and other skills-compatible agents:
+
+```bash
+npx skills add razel369/intentfence --skill guard-x402-payments
+```
+
+The skill triggers when an agent is about to sign an x402 payment. It teaches
+the agent to capture the exact quote, enforce a caller-defined ceiling and
+payee allowlist, keep wallet credentials local, and use IntentFence only after
+the 0.005 USDC assessment fee is authorized. It includes a capped Coinbase
+Agentic Wallet buyer path for agents that already use an authenticated wallet.
 
 The official x402 client buyer example verifies the live fee challenge before
 creating a signer and is payment-disabled by default:

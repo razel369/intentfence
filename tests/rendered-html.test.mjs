@@ -101,6 +101,23 @@ test("encodes a reviewable VS Code remote MCP installation", () => {
   });
 });
 
+test("ships a cross-agent x402 guard with a capped buyer path", async () => {
+  const [skill, metadata, growth, readme] = await Promise.all([
+    source("skills/guard-x402-payments/SKILL.md"),
+    source("skills/guard-x402-payments/agents/openai.yaml"),
+    source("app/GrowthSections.tsx"),
+    source("README.md"),
+  ]);
+
+  assert.match(skill, /^---\nname: guard-x402-payments\n/u);
+  assert.match(skill, /live IntentFence service before it signs/u);
+  assert.match(skill, /--max-amount 5000 --json/u);
+  assert.match(skill, /unless they explicitly authorize those actions/u);
+  assert.match(metadata, /\$guard-x402-payments/u);
+  assert.match(growth, /npx skills add razel369\/intentfence/u);
+  assert.match(readme, /--skill guard-x402-payments/u);
+});
+
 test("does not publish a private signing key", async () => {
   const [jwksText, receiptSource, runtimeSecretSource] = await Promise.all([
     source("public/.well-known/jwks.json"),

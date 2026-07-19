@@ -26,6 +26,9 @@ const assessmentFlow = `target -> 402 + PAYMENT-REQUIRED
 -> agent signs 0.005 USDC on Base and retries
 -> signed SHA-256-bound quote assessment`;
 
+const agentSkillInstall = `npx skills add razel369/intentfence \\
+  --skill guard-x402-payments`;
+
 const plans = [
   {
     key: "free",
@@ -125,6 +128,7 @@ export default function GrowthSections() {
             <a href="/.well-known/x402">x402 service manifest</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
+            <a href="https://skills.sh/razel369/intentfence">Agent Skill</a>
             <a href="/api/payments">x402 payment metadata</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
@@ -161,6 +165,43 @@ export default function GrowthSections() {
               <span>.vscode/mcp.json</span>
             </div>
             <pre><code>{INTENTFENCE_VSCODE_MANUAL_CONFIG}</code></pre>
+          </div>
+        </div>
+
+        <div className="mcp-install-card" id="agent-skill-install">
+          <div className="mcp-install-copy">
+            <span>CROSS-AGENT INSTALL</span>
+            <h3>Teach your agent to check x402 before it signs.</h3>
+            <p>
+              One open Agent Skill works across Codex, Claude Code, Cursor,
+              Gemini CLI, GitHub Copilot, and other skills-compatible agents.
+              It keeps keys local and pauses before any unapproved fee.
+            </p>
+            <div className="mcp-install-actions">
+              <a
+                className="button mcp-install-button"
+                href="https://skills.sh/razel369/intentfence"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Install the x402 guard skill
+              </a>
+              <a
+                className="mcp-install-docs"
+                href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Review every instruction <span aria-hidden="true">&#8599;</span>
+              </a>
+            </div>
+          </div>
+          <div className="mcp-install-config">
+            <div className="code-topline">
+              <span>Install in supported agents</span>
+              <span>NO API KEY</span>
+            </div>
+            <pre><code>{agentSkillInstall}</code></pre>
           </div>
         </div>
 

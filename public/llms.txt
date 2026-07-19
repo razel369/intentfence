@@ -12,6 +12,8 @@ Before signing an x402 payment, an agent should make its intended unpaid request
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
+- Cross-agent payment guard skill: https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments
+- Agent Skill installer: npx skills add razel369/intentfence --skill guard-x402-payments
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
