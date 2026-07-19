@@ -3,13 +3,13 @@
   "info": {
     "title": "IntentFence Policy API",
     "version": "0.8.0",
-    "description": "Guard autonomous agent payments with live Base wallet-risk intelligence, declared-input policy checks, and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
+    "description": "Guard autonomous agent payments with live Base wallet screening for sanctions, phishing, mixer, money-laundering, and counterparty risk; declared-input policy checks; and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
     },
     "contact": { "url": "https://github.com/razel369/intentfence" },
-    "x-guidance": "Before paying, check the recipient with /api/wallet-risk, then forward the exact caller-observed PAYMENT-REQUIRED header to /api/x402-assessments with an explicit caller-approved payee allowlist. Use the free preflight for a declared-input preview."
+    "x-guidance": "Before sending USDC or signing an x402 payment, screen the recipient for wallet, sanctions, phishing, mixer, and AML/KYT counterparty risk with /api/wallet-risk. Then forward the exact caller-observed PAYMENT-REQUIRED header to /api/x402-assessments with an explicit caller-approved payee allowlist. Use the free preflight for a declared-input preview."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
@@ -287,8 +287,8 @@
     "/api/wallet-risk": {
       "get": {
         "operationId": "assessBaseWalletRisk",
-        "summary": "Check a Base recipient before paying it",
-        "description": "Paid live counterparty assessment using Base RPC activity and GoPlus malicious-address intelligence. A low-risk result means no listed malicious flags were observed and the address was established on Base at assessment time; it does not prove identity, ownership, authorization, or future behavior. The assessment costs 0.002 USDC through x402 and returns a five-minute ES256 receipt.",
+        "summary": "Screen a Base wallet for sanctions, phishing, and counterparty risk",
+        "description": "Paid AML/KYT wallet screening before sending USDC or interacting with an unknown Base recipient. Uses live Base RPC activity and GoPlus malicious-address intelligence to check sanctions exposure, phishing, mixers, money laundering, dark-web activity, blacklists, cybercrime, and related risk flags. A low-risk result means no listed malicious flags were observed and the address was established on Base at assessment time; it does not prove identity, ownership, authorization, or future behavior. Costs 0.002 USDC through x402 and returns a five-minute ES256 receipt.",
         "tags": ["wallet-intelligence", "counterparty-risk", "security", "x402"],
         "security": [],
         "x-payment-info": {
@@ -318,7 +318,7 @@
             "name": "address",
             "in": "query",
             "required": true,
-            "description": "Base recipient or counterparty address.",
+            "description": "Base wallet or counterparty address to screen before sending funds, approving a transaction, or interacting with a contract.",
             "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
             "example": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
           },

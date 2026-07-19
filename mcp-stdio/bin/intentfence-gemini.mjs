@@ -116,7 +116,7 @@ const tools = [
   {
     name: "intentfence_wallet_risk",
     title: "IntentFence Wallet Risk",
-    description: "Paid recipient assessment costing 0.002 USDC on Base. Checks live Base activity and malicious-address intelligence, then returns a five-minute signed receipt. A low-risk result is not proof of identity or ownership.",
+    description: "Paid AML/KYT wallet screening costing 0.002 USDC on Base. Checks live activity plus sanctions, phishing, mixer, money-laundering, dark-web, blacklist, and related counterparty-risk flags, then returns a five-minute signed receipt. A low-risk result is not proof of identity or ownership.",
     inputSchema: walletRiskInputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   },

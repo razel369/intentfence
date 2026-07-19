@@ -249,7 +249,7 @@ export const walletRiskRouteConfig = {
     payTo: INTENTFENCE_PAY_TO,
   },
   description:
-    "Check a Base recipient before payment using live Base RPC activity and GoPlus malicious-address intelligence. Returns a signed, five-minute risk receipt; it does not prove identity or ownership.",
+    "Screen a Base wallet before sending USDC for sanctions, phishing, mixer, money-laundering, blacklist, and counterparty risk using live Base RPC and GoPlus intelligence. Returns a signed five-minute receipt; it does not prove identity or ownership.",
   mimeType: "application/json",
   serviceName: "IntentFence Wallet Risk",
   tags: [

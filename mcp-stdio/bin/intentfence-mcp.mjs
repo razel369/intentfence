@@ -240,9 +240,9 @@ server.registerTool(
 server.registerTool(
   "intentfence_wallet_risk",
   {
-    title: "Check a Base recipient before paying it",
+    title: "Screen a Base wallet before sending funds",
     description:
-      "Costs 0.002 USDC on Base. Checks live Base activity and GoPlus malicious-address intelligence, then returns a five-minute ES256 receipt. A low-risk result means no listed malicious flags were observed and the address was established on Base; it does not prove identity, ownership, authorization, or future behavior.",
+      "Paid AML/KYT wallet screening costing 0.002 USDC on Base. Checks live activity plus GoPlus sanctions, phishing, mixer, money-laundering, dark-web, blacklist, and related counterparty-risk flags, then returns a five-minute ES256 receipt. A low-risk result is not proof of identity, ownership, authorization, or future behavior.",
     inputSchema: {
       address: z
         .string()

@@ -73,6 +73,8 @@ test("publishes the IntentFence 0.8 protocol entry points in the site", async ()
   assert.equal(openapi.paths["/api/x402-assessments"].post["x-x402-price"], "$0.005");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
+  assert.match(openapi.paths["/api/wallet-risk"].get.summary, /sanctions.*phishing.*counterparty risk/iu);
+  assert.match(openapi.paths["/api/wallet-risk"].get.description, /AML\/KYT wallet screening/iu);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_wallet_risk"), true);
   assert.equal(
     openapi.paths["/api/x402-assessments/preview"].post["x-marketplace"].name,
