@@ -26,7 +26,7 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.9 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, usCpiRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, usCpiRoute, usCpiPreviewRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
@@ -35,6 +35,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
     source("app/api/x402-assessments/preview/route.ts"),
     source("app/api/wallet-risk/route.ts"),
     source("app/api/us-cpi/route.ts"),
+    source("app/api/us-cpi/preview/route.ts"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
     source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
@@ -61,6 +62,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
   assert.match(walletRiskRoute, /"GET \/api\/wallet-risk": walletRiskRouteConfig/);
   assert.match(usCpiRoute, /"GET \/api\/us-cpi": usCpiRouteConfig/);
+  assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.equal(manifest.version, "0.9.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
@@ -76,6 +78,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
   assert.equal(openapi.paths["/api/us-cpi"].get["x-x402-price"], "$0.001");
+  assert.equal(openapi.paths["/api/us-cpi/preview"].post["x-marketplace"].name, "PayanAgent");
   assert.match(openapi.paths["/api/wallet-risk"].get.summary, /sanctions.*phishing.*counterparty risk/iu);
   assert.match(openapi.paths["/api/wallet-risk"].get.description, /AML\/KYT wallet screening/iu);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_wallet_risk"), true);

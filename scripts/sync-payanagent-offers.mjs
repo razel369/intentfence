@@ -20,6 +20,32 @@ const openapi = JSON.parse(
 
 const offers = [
   {
+    title: "Official U.S. CPI & inflation data",
+    description:
+      "Retrieve the latest or a requested YYYY-MM U.S. headline CPI and core CPI observation, index values, and year-over-year inflation rates. Data is fetched from the official U.S. Bureau of Labor Statistics series CUUR0000SA0 and CUUR0000SA0L1E, normalized into stable JSON, and served through a six-hour edge cache. PayanAgent settles 0.01 USDC directly to the IntentFence wallet and supplies the on-chain receipt. For an IntentFence ES256 provenance receipt, use the separate direct x402 endpoint.",
+    category: "Data",
+    tags: ["cpi", "inflation", "economics", "official-data", "bls", "us-data", "x402", "base-usdc"],
+    priceCents: 1,
+    offerType: "api",
+    endpoint: `${serviceUrl}/api/us-cpi/preview`,
+    httpMethod: "POST",
+    inputSchema: JSON.stringify({
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        month: {
+          type: "string",
+          pattern: "^20[0-9]{2}-(?:0[1-9]|1[0-2])$",
+          description: "Optional YYYY-MM period. Omit for the latest complete period.",
+        },
+      },
+    }),
+    outputSchema: JSON.stringify(openapi.components.schemas.UsCpiDecision),
+    estimatedDurationSeconds: 3,
+    previewDescription:
+      "Official BLS headline and core CPI with year-over-year inflation rates in stable JSON.",
+  },
+  {
     idHint: primaryOfferId,
     title: "AI action policy preflight",
     description:

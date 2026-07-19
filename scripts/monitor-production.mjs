@@ -146,6 +146,17 @@ assert.equal(usCpiPaymentRequired.accepts[0].amount, "1000");
 assert.equal(usCpiPaymentRequired.accepts[0].network, "eip155:8453");
 assert.equal(usCpiPaymentRequired.resource.url, usCpiDiscoveryUrl);
 
+const usCpiPreviewResponse = await fetchWithTimeout(`${baseUrl}/api/us-cpi/preview`, {
+  method: "POST",
+  headers: { ...monitorHeaders, "Content-Type": "application/json" },
+  body: "{}",
+});
+assert.equal(usCpiPreviewResponse.status, 200, "U.S. CPI marketplace delivery is unavailable");
+const usCpiPreview = await json(usCpiPreviewResponse);
+assert.equal(usCpiPreview.status, "verified");
+assert.equal(usCpiPreview.source.publisher, "U.S. Bureau of Labor Statistics");
+assert.equal(usCpiPreview.receipt.signed, false);
+
 const mcpResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: {
@@ -297,6 +308,9 @@ let payanAgentChallengeReady = false;
 let payanAgentQuoteOfferId = null;
 let payanAgentQuoteOfferListed = false;
 let payanAgentQuoteChallengeReady = false;
+let payanAgentCpiOfferId = null;
+let payanAgentCpiOfferListed = false;
+let payanAgentCpiChallengeReady = false;
 let payanAgentSales = 0;
 let payanAgentDistinctBuyers = 0;
 let payanAgentRevenueUsdc = 0;
@@ -382,6 +396,46 @@ try {
           settlementWallet.toLowerCase();
     }
   }
+  const cpiSearchResponse = await fetchWithTimeout(
+    "https://payanagent.com/api/v1/offers?q=Official%20U.S.%20CPI%20%26%20inflation%20data&limit=20",
+  );
+  if (cpiSearchResponse.ok) {
+    const cpiSearch = await json(cpiSearchResponse);
+    for (const candidate of cpiSearch.offers ?? []) {
+      if (candidate.title !== "Official U.S. CPI & inflation data") continue;
+      const detailResponse = await fetchWithTimeout(
+        `https://payanagent.com/api/v1/offers/${candidate._id}`,
+      );
+      if (!detailResponse.ok) continue;
+      const detailPayload = await json(detailResponse);
+      const detail = detailPayload.offer ?? detailPayload;
+      if (detail.sellerId === payanAgentAgentId && detail.isActive !== false) {
+        payanAgentCpiOfferId = detail._id;
+        payanAgentCpiOfferListed = true;
+        break;
+      }
+    }
+  }
+  if (payanAgentCpiOfferId) {
+    const cpiChallengeResponse = await fetchWithTimeout(
+      `https://payanagent.com/x402/${payanAgentCpiOfferId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      },
+    );
+    const cpiChallengeHeader = cpiChallengeResponse.headers.get("payment-required");
+    if (cpiChallengeResponse.status === 402 && cpiChallengeHeader) {
+      const cpiChallenge = JSON.parse(
+        Buffer.from(cpiChallengeHeader, "base64").toString("utf8"),
+      );
+      payanAgentCpiChallengeReady =
+        cpiChallenge.accepts?.[0]?.amount === "10000" &&
+        cpiChallenge.accepts?.[0]?.network === "eip155:8453" &&
+        cpiChallenge.accepts?.[0]?.payTo?.toLowerCase() === settlementWallet.toLowerCase();
+    }
+  }
 } catch {
   // Marketplace distribution is reported but does not fail core production health.
 }
@@ -411,6 +465,9 @@ console.log(
       payanagent_quote_offer_id: payanAgentQuoteOfferId,
       payanagent_quote_offer_listed: payanAgentQuoteOfferListed,
       payanagent_quote_challenge_ready: payanAgentQuoteChallengeReady,
+      payanagent_cpi_offer_id: payanAgentCpiOfferId,
+      payanagent_cpi_offer_listed: payanAgentCpiOfferListed,
+      payanagent_cpi_challenge_ready: payanAgentCpiChallengeReady,
       payanagent_sales: payanAgentSales,
       payanagent_distinct_buyers: payanAgentDistinctBuyers,
       payanagent_revenue_usdc: payanAgentRevenueUsdc,

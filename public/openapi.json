@@ -408,6 +408,46 @@
         }
       }
     },
+    "/api/us-cpi/preview": {
+      "post": {
+        "operationId": "deliverMarketplaceUsCpi",
+        "summary": "Deliver official U.S. CPI data through a marketplace",
+        "description": "Unsigned delivery route for the PayanAgent offer. Accepts an optional YYYY-MM period and returns official BLS headline and core CPI values and year-over-year rates. PayanAgent performs settlement and attaches its receipt; use /api/us-cpi for an IntentFence-signed provenance receipt.",
+        "tags": ["official-data", "inflation", "marketplace"],
+        "security": [],
+        "x-marketplace": {
+          "name": "PayanAgent",
+          "price": "0.01 USDC",
+          "catalog": "https://payanagent.com/marketplace"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "month": { "type": "string", "pattern": "^20[0-9]{2}-(?:0[1-9]|1[0-2])$" }
+                }
+              },
+              "example": { "month": "2026-06" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Official CPI data delivered; marketplace settlement is external to this route",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UsCpiDecision" } } }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "413": { "$ref": "#/components/responses/Problem" },
+          "415": { "$ref": "#/components/responses/Problem" },
+          "500": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
     "/api/receipts/verify": {
       "post": {
         "operationId": "verifyIntentFenceReceipt",
