@@ -213,6 +213,25 @@ try {
   // Bazaar availability is reported but does not fail core production health.
 }
 
+let jaypayDirectoryListed = false;
+try {
+  const jaypayResponse = await fetchWithTimeout(
+    "https://402directory.com/api/directory",
+  );
+  if (jaypayResponse.ok) {
+    const jaypay = await json(jaypayResponse);
+    jaypayDirectoryListed =
+      Array.isArray(jaypay.entries) &&
+      jaypay.entries.some(
+        (entry) =>
+          entry.endpoint === `${baseUrl}/api/preflight/verified` ||
+          entry.endpoint_url === `${baseUrl}/api/preflight/verified`,
+      );
+  }
+} catch {
+  // A pending or unavailable directory listing does not fail core production health.
+}
+
 console.log(
   JSON.stringify(
     {
@@ -227,6 +246,7 @@ console.log(
       official_mcp_registry: true,
       x402scan_registered: true,
       coinbase_bazaar_listed: bazaarListed,
+      jaypay_directory_listed: jaypayDirectoryListed,
     },
     null,
     2,
