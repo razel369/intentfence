@@ -1,6 +1,6 @@
 {
   "name": "intentfence",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Add caller-observed x402 quote assessment and signed payment preflights to Gemini CLI agents.",
   "mcpServers": {
     "intentfence": {

@@ -298,7 +298,7 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open protocol / v0.8</div>
+          <div className="section-kicker">Open protocol / v0.9</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
             Forward the caller-observed x402 challenge before signing a payment
@@ -308,6 +308,7 @@ export default function Home() {
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
             <div><span>DISCOVER</span><code>GET /.well-known/intentfence.json</code></div>
             <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
+            <div><span>GET CPI</span><code>GET /api/us-cpi?month=YYYY-MM</code></div>
             <div><span>CHECK WALLET</span><code>GET /api/wallet-risk?address=...</code></div>
             <div><span>ASSESS x402</span><code>POST /api/x402-assessments</code></div>
             <div><span>PAY + VERIFY</span><code>POST /api/preflight/verified</code></div>
@@ -341,7 +342,7 @@ export default function Home() {
       <footer>
         <a className="wordmark wordmark-footer" href="#top">IntentFence<span className="wordmark-dot">.</span></a>
         <p>Live Base wallet risk, caller-observed x402 quote assessments, and signed payment receipts for autonomous AI.</p>
-        <span>Protocol 0.8 · ES256 receipts · x402 on Base</span>
+            <span>Protocol 0.9 · ES256 receipts · x402 on Base</span>
       </footer>
     </main>
   );

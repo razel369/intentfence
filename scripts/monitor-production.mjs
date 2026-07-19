@@ -47,6 +47,7 @@ assert.equal(health.checks.x402_configuration.ready, true);
 assert.equal(health.checks.x402_configuration.facilitator_reachable, true);
 assert.equal(health.checks.x402_configuration.facilitator_supports_route, true);
 assert.equal(health.checks.x402_configuration.amount_atomic, "5000");
+assert.equal(health.checks.x402_configuration.us_cpi_amount_atomic, "1000");
 
 const requiredResponse = await fetchWithTimeout(
   `${baseUrl}/api/preflight/verified`,
@@ -131,6 +132,20 @@ assert.equal(walletRiskPaymentRequired.accepts[0].amount, "2000");
 assert.equal(walletRiskPaymentRequired.accepts[0].network, "eip155:8453");
 assert.equal(walletRiskPaymentRequired.resource.url, walletRiskUrl);
 
+const usCpiDiscoveryUrl = `${baseUrl}/api/us-cpi`;
+const usCpiRequiredResponse = await fetchWithTimeout(usCpiDiscoveryUrl, {
+  headers: monitorHeaders,
+});
+assert.equal(usCpiRequiredResponse.status, 402);
+const usCpiRequiredHeader = usCpiRequiredResponse.headers.get("payment-required");
+assert.ok(usCpiRequiredHeader, "U.S. CPI PAYMENT-REQUIRED header missing");
+const usCpiPaymentRequired = JSON.parse(
+  Buffer.from(usCpiRequiredHeader, "base64").toString("utf8"),
+);
+assert.equal(usCpiPaymentRequired.accepts[0].amount, "1000");
+assert.equal(usCpiPaymentRequired.accepts[0].network, "eip155:8453");
+assert.equal(usCpiPaymentRequired.resource.url, usCpiDiscoveryUrl);
+
 const mcpResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: {
@@ -163,6 +178,10 @@ assert.ok(
     (tool) => tool.name === "intentfence_x402_assessment",
   ),
   "caller-observed x402 quote assessment MCP tool missing",
+);
+assert.ok(
+  mcp.result.tools.some((tool) => tool.name === "intentfence_us_cpi"),
+  "official U.S. CPI MCP tool missing",
 );
 
 const mcpChallengeResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
@@ -215,6 +234,7 @@ const paidResources = [
   { url: `${baseUrl}/api/preflight/verified`, method: "POST" },
   { url: `${baseUrl}/api/x402-assessments`, method: "POST" },
   { url: walletRiskDiscoveryUrl, method: "GET" },
+  { url: usCpiDiscoveryUrl, method: "GET" },
 ];
 const x402scanUrl = new URL(
   "https://www.x402scan.com/api/trpc/public.resources.checkRegistered",
@@ -377,6 +397,8 @@ console.log(
       wallet_risk_challenge: true,
       wallet_risk_discovery_probe: true,
       wallet_risk_amount_atomic: walletRiskPaymentRequired.accepts[0].amount,
+      us_cpi_challenge: true,
+      us_cpi_amount_atomic: usCpiPaymentRequired.accepts[0].amount,
       x402_amount_atomic: paymentRequired.accepts[0].amount,
       settled_calls: metrics.settled_calls,
       revenue_usdc: metrics.revenue_usdc,

@@ -8,7 +8,8 @@ const MIN_RESERVATION_MS = 30 * 1_000;
 export type X402ReservationProduct =
   | "verified-preflight"
   | "x402-assessment"
-  | "wallet-risk";
+  | "wallet-risk"
+  | "us-cpi";
 
 export class X402PaymentReservationInputError extends Error {
   constructor(message: string) {

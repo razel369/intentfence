@@ -15,6 +15,7 @@ import {
 } from "../lib/paid-preflight.mjs";
 import { validateX402AssessmentInput } from "../lib/x402-assessment.mjs";
 import { validateWalletRiskInput } from "../lib/wallet-risk.mjs";
+import { validateUsCpiInput } from "../lib/us-cpi.mjs";
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 
@@ -22,7 +23,7 @@ const server = new McpServer(
   {
     name: "intentfence",
     title: "IntentFence Policy Gate",
-    version: "0.8.0",
+    version: "0.9.0",
     websiteUrl: SITE_URL,
     description:
       "A declared-input policy gate for autonomous AI actions, including spend, scope, data-retention, and human-approval constraints.",
@@ -263,6 +264,32 @@ server.registerTool(
     method: "GET",
     query: (input) => ({ address: input.address }),
     failureMessage: "The IntentFence wallet-risk assessment could not be processed.",
+  }),
+);
+
+server.registerTool(
+  "intentfence_us_cpi",
+  {
+    title: "Retrieve signed official U.S. CPI data",
+    description:
+      "Costs 0.001 USDC on Base. Returns headline and core CPI index values and year-over-year rates sourced from the U.S. Bureau of Labor Statistics, plus an ES256 provenance receipt. Optionally request a YYYY-MM period.",
+    inputSchema: {
+      month: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/u).optional(),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  createPaidIntentFenceHandler({
+    validateInput: validateUsCpiInput,
+    source: "npm-mcp-us-cpi",
+    endpoint: "/api/us-cpi",
+    method: "GET",
+    query: (input) => input.month ? { month: input.month } : {},
+    failureMessage: "The official U.S. CPI request could not be processed.",
   }),
 );
 

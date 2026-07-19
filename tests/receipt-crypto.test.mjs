@@ -7,6 +7,7 @@ globalThis.crypto ??= webcrypto;
 
 const {
   INTENTFENCE_SIGNING_KID,
+  createSignedOfficialDataReceipt,
   signReceiptClaims,
   validateReceiptSigningKey,
   verifyReceipt,
@@ -107,6 +108,43 @@ test("verifies a short-lived live Base wallet-risk receipt", async () => {
   assert.equal(result.valid, true);
   assert.equal(result.claims.assurance, "live-base-wallet-risk");
   assert.equal(result.claims.payment.amount_atomic, "2000");
+});
+
+test("signs and verifies official BLS CPI provenance", async () => {
+  const now = Date.now();
+  const issuedAt = new Date(now).toISOString();
+  const keys = await keyPair();
+  const receipt = await createSignedOfficialDataReceipt({
+    request_id: "00000000-0000-4000-8000-000000000008",
+    status: "verified",
+    source: {
+      publisher: "U.S. Bureau of Labor Statistics",
+      api: "https://api.bls.gov/publicAPI/v2/timeseries/data",
+      retrieved_at: issuedAt,
+      series: { headline: "CUUR0000SA0", core: "CUUR0000SA0L1E" },
+    },
+    period: { month: "2026-06" },
+    cpi: { headline_index: 333.952, core_index: 336.882 },
+    checks: [],
+    receipt: {
+      id: "if_cpi_test",
+      issued_at: issuedAt,
+      subject: "official-data://bls/us-cpi",
+      action: { type: "official_data.us_cpi", resource: "2026-06" },
+      signed: false,
+      assurance: "official-source-data",
+      note: "unsigned",
+    },
+  }, keys.privateJwk, {
+    network: "eip155:8453",
+    asset: "USDC",
+    amountAtomic: "1000",
+    payTo: "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
+  });
+  const result = await verifyReceipt(receipt.signature.jws, now, keys.publicJwk);
+  assert.equal(result.valid, true);
+  assert.equal(result.claims.assurance, "official-source-data");
+  assert.equal(result.claims.payment.amount_atomic, "1000");
 });
 
 test("published JWKS contains the production signing key", async () => {

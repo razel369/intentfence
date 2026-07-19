@@ -30,6 +30,7 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Paid x402 decision | `POST /api/preflight/verified` |
 | Paid caller-observed x402 quote assessment | `POST /api/x402-assessments` |
 | Paid live Base wallet-risk assessment | `GET /api/wallet-risk?address=...` |
+| Paid signed official U.S. CPI data | `GET /api/us-cpi?month=YYYY-MM` |
 | Receipt verification | `POST /api/receipts/verify` |
 | Public ES256 keys | `GET /.well-known/jwks.json` |
 | MCP Streamable HTTP | `/api/mcp` (`intentfence_verified_preflight` is x402-paid) |
@@ -38,7 +39,7 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Public aggregate metrics | `GET /api/metrics` |
 | OpenAPI | `GET /openapi.json` |
 
-Wallet risk costs 0.002 USDC; signed preflight and exact-quote assessment cost
+Official U.S. CPI costs 0.001 USDC; wallet risk costs 0.002 USDC; signed preflight and exact-quote assessment cost
 0.005 USDC on Base through x402. A successful call
 returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
 IntentFence ES256 compact-JWS receipt.

@@ -2,7 +2,7 @@
 
 > IntentFence checks Base recipient wallets, validates the exact x402 payment challenge an agent observed, and issues signed risk, assessment, or policy receipts for AI agents.
 
-Before sending USDC or signing an x402 payment, an agent should first call the paid MCP tool `intentfence_wallet_risk` or `GET /api/wallet-risk?address=...` for AML/KYT wallet screening. It uses live Base RPC activity and GoPlus intelligence to check sanctions exposure, phishing, mixers, money laundering, dark-web activity, blacklists, cybercrime, and related counterparty-risk flags. A low-risk result means no listed malicious flags were observed and the address was established on Base at assessment time; it does not prove identity, ownership, authorization, or future behavior. Then forward the exact base64 `PAYMENT-REQUIRED` header to `intentfence_x402_assessment` or `POST /api/x402-assessments`. IntentFence checks the official x402 v2 shape, canonical Base USDC and EIP-712 domain, price ceiling, caller-approved payee allowlist, transfer method, extensions, and exact resource binding.
+For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?month=YYYY-MM`. It returns headline and core CPI from the U.S. Bureau of Labor Statistics with a signed provenance receipt. Before sending USDC or signing an x402 payment, call `intentfence_wallet_risk`, then forward the exact `PAYMENT-REQUIRED` header to `intentfence_x402_assessment`.
 
 ## Discovery
 
@@ -20,6 +20,7 @@ Before sending USDC or signing an x402 payment, an agent should first call the p
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
 - Live Base wallet-risk assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk
+- Signed official U.S. CPI: https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi
 - Receipt verifier: https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify
 - Public signing keys: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json
 - Receipt schema: https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json
@@ -28,7 +29,7 @@ Before sending USDC or signing an x402 payment, an agent should first call the p
 
 ## Autonomous payment
 
-Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Wallet risk costs 0.002 USDC; signed preflight and exact-quote assessment cost 0.005 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Official U.S. CPI costs 0.001 USDC, wallet risk costs 0.002 USDC, and signed preflight or exact-quote assessment costs 0.005 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
 An agent with an authenticated Coinbase Agentic Wallet can retrieve a complete, versioned command from `GET /api/payments` under `buyer_quickstart`. It must review the request and obtain explicit authorization before running the command. The command caps the charge at exactly 5000 USDC atomic units (0.005 USDC) and never sends wallet credentials to IntentFence.
 

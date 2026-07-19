@@ -151,6 +151,46 @@ export type WalletRiskDecision = {
         };
     };
 };
+export type UsCpiDecision = {
+    intentfence: "0.8";
+    request_id: string;
+    status: "verified";
+    source: {
+        publisher: "U.S. Bureau of Labor Statistics";
+        api: string;
+        retrieved_at: string;
+        cache_ttl_seconds: 21600;
+        served_from_cache: boolean;
+        series: {
+            headline: "CUUR0000SA0";
+            core: "CUUR0000SA0L1E";
+        };
+    };
+    period: {
+        year: string;
+        month: string;
+        name: string;
+    };
+    cpi: {
+        headline_index: number;
+        headline_yoy_percent: number;
+        core_index: number;
+        core_yoy_percent: number;
+    };
+    summary: string;
+    checks: Array<{
+        name: string;
+        status: "pass";
+        detail: string;
+    }>;
+    receipt: {
+        signed: true;
+        assurance: "official-source-data";
+        signature: {
+            jws: string;
+        };
+    };
+};
 export declare class IntentFenceHttpError extends Error {
     readonly status: number;
     readonly response: Response;
@@ -177,6 +217,9 @@ export declare class IntentFenceClient {
     assessWalletRisk(address: string, options?: {
         paymentSignature?: string;
     }): Promise<WalletRiskDecision>;
+    getUsCpi(month?: string, options?: {
+        paymentSignature?: string;
+    }): Promise<UsCpiDecision>;
     verifyReceipt(jws: string): Promise<{
         valid: boolean;
         claims?: unknown;

@@ -5,6 +5,7 @@ import { createInterface } from "node:readline";
 import { negotiateProtocolVersion } from "../lib/protocol-version.mjs";
 import { validateX402AssessmentInput } from "../lib/x402-assessment.mjs";
 import { validateWalletRiskInput } from "../lib/wallet-risk.mjs";
+import { validateUsCpiInput } from "../lib/us-cpi.mjs";
 
 const baseUrl = (process.env.INTENTFENCE_BASE_URL ??
   "https://agentpass-protocol.rmalka06.chatgpt.site").replace(/\/$/u, "");
@@ -91,6 +92,14 @@ const walletRiskInputSchema = {
   },
 };
 
+const usCpiInputSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    month: { type: "string", pattern: "^\\d{4}-(?:0[1-9]|1[0-2])$" },
+  },
+};
+
 const tools = [
   {
     name: "intentfence_preflight",
@@ -118,6 +127,13 @@ const tools = [
     title: "IntentFence Wallet Risk",
     description: "Paid AML/KYT wallet screening costing 0.002 USDC on Base. Checks live activity plus sanctions, phishing, mixer, money-laundering, dark-web, blacklist, and related counterparty-risk flags, then returns a five-minute signed receipt. A low-risk result is not proof of identity or ownership.",
     inputSchema: walletRiskInputSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  {
+    name: "intentfence_us_cpi",
+    title: "IntentFence Official U.S. CPI",
+    description: "Paid official U.S. headline and core CPI data costing 0.001 USDC on Base, sourced from BLS with a signed provenance receipt.",
+    inputSchema: usCpiInputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   },
 ];
@@ -155,11 +171,14 @@ async function callTool(params) {
 
   const assessment = name === "intentfence_x402_assessment";
   const walletRisk = name === "intentfence_wallet_risk";
-  const paid = name === "intentfence_verified_preflight" || assessment || walletRisk;
+  const usCpi = name === "intentfence_us_cpi";
+  const paid = name === "intentfence_verified_preflight" || assessment || walletRisk || usCpi;
   const arguments_ = assessment
     ? validateX402AssessmentInput(params?.arguments ?? {})
     : walletRisk
       ? validateWalletRiskInput(params?.arguments ?? {})
+      : usCpi
+        ? validateUsCpiInput(params?.arguments ?? {})
       : params?.arguments ?? {};
   const payment = params?._meta?.["x402/payment"];
   const headers = {
@@ -172,8 +191,10 @@ async function callTool(params) {
 
   const endpoint = walletRisk
     ? `${baseUrl}/api/wallet-risk?address=${encodeURIComponent(arguments_.address)}`
+    : usCpi
+      ? `${baseUrl}/api/us-cpi${arguments_.month ? `?month=${encodeURIComponent(arguments_.month)}` : ""}`
     : `${baseUrl}${assessment ? "/api/x402-assessments" : paid ? "/api/preflight/verified" : "/api/preflight"}`;
-  const response = await fetch(endpoint, walletRisk
+  const response = await fetch(endpoint, walletRisk || usCpi
     ? { method: "GET", headers }
     : { method: "POST", headers, body: JSON.stringify(arguments_) });
   const text = await response.text();
@@ -226,7 +247,7 @@ lines.on("line", async (line) => {
       result(request.id, {
         protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.8.0" },
+        serverInfo: { name: "intentfence", version: "0.9.0" },
         instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. The free preflight remains an unsigned declared-input preview.",
       });
       return;

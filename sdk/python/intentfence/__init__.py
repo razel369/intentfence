@@ -104,6 +104,18 @@ class WalletRiskDecision(TypedDict):
     receipt: dict[str, Any]
 
 
+class UsCpiDecision(TypedDict):
+    intentfence: Literal["0.8"]
+    request_id: str
+    status: Literal["verified"]
+    source: dict[str, Any]
+    period: dict[str, str]
+    cpi: dict[str, float]
+    summary: str
+    checks: list[dict[str, str]]
+    receipt: dict[str, Any]
+
+
 @dataclass
 class IntentFenceError(RuntimeError):
     message: str
@@ -219,6 +231,21 @@ class IntentFenceClient:
             ),
         )
 
+    def get_us_cpi(
+        self,
+        month: str | None = None,
+        *,
+        payment_signature: str | None = None,
+    ) -> UsCpiDecision:
+        return cast(
+            UsCpiDecision,
+            self._get(
+                "/api/us-cpi",
+                {"month": month} if month else {},
+                payment_signature=payment_signature,
+            ),
+        )
+
     def run_guarded(
         self,
         payload: dict[str, Any],
@@ -241,6 +268,7 @@ class IntentFenceClient:
 __all__ = [
     "IntentFenceClient",
     "IntentFenceError",
+    "UsCpiDecision",
     "X402AcceptedPayment",
     "X402AcceptedPaymentExtra",
     "X402AssessmentDecision",

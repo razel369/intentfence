@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.8.0",
-    "description": "Guard autonomous agent payments with live Base wallet screening for sanctions, phishing, mixer, money-laundering, and counterparty risk; declared-input policy checks; and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
+    "version": "0.9.0",
+    "description": "Retrieve signed official U.S. CPI data and guard autonomous agent payments with live Base wallet screening, declared-input policy checks, and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
@@ -366,6 +366,48 @@
         }
       }
     },
+    "/api/us-cpi": {
+      "get": {
+        "operationId": "getOfficialUsCpi",
+        "summary": "Retrieve signed official U.S. CPI and core CPI data",
+        "description": "Returns official Bureau of Labor Statistics headline and core CPI index values and year-over-year rates. Results use a six-hour edge cache and include an ES256 provenance receipt. Costs 0.001 USDC through x402.",
+        "tags": ["official-data", "inflation", "x402", "agent-commerce"],
+        "security": [],
+        "x-payment-info": {
+          "price": { "mode": "fixed", "currency": "USD", "amount": "0.001" },
+          "protocols": [{ "x402": { "version": 2, "network": "eip155:8453", "asset": "USDC", "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e" } }]
+        },
+        "x-x402-price": "$0.001",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "Optional historical period in YYYY-MM format. Omit for the latest common headline/core period with a year-over-year comparison.",
+            "schema": { "type": "string", "pattern": "^[0-9]{4}-(?:0[1-9]|1[0-2])$" }
+          },
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 payment payload. Omit on the first call to receive PAYMENT-REQUIRED.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Official CPI data returned and the IntentFence fee settled",
+            "headers": { "PAYMENT-RESPONSE": { "description": "Base64-encoded x402 settlement result.", "schema": { "type": "string" } } },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UsCpiDecision" } } }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "402": { "description": "Payment is required or could not be verified" },
+          "409": { "$ref": "#/components/responses/Problem" },
+          "500": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
     "/api/receipts/verify": {
       "post": {
         "operationId": "verifyIntentFenceReceipt",
@@ -505,15 +547,15 @@
           "iat": { "type": "integer" },
           "exp": { "type": "integer" },
           "jti": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "intentfence_version": { "type": "string", "enum": ["0.5", "0.6"] },
+          "intentfence_version": { "type": "string", "enum": ["0.5", "0.6", "0.7", "0.8"] },
           "assurance": {
             "type": "string",
-            "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment"]
+            "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-base-wallet-risk", "official-source-data"]
           },
           "request_id": { "type": "string", "format": "uuid" },
           "decision": {
             "type": "string",
-            "enum": ["safe_to_proceed", "needs_review", "denied"]
+            "enum": ["safe_to_proceed", "needs_review", "denied", "verified"]
           },
           "subject": { "type": ["string", "null"] },
           "action": { "type": ["object", "null"] },
@@ -760,6 +802,34 @@
               "signature": { "type": "object" }
             }
           }
+        }
+      },
+      "UsCpiDecision": {
+        "type": "object",
+        "required": ["intentfence", "request_id", "status", "source", "period", "cpi", "summary", "checks", "receipt"],
+        "properties": {
+          "intentfence": { "type": "string", "const": "0.8" },
+          "request_id": { "type": "string", "format": "uuid" },
+          "status": { "type": "string", "const": "verified" },
+          "source": { "type": "object" },
+          "period": {
+            "type": "object",
+            "required": ["year", "month", "name"],
+            "properties": { "year": { "type": "string" }, "month": { "type": "string" }, "name": { "type": "string" } }
+          },
+          "cpi": {
+            "type": "object",
+            "required": ["headline_index", "headline_yoy_percent", "core_index", "core_yoy_percent"],
+            "properties": {
+              "headline_index": { "type": "number" },
+              "headline_yoy_percent": { "type": "number" },
+              "core_index": { "type": "number" },
+              "core_yoy_percent": { "type": "number" }
+            }
+          },
+          "summary": { "type": "string" },
+          "checks": { "type": "array", "items": { "type": "object" } },
+          "receipt": { "type": "object" }
         }
       },
       "PreflightRequest": {

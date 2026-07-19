@@ -1,7 +1,7 @@
 {
   "name": "IntentFence",
-  "version": "0.8.0",
-  "description": "Live Base wallet-risk intelligence, caller-observed x402 quote assessment, and signed payment-policy receipts for autonomous AI agents.",
+  "version": "0.9.0",
+  "description": "Signed official U.S. CPI data, live Base wallet-risk intelligence, caller-observed x402 quote assessment, and payment-policy receipts for autonomous AI agents.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
     "rest": {
@@ -9,6 +9,7 @@
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "walletRisk": "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
+      "usCpi": "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi",
       "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
       "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
       "health": "https://agentpass-protocol.rmalka06.chatgpt.site/api/health"
@@ -21,9 +22,10 @@
         "intentfence_preflight",
         "intentfence_verified_preflight",
         "intentfence_x402_assessment",
-        "intentfence_wallet_risk"
+        "intentfence_wallet_risk",
+        "intentfence_us_cpi"
       ],
-      "paidTools": ["intentfence_verified_preflight", "intentfence_x402_assessment", "intentfence_wallet_risk"]
+      "paidTools": ["intentfence_verified_preflight", "intentfence_x402_assessment", "intentfence_wallet_risk", "intentfence_us_cpi"]
     },
     "a2a": {
       "protocolVersion": "1.0",
@@ -33,7 +35,7 @@
   "receipts": {
     "format": "JWS Compact",
     "algorithm": "ES256",
-    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-base-wallet-risk"],
+    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-base-wallet-risk", "official-source-data"],
     "jwks": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json",
     "schema": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json"
   },
@@ -45,10 +47,12 @@
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk"
+      ,"https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
     ],
     "price": "0.005 USDC",
     "amountAtomic": "5000",
     "offers": [
+      { "endpoint": "/api/us-cpi", "method": "GET", "price": "0.001 USDC", "amountAtomic": "1000" },
       { "endpoint": "/api/wallet-risk", "method": "GET", "price": "0.002 USDC", "amountAtomic": "2000" },
       { "endpoint": "/api/x402-assessments", "method": "POST", "price": "0.005 USDC", "amountAtomic": "5000" },
       { "endpoint": "/api/preflight/verified", "method": "POST", "price": "0.005 USDC", "amountAtomic": "5000" }

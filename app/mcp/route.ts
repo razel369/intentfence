@@ -17,7 +17,13 @@ import {
   WalletRiskValidationError,
 } from "../../lib/wallet-risk";
 import {
+  usCpiInputSchema,
+  UsCpiValidationError,
+  validateUsCpiInput,
+} from "../../lib/us-cpi";
+import {
   createIntentFencePaymentRequired,
+  createUsCpiPaymentRequired,
   createWalletRiskPaymentRequired,
   createX402AssessmentPaymentRequired,
   decodeX402Header,
@@ -282,6 +288,50 @@ async function callWalletRisk(
   };
 }
 
+async function callUsCpi(
+  request: Request,
+  input: ReturnType<typeof validateUsCpiInput>,
+  payment: Record<string, unknown>,
+) {
+  const paidEndpoint = new URL("/api/us-cpi", request.url);
+  if (input.month) paidEndpoint.searchParams.set("month", input.month);
+  const response = await fetch(paidEndpoint, {
+    method: "GET",
+    headers: {
+      "PAYMENT-SIGNATURE": encodeX402Header(payment),
+      "X-IntentFence-Source": "mcp-us-cpi",
+    },
+  });
+  const rawBody = await response.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody) as unknown;
+  } catch {
+    body = { error: "upstream_invalid_response", message: "The U.S. CPI response returned invalid JSON." };
+  }
+  if (response.status === 402) {
+    const required = decodeX402Header(response.headers.get("PAYMENT-REQUIRED"));
+    const paymentRequired = isRecord(required)
+      ? required
+      : createUsCpiPaymentRequired(paidEndpoint.toString(), "Payment verification failed");
+    return toolError("Payment verification failed", paymentRequired);
+  }
+  if (!response.ok || !isRecord(body)) {
+    const message = isRecord(body) && typeof body.detail === "string"
+      ? body.detail
+      : "The U.S. CPI request could not be processed.";
+    return toolError(message);
+  }
+  const paymentResponseHeader = response.headers.get("PAYMENT-RESPONSE");
+  const paymentResponse = decodeX402Header(paymentResponseHeader) ?? paymentResponseHeader;
+  return {
+    content: [{ type: "text", text: JSON.stringify(body) }],
+    structuredContent: body,
+    isError: false,
+    _meta: paymentResponse ? { [MCP_PAYMENT_RESPONSE_META_KEY]: paymentResponse } : undefined,
+  };
+}
+
 export function OPTIONS(request: Request) {
   if (!validOrigin(request)) return new Response(null, { status: 403 });
   return new Response(null, { status: 204, headers: corsHeaders(request) });
@@ -338,8 +388,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.8.0" },
-      instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient address with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. A low-risk wallet result means no listed flags were observed at assessment time; it does not prove identity or ownership. intentfence_preflight remains a free declared-input preview; the other tools return paid signed decisions.",
+      serverInfo: { name: "IntentFence", version: "0.9.0" },
+      instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient address, then forward the exact PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_us_cpi returns signed official U.S. inflation data. intentfence_preflight is a free preview; the other tools are paid.",
     }, protocolVersion);
   }
 
@@ -349,7 +399,7 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 4 },
+      metadata: { protocol: "mcp", tools: 5 },
     });
     return jsonRpc(request, body.id, {
       tools: [
@@ -381,6 +431,13 @@ export async function POST(request: Request) {
           inputSchema: walletRiskInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
         },
+        {
+          name: "intentfence_us_cpi",
+          title: "IntentFence Official U.S. CPI",
+          description: "Paid official U.S. CPI and core CPI data ($0.001 USDC on Base), retrieved from the Bureau of Labor Statistics with a six-hour edge cache and returned with an ES256 provenance receipt. Optionally request a YYYY-MM period.",
+          inputSchema: usCpiInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+        },
       ],
     });
   }
@@ -392,7 +449,8 @@ export async function POST(request: Request) {
       toolName !== "intentfence_preflight" &&
       toolName !== "intentfence_verified_preflight" &&
       toolName !== "intentfence_x402_assessment" &&
-      toolName !== "intentfence_wallet_risk"
+      toolName !== "intentfence_wallet_risk" &&
+      toolName !== "intentfence_us_cpi"
     ) {
       return jsonRpc(request, body.id, {
         content: [{ type: "text", text: "Unknown tool name." }],
@@ -400,6 +458,24 @@ export async function POST(request: Request) {
       });
     }
     try {
+      if (toolName === "intentfence_us_cpi") {
+        const input = validateUsCpiInput(toolParams.arguments ?? {});
+        const payment = x402PaymentFromParams(toolParams);
+        const paidEndpoint = new URL("/api/us-cpi", request.url);
+        if (input.month) paidEndpoint.searchParams.set("month", input.month);
+        if (!payment) {
+          const paymentRequired = createUsCpiPaymentRequired(paidEndpoint.toString());
+          await recordFunnelEvent({
+            eventName: "payment_required",
+            request,
+            subject: "official-data://bls/us-cpi",
+            metadata: { protocol: "mcp-x402", product: "us-cpi" },
+          });
+          return jsonRpc(request, body.id, toolError("Payment required", paymentRequired));
+        }
+        return jsonRpc(request, body.id, await callUsCpi(request, input, payment));
+      }
+
       if (toolName === "intentfence_wallet_risk") {
         const input = validateWalletRiskInput(toolParams.arguments ?? {});
         const payment = x402PaymentFromParams(toolParams);
@@ -467,7 +543,8 @@ export async function POST(request: Request) {
     } catch (error) {
       const message = error instanceof PreflightValidationError ||
           error instanceof X402AssessmentValidationError ||
-          error instanceof WalletRiskValidationError
+          error instanceof WalletRiskValidationError ||
+          error instanceof UsCpiValidationError
         ? error.message
         : "The IntentFence request could not be processed.";
       return jsonRpc(request, body.id, {

@@ -54,6 +54,21 @@ const plans = [
     ],
   },
   {
+    key: "cpi",
+    name: "Official U.S. CPI",
+    price: "0.001 USDC",
+    note: "per signed official-data response",
+    features: [
+      "Headline and core CPI",
+      "Latest or requested YYYY-MM period",
+      "Official Bureau of Labor Statistics source",
+      "Six-hour edge cache",
+      "ES256 provenance receipt",
+      "MCP and REST discovery",
+    ],
+    featured: true,
+  },
+  {
     key: "verified",
     name: "Wallet Risk",
     price: "0.002 USDC",
@@ -67,7 +82,6 @@ const plans = [
       "Machine-readable MCP and REST discovery",
       "No stored wallet credentials",
     ],
-    featured: true,
   },
   {
     key: "quote",
@@ -302,6 +316,11 @@ export default function GrowthSections() {
 
         <div className="interface-grid">
           <article>
+            <span>00 / OFFICIAL CPI</span>
+            <h3>GET /api/us-cpi</h3>
+            <p>Retrieve official headline and core U.S. inflation data with signed BLS provenance for 0.001 USDC.</p>
+          </article>
+          <article>
             <span>01 / WALLET RISK</span>
             <h3>GET /api/wallet-risk</h3>
             <p>Check the recipient with live Base activity and malicious-address intelligence for 0.002 USDC before signing a payment.</p>
@@ -361,7 +380,7 @@ export default function GrowthSections() {
           <div className="section-kicker">Wallet and x402 quote safety - autonomous service-fee settlement</div>
           <h2 id="pricing-title">Check the recipient. Observe the quote. Pay for signed evidence.</h2>
           <p>
-            Agents pay 0.002 USDC for live Base wallet risk, or 0.005 USDC for an exact quote assessment or signed preflight, with no account or API key. A low-risk wallet result means no listed malicious flags were observed; it does not prove identity or ownership. Teams can apply to put the guard directly in a real payment path.
+            Agents pay 0.001 USDC for signed official U.S. CPI data, 0.002 USDC for live Base wallet risk, or 0.005 USDC for an exact quote assessment or signed preflight, with no account or API key.
           </p>
         </div>
         <div className="pricing-grid">
@@ -376,7 +395,7 @@ export default function GrowthSections() {
               </ul>
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
-              ) : item.key === "verified" || item.key === "quote" ? (
+              ) : item.key === "cpi" || item.key === "verified" || item.key === "quote" ? (
                 <a className="plan-button" href="#agent-wallet-checkout">Copy the capped checkout</a>
               ) : (
                 <button className="plan-button" onClick={() => selectPlan(item.key)}>Request founding access</button>
@@ -384,7 +403,7 @@ export default function GrowthSections() {
             </article>
           ))}
         </div>
-        <p className="pricing-note">The 0.002 and 0.005 USDC endpoints are live. Founding Integration is an application, not a checkout; no subscription is charged before scope and success criteria are agreed.</p>
+        <p className="pricing-note">The 0.001, 0.002 and 0.005 USDC endpoints are live. Founding Integration is an application, not a checkout; no subscription is charged before scope and success criteria are agreed.</p>
       </section>
 
       <section className="founding-section" id="founding-access">

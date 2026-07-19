@@ -129,6 +129,30 @@ export type WalletRiskDecision = {
   };
 };
 
+export type UsCpiDecision = {
+  intentfence: "0.8";
+  request_id: string;
+  status: "verified";
+  source: {
+    publisher: "U.S. Bureau of Labor Statistics";
+    api: string;
+    retrieved_at: string;
+    cache_ttl_seconds: 21600;
+    served_from_cache: boolean;
+    series: { headline: "CUUR0000SA0"; core: "CUUR0000SA0L1E" };
+  };
+  period: { year: string; month: string; name: string };
+  cpi: {
+    headline_index: number;
+    headline_yoy_percent: number;
+    core_index: number;
+    core_yoy_percent: number;
+  };
+  summary: string;
+  checks: Array<{ name: string; status: "pass"; detail: string }>;
+  receipt: { signed: true; assurance: "official-source-data"; signature: { jws: string } };
+};
+
 export class IntentFenceHttpError extends Error {
   constructor(
     message: string,
@@ -218,6 +242,28 @@ export class IntentFenceClient {
       );
     }
     return await response.json() as WalletRiskDecision;
+  }
+
+  async getUsCpi(
+    month?: string,
+    options: { paymentSignature?: string } = {},
+  ) {
+    const url = new URL(`${this.baseUrl}/api/us-cpi`);
+    if (month) url.searchParams.set("month", month);
+    const response = await this.request(url, {
+      method: "GET",
+      headers: options.paymentSignature
+        ? { "PAYMENT-SIGNATURE": options.paymentSignature }
+        : {},
+    });
+    if (!response.ok) {
+      throw new IntentFenceHttpError(
+        `IntentFence returned HTTP ${response.status}.`,
+        response.status,
+        response,
+      );
+    }
+    return await response.json() as UsCpiDecision;
   }
 
   async verifyReceipt(jws: string) {

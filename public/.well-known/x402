@@ -2,12 +2,13 @@
   "spec": "agent402-service-manifest/1",
   "version": 1,
   "name": "IntentFence",
-  "description": "Check a Base recipient with live wallet-risk intelligence, assess an exact caller-observed x402 quote, or obtain a signed policy preflight.",
+  "description": "Retrieve signed official U.S. CPI data, check a Base recipient, assess an x402 quote, or obtain a signed policy preflight.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "resources": [
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
-    "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk"
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
   ],
   "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
   "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
@@ -24,13 +25,14 @@
     }
   },
   "capabilities": {
-    "tools": 4,
+    "tools": 5,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
     "signedReceipts": "ES256",
     "callerObservedX402QuoteAssessment": true,
-    "liveBaseWalletRisk": true
+    "liveBaseWalletRisk": true,
+    "signedOfficialUsCpi": true
   },
   "tags": [
     "ai-agents",

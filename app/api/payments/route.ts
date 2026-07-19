@@ -7,6 +7,8 @@ import {
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
+  INTENTFENCE_US_CPI_PRICE_ATOMIC,
+  INTENTFENCE_US_CPI_PRICE_USD,
   INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
   INTENTFENCE_WALLET_RISK_PRICE_USD,
 } from "../../../lib/x402";
@@ -21,6 +23,14 @@ export function GET() {
       status: "live",
       endpoint: "/api/preflight/verified",
       endpoints: [
+        {
+          path: "/api/us-cpi?month={YYYY-MM}",
+          method: "GET",
+          product: "signed-official-us-cpi",
+          price: INTENTFENCE_US_CPI_PRICE_USD,
+          amount_atomic: INTENTFENCE_US_CPI_PRICE_ATOMIC,
+          recommended_for: "official headline and core U.S. inflation data with signed provenance",
+        },
         {
           path: "/api/wallet-risk?address={base_address}",
           method: "GET",

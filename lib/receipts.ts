@@ -25,7 +25,7 @@ export const INTENTFENCE_PUBLIC_JWK: IntentFenceJwk = {
 
 export type ReceiptDecision = {
   request_id: string;
-  status: "safe_to_proceed" | "needs_review" | "denied";
+  status: "safe_to_proceed" | "needs_review" | "denied" | "verified";
   checks: unknown[];
   receipt: {
     id: string;
@@ -89,10 +89,28 @@ export type WalletRiskReceiptClaims = Omit<
   };
 };
 
+export type OfficialDataReceiptClaims = Omit<
+  ReceiptClaims,
+  "intentfence_version" | "assurance"
+> & {
+  intentfence_version: "0.8";
+  assurance: "official-source-data";
+  evidence: {
+    publisher: "U.S. Bureau of Labor Statistics";
+    retrieved_at: string;
+    period: string;
+    series_ids: string[];
+    source_api: string;
+    headline_index: number;
+    core_index: number;
+  };
+};
+
 export type VerifiableReceiptClaims =
   | ReceiptClaims
   | AssessmentReceiptClaims
-  | WalletRiskReceiptClaims;
+  | WalletRiskReceiptClaims
+  | OfficialDataReceiptClaims;
 
 export type SignedReceipt = ReceiptDecision["receipt"] & {
   signed: true;
@@ -127,6 +145,14 @@ export type SignedWalletRiskReceipt = Omit<
   "assurance" | "note"
 > & {
   assurance: "live-base-wallet-risk";
+  note: string;
+};
+
+export type SignedOfficialDataReceipt = Omit<
+  SignedReceipt,
+  "assurance" | "note"
+> & {
+  assurance: "official-source-data";
   note: string;
 };
 
@@ -425,6 +451,74 @@ export async function createSignedWalletRiskReceipt(
   };
 }
 
+export async function createSignedOfficialDataReceipt(
+  decision: ReceiptDecision & {
+    source: {
+      publisher: "U.S. Bureau of Labor Statistics";
+      api: string;
+      retrieved_at: string;
+      series: { headline: string; core: string };
+    };
+    period: { month: string };
+    cpi: { headline_index: number; core_index: number };
+  },
+  privateJwk: string,
+  payment: { network: string; asset: string; amountAtomic: string; payTo: string },
+): Promise<SignedOfficialDataReceipt> {
+  const issuedAtSeconds = Math.floor(new Date(decision.receipt.issued_at).getTime() / 1000);
+  const claims: OfficialDataReceiptClaims = {
+    iss: SITE_URL,
+    aud: RECEIPT_AUDIENCE,
+    iat: issuedAtSeconds,
+    exp: issuedAtSeconds + RECEIPT_TTL_SECONDS,
+    jti: decision.receipt.id,
+    intentfence_version: "0.8",
+    assurance: "official-source-data",
+    request_id: decision.request_id,
+    decision: decision.status,
+    subject: decision.receipt.subject,
+    action: decision.receipt.action,
+    checks: decision.checks,
+    evidence: {
+      publisher: decision.source.publisher,
+      retrieved_at: decision.source.retrieved_at,
+      period: decision.period.month,
+      series_ids: [decision.source.series.headline, decision.source.series.core],
+      source_api: decision.source.api,
+      headline_index: decision.cpi.headline_index,
+      core_index: decision.cpi.core_index,
+    },
+    payment: {
+      protocol: "x402-v2",
+      network: payment.network,
+      asset: payment.asset,
+      amount_atomic: payment.amountAtomic,
+      pay_to: payment.payTo,
+    },
+  };
+  const jws = await signReceiptClaims(claims, privateJwk);
+  return {
+    ...decision.receipt,
+    signed: true,
+    assurance: "official-source-data",
+    expires_at: new Date(claims.exp * 1000).toISOString(),
+    payment_assurance: "x402-settled",
+    payment_network: payment.network,
+    payment_asset: payment.asset,
+    payment_amount_atomic: payment.amountAtomic,
+    pay_to: payment.payTo,
+    signature: {
+      format: "JWS Compact",
+      alg: "ES256",
+      kid: INTENTFENCE_SIGNING_KID,
+      jws,
+      verify_url: `${SITE_URL}/api/receipts/verify`,
+      jwks_url: `${SITE_URL}/.well-known/jwks.json`,
+    },
+    note: "IntentFence signed the BLS publisher, source API, retrieval time, observation period, series identifiers, and index values for 24 hours. PAYMENT-RESPONSE separately proves settlement of the data fee.",
+  };
+}
+
 export async function verifyReceipt(
   jws: string,
   now = Date.now(),
@@ -463,11 +557,16 @@ export async function verifyReceipt(
       claims.intentfence_version === "0.7" &&
       claims.assurance === "live-base-wallet-risk" &&
       isRecord(claims.evidence);
+    const officialDataReceipt =
+      isRecord(claims) &&
+      claims.intentfence_version === "0.8" &&
+      claims.assurance === "official-source-data" &&
+      isRecord(claims.evidence);
     if (
       !isRecord(claims) ||
       claims.iss !== SITE_URL ||
       claims.aud !== RECEIPT_AUDIENCE ||
-      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt) ||
+      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt && !officialDataReceipt) ||
       typeof claims.iat !== "number" ||
       typeof claims.exp !== "number" ||
       typeof claims.jti !== "string" ||

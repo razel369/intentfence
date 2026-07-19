@@ -65,6 +65,21 @@ export class IntentFenceClient {
         }
         return await response.json();
     }
+    async getUsCpi(month, options = {}) {
+        const url = new URL(`${this.baseUrl}/api/us-cpi`);
+        if (month)
+            url.searchParams.set("month", month);
+        const response = await this.request(url, {
+            method: "GET",
+            headers: options.paymentSignature
+                ? { "PAYMENT-SIGNATURE": options.paymentSignature }
+                : {},
+        });
+        if (!response.ok) {
+            throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
+        }
+        return await response.json();
+    }
     async verifyReceipt(jws) {
         const response = await this.request(`${this.baseUrl}/api/receipts/verify`, {
             method: "POST",

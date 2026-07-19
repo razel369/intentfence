@@ -3,6 +3,7 @@ import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { preflightInputSchema } from "./preflight";
 import { x402AssessmentInputSchema } from "./x402-assessment";
 import { walletRiskInputSchema } from "./wallet-risk";
+import { usCpiInputSchema } from "./us-cpi";
 import {
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
@@ -10,6 +11,8 @@ import {
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
   INTENTFENCE_USDC_CONTRACT,
+  INTENTFENCE_US_CPI_PRICE_ATOMIC,
+  INTENTFENCE_US_CPI_PRICE_USD,
   INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
   INTENTFENCE_WALLET_RISK_PRICE_USD,
 } from "./x402";
@@ -270,16 +273,95 @@ export const walletRiskRouteConfig = {
   }),
 } satisfies RouteConfig;
 
+export const usCpiDiscoveryExtensions = declareDiscoveryExtension({
+  input: { month: "2026-06" },
+  inputSchema: usCpiInputSchema,
+  output: {
+    example: {
+      intentfence: "0.8",
+      request_id: "a6f37ff9-90aa-43f7-8304-f329292bc702",
+      status: "verified",
+      period: { year: "2026", month: "2026-06", name: "June" },
+      cpi: {
+        headline_index: 333.952,
+        headline_yoy_percent: 3.531,
+        core_index: 336.882,
+        core_yoy_percent: 2.594,
+      },
+      receipt: { signed: true, assurance: "official-source-data" },
+    },
+    schema: {
+      type: "object",
+      properties: {
+        intentfence: { type: "string", const: "0.8" },
+        request_id: { type: "string", format: "uuid" },
+        status: { type: "string", const: "verified" },
+        source: { type: "object" },
+        period: { type: "object" },
+        cpi: { type: "object" },
+        summary: { type: "string" },
+        checks: { type: "array", items: { type: "object" } },
+        receipt: { type: "object" },
+      },
+      required: ["intentfence", "request_id", "status", "source", "period", "cpi", "summary", "checks", "receipt"],
+    },
+  },
+});
+
+export const usCpiPaymentRequiredExtensions = {
+  bazaar: {
+    ...usCpiDiscoveryExtensions.bazaar,
+    info: {
+      ...usCpiDiscoveryExtensions.bazaar.info,
+      input: {
+        ...usCpiDiscoveryExtensions.bazaar.info.input,
+        method: "GET" as const,
+      },
+    },
+  },
+};
+
+export const usCpiRouteConfig = {
+  accepts: {
+    scheme: "exact",
+    price: INTENTFENCE_US_CPI_PRICE_USD,
+    network: INTENTFENCE_NETWORK,
+    payTo: INTENTFENCE_PAY_TO,
+  },
+  description:
+    "Official U.S. headline and core Consumer Price Index data from the Bureau of Labor Statistics. Returns the latest complete month or a requested YYYY-MM period, year-over-year inflation calculations, source provenance, and a signed receipt.",
+  mimeType: "application/json",
+  serviceName: "IntentFence Official U.S. CPI",
+  tags: [
+    "ai-agents",
+    "bls",
+    "consumer-price-index",
+    "inflation",
+    "official-data",
+  ],
+  iconUrl: `${INTENTFENCE_SITE_URL}/favicon.svg`,
+  unpaidResponseBody: () => ({
+    contentType: "application/json",
+    body: {
+      error: "payment_required",
+      message: `Pay ${INTENTFENCE_US_CPI_PRICE_USD} in USDC on Base for official U.S. headline and core CPI data with a signed source receipt.`,
+      payment_info: `${INTENTFENCE_SITE_URL}/api/payments`,
+    },
+  }),
+} satisfies RouteConfig;
+
 function createPaymentRequired(
   resourceUrl: string,
   routeConfig:
     | typeof intentFencePaidRouteConfig
     | typeof x402AssessmentRouteConfig
-    | typeof walletRiskRouteConfig,
+    | typeof walletRiskRouteConfig
+    | typeof usCpiRouteConfig,
   extensions:
     | typeof intentFencePaymentRequiredExtensions
     | typeof x402AssessmentPaymentRequiredExtensions
-    | typeof walletRiskPaymentRequiredExtensions,
+    | typeof walletRiskPaymentRequiredExtensions
+    | typeof usCpiPaymentRequiredExtensions,
   error: string,
   amountAtomic = INTENTFENCE_PRICE_ATOMIC,
 ) {
@@ -340,6 +422,19 @@ export function createWalletRiskPaymentRequired(
     walletRiskPaymentRequiredExtensions,
     error,
     INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+  );
+}
+
+export function createUsCpiPaymentRequired(
+  resourceUrl: string,
+  error = "Payment required",
+) {
+  return createPaymentRequired(
+    resourceUrl,
+    usCpiRouteConfig,
+    usCpiPaymentRequiredExtensions,
+    error,
+    INTENTFENCE_US_CPI_PRICE_ATOMIC,
   );
 }
 

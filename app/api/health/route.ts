@@ -12,6 +12,7 @@ import {
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
+  INTENTFENCE_US_CPI_PRICE_ATOMIC,
   INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
 } from "../../../lib/x402";
 import { checkIntentFenceFacilitator } from "../../../lib/x402-health";
@@ -87,7 +88,7 @@ export async function GET() {
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.8.0",
+      version: "0.9.0",
       status,
       checks: {
         database,
@@ -103,6 +104,7 @@ export async function GET() {
           network: INTENTFENCE_NETWORK,
           amount_atomic: INTENTFENCE_PRICE_ATOMIC,
           wallet_risk_amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+          us_cpi_amount_atomic: INTENTFENCE_US_CPI_PRICE_ATOMIC,
         },
       },
       protocol: {
@@ -113,6 +115,7 @@ export async function GET() {
         x402: true,
         caller_observed_x402_quote_assessment: true,
         live_base_wallet_risk: true,
+        signed_official_us_cpi: true,
       },
     },
     {
