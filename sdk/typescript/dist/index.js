@@ -51,6 +51,20 @@ export class IntentFenceClient {
         }
         return await response.json();
     }
+    async assessWalletRisk(address, options = {}) {
+        const url = new URL(`${this.baseUrl}/api/wallet-risk`);
+        url.searchParams.set("address", address);
+        const response = await this.request(url, {
+            method: "GET",
+            headers: options.paymentSignature
+                ? { "PAYMENT-SIGNATURE": options.paymentSignature }
+                : {},
+        });
+        if (!response.ok) {
+            throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
+        }
+        return await response.json();
+    }
     async verifyReceipt(jws) {
         const response = await this.request(`${this.baseUrl}/api/receipts/verify`, {
             method: "POST",

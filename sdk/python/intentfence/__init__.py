@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Mapping, TypeVar, TypedDict, cast
 from urllib.error import HTTPError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 T = TypeVar("T")
@@ -89,6 +90,20 @@ class X402AssessmentDecision(TypedDict):
     receipt: X402AssessmentReceipt
 
 
+class WalletRiskDecision(TypedDict):
+    intentfence: Literal["0.7"]
+    request_id: str
+    status: Literal["safe_to_proceed", "needs_review", "denied"]
+    risk_level: Literal["low", "medium", "critical"]
+    risk_score: int
+    assessed_at: str
+    verification_tier: Literal["live-base-wallet-risk+x402-settled"]
+    subject: dict[str, str]
+    observed: dict[str, Any]
+    checks: list[dict[str, str]]
+    receipt: dict[str, Any]
+
+
 @dataclass
 class IntentFenceError(RuntimeError):
     message: str
@@ -138,6 +153,35 @@ class IntentFenceClient:
                 body=body,
             ) from error
 
+    def _get(
+        self,
+        path: str,
+        query: Mapping[str, str],
+        *,
+        payment_signature: str | None = None,
+    ) -> dict[str, Any]:
+        headers = {}
+        if payment_signature:
+            headers["PAYMENT-SIGNATURE"] = payment_signature
+        request = Request(
+            f"{self.base_url}{path}?{urlencode(query)}",
+            headers=headers,
+            method="GET",
+        )
+        try:
+            with self.opener(request, timeout=30) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            try:
+                body = json.loads(error.read().decode("utf-8"))
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                body = None
+            raise IntentFenceError(
+                f"IntentFence returned HTTP {error.code}.",
+                status=error.code,
+                body=body,
+            ) from error
+
     def preflight(self, payload: dict[str, Any], *, paid: bool = False) -> dict[str, Any]:
         path = "/api/preflight/verified" if paid else "/api/preflight"
         return self._post(path, payload)
@@ -156,6 +200,21 @@ class IntentFenceClient:
             self._post(
                 "/api/x402-assessments",
                 payload,
+                payment_signature=payment_signature,
+            ),
+        )
+
+    def assess_wallet_risk(
+        self,
+        address: str,
+        *,
+        payment_signature: str | None = None,
+    ) -> WalletRiskDecision:
+        return cast(
+            WalletRiskDecision,
+            self._get(
+                "/api/wallet-risk",
+                {"address": address},
                 payment_signature=payment_signature,
             ),
         )
@@ -190,4 +249,5 @@ __all__ = [
     "X402AssessmentPolicy",
     "X402AssessmentReceipt",
     "X402AssessmentTarget",
+    "WalletRiskDecision",
 ]

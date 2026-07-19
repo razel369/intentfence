@@ -12,6 +12,7 @@ import {
   createPaidPreflightHandler,
 } from "../mcp-stdio/lib/paid-preflight.mjs";
 import { validateX402AssessmentInput } from "../lib/x402-assessment.ts";
+import { validateWalletRiskInput } from "../mcp-stdio/lib/wallet-risk.mjs";
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 
@@ -19,14 +20,14 @@ const server = new McpServer(
   {
     name: "intentfence",
     title: "IntentFence Policy Gate",
-    version: "0.7.1",
+    version: "0.8.0",
     websiteUrl: SITE_URL,
     description:
       "A declared-input policy gate for autonomous AI actions, including spend, scope, data-retention, and human-approval constraints.",
   },
   {
     instructions:
-      "Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a caller-approved payment policy without contacting the target or verifying merchant identity, then returns a signed assessment. intentfence_preflight remains a free declared-input preview.",
+      "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_preflight remains a free declared-input preview.",
   },
 );
 
@@ -231,6 +232,35 @@ server.registerTool(
     source: "glama-mcp-x402-assessment",
     endpoint: "/api/x402-assessments",
     failureMessage: "The IntentFence x402 quote assessment could not be processed.",
+  }),
+);
+
+server.registerTool(
+  "intentfence_wallet_risk",
+  {
+    title: "Check a Base recipient before paying it",
+    description:
+      "Costs 0.002 USDC on Base. Checks live Base activity and GoPlus malicious-address intelligence, then returns a five-minute ES256 receipt. A low-risk result means no listed malicious flags were observed and the address was established on Base; it does not prove identity, ownership, authorization, or future behavior.",
+    inputSchema: {
+      address: z
+        .string()
+        .regex(/^0x[0-9a-fA-F]{40}$/u)
+        .describe("Base recipient or counterparty address to assess before payment."),
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  createPaidIntentFenceHandler({
+    validateInput: validateWalletRiskInput,
+    source: "glama-mcp-wallet-risk",
+    endpoint: "/api/wallet-risk",
+    method: "GET",
+    query: (input) => ({ address: input.address }),
+    failureMessage: "The IntentFence wallet-risk assessment could not be processed.",
   }),
 );
 

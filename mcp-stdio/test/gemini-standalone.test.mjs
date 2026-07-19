@@ -44,12 +44,12 @@ test("dependency-free Gemini extension lists tools and returns an x402 challenge
     env: { ...process.env, INTENTFENCE_BASE_URL: `http://127.0.0.1:${address.port}` },
     stderr: "pipe",
   });
-  const client = new Client({ name: "gemini-extension-test", version: "0.7.1" });
+  const client = new Client({ name: "gemini-extension-test", version: "0.8.0" });
 
   try {
     await client.connect(transport);
     const listed = await client.listTools();
-    assert.equal(listed.tools.length, 3);
+    assert.equal(listed.tools.length, 4);
     const assessmentTool = listed.tools.find(
       (tool) => tool.name === "intentfence_x402_assessment",
     );

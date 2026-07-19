@@ -2,14 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.7.1",
-    "description": "Guard autonomous agent payments with declared-input policy checks and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
+    "version": "0.8.0",
+    "description": "Guard autonomous agent payments with live Base wallet-risk intelligence, declared-input policy checks, and caller-observed x402 quote assessments. Paid endpoints return ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
     },
     "contact": { "url": "https://github.com/razel369/intentfence" },
-    "x-guidance": "Use the free preflight for a declared-input preview. Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to the paid quote assessment with an explicit caller-approved payee allowlist."
+    "x-guidance": "Before paying, check the recipient with /api/wallet-risk, then forward the exact caller-observed PAYMENT-REQUIRED header to /api/x402-assessments with an explicit caller-approved payee allowlist. Use the free preflight for a declared-input preview."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
@@ -279,6 +279,88 @@
           },
           "413": { "$ref": "#/components/responses/Problem" },
           "415": { "$ref": "#/components/responses/Problem" },
+          "500": { "$ref": "#/components/responses/Problem" },
+          "503": { "$ref": "#/components/responses/Problem" }
+        }
+      }
+    },
+    "/api/wallet-risk": {
+      "get": {
+        "operationId": "assessBaseWalletRisk",
+        "summary": "Check a Base recipient before paying it",
+        "description": "Paid live counterparty assessment using Base RPC activity and GoPlus malicious-address intelligence. A low-risk result means no listed malicious flags were observed and the address was established on Base at assessment time; it does not prove identity, ownership, authorization, or future behavior. The assessment costs 0.002 USDC through x402 and returns a five-minute ES256 receipt.",
+        "tags": ["wallet-intelligence", "counterparty-risk", "security", "x402"],
+        "security": [],
+        "x-payment-info": {
+          "price": { "mode": "fixed", "currency": "USD", "amount": "0.002" },
+          "protocols": [
+            {
+              "x402": {
+                "version": 2,
+                "network": "eip155:8453",
+                "asset": "USDC",
+                "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+              }
+            }
+          ]
+        },
+        "x-x402-price": "$0.002",
+        "x-x402": {
+          "version": 2,
+          "scheme": "exact",
+          "price": "0.002 USDC",
+          "network": "eip155:8453",
+          "asset": "USDC",
+          "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+        },
+        "parameters": [
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "description": "Base recipient or counterparty address.",
+            "schema": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+            "example": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+          },
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 payment payload. Omit on the first call to receive PAYMENT-REQUIRED.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live wallet-risk assessment created and the IntentFence fee settled",
+            "headers": {
+              "PAYMENT-RESPONSE": {
+                "description": "Base64-encoded x402 settlement result for the assessment fee.",
+                "schema": { "type": "string" }
+              },
+              "X-IntentFence-Request-ID": {
+                "description": "Assessment and audit correlation identifier.",
+                "schema": { "type": "string", "format": "uuid" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/WalletRiskDecision" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/Problem" },
+          "402": {
+            "description": "Payment is required or the supplied payment could not be verified",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64-encoded x402 v2 payment requirements for 0.002 USDC.",
+                "required": true,
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "409": { "$ref": "#/components/responses/Problem" },
           "500": { "$ref": "#/components/responses/Problem" },
           "503": { "$ref": "#/components/responses/Problem" }
         }
@@ -599,6 +681,81 @@
                 "type": "string",
                 "const": "caller-observed-x402-quote-assessment"
               },
+              "expires_at": { "type": "string", "format": "date-time" },
+              "signature": { "type": "object" }
+            }
+          }
+        }
+      },
+      "WalletRiskDecision": {
+        "type": "object",
+        "required": [
+          "intentfence",
+          "request_id",
+          "status",
+          "risk_level",
+          "risk_score",
+          "assessed_at",
+          "subject",
+          "observed",
+          "checks",
+          "verification_tier",
+          "receipt"
+        ],
+        "properties": {
+          "intentfence": { "type": "string", "const": "0.7" },
+          "request_id": { "type": "string", "format": "uuid" },
+          "status": {
+            "type": "string",
+            "enum": ["safe_to_proceed", "needs_review", "denied"]
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["low", "medium", "critical"]
+          },
+          "risk_score": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "assessed_at": { "type": "string", "format": "date-time" },
+          "subject": {
+            "type": "object",
+            "required": ["address", "network", "account_type"],
+            "properties": {
+              "address": { "type": "string", "pattern": "^0x[0-9a-f]{40}$" },
+              "network": { "type": "string", "const": "eip155:8453" },
+              "account_type": { "type": "string", "enum": ["eoa", "contract"] }
+            }
+          },
+          "observed": {
+            "type": "object",
+            "required": [
+              "block_number",
+              "transaction_count",
+              "native_balance_wei",
+              "usdc_balance_atomic",
+              "malicious_flags",
+              "intelligence_source"
+            ],
+            "properties": {
+              "block_number": { "type": "string", "pattern": "^[0-9]+$" },
+              "transaction_count": { "type": "string", "pattern": "^[0-9]+$" },
+              "native_balance_wei": { "type": "string", "pattern": "^[0-9]+$" },
+              "usdc_balance_atomic": { "type": "string", "pattern": "^[0-9]+$" },
+              "code_sha256": { "type": ["string", "null"] },
+              "malicious_flags": { "type": "array", "items": { "type": "string" } },
+              "malicious_contracts_created": { "type": "integer", "minimum": 0 },
+              "intelligence_source": { "type": "string" }
+            }
+          },
+          "checks": { "type": "array", "items": { "type": "object" } },
+          "verification_tier": {
+            "type": "string",
+            "const": "live-base-wallet-risk+x402-settled"
+          },
+          "receipt": {
+            "type": "object",
+            "required": ["signed", "assurance", "expires_at", "signature"],
+            "properties": {
+              "signed": { "const": true },
+              "assurance": { "type": "string", "const": "live-base-wallet-risk" },
               "expires_at": { "type": "string", "format": "date-time" },
               "signature": { "type": "object" }
             }

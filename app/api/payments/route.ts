@@ -7,6 +7,8 @@ import {
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
+  INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+  INTENTFENCE_WALLET_RISK_PRICE_USD,
 } from "../../../lib/x402";
 import { AGENTIC_WALLET_CHECKOUT } from "../../../lib/agentic-wallet-checkout";
 import { COINBASE_AGENTKIT_CHECKOUT } from "../../../lib/coinbase-agentkit-checkout";
@@ -20,13 +22,27 @@ export function GET() {
       endpoint: "/api/preflight/verified",
       endpoints: [
         {
+          path: "/api/wallet-risk?address={base_address}",
+          method: "GET",
+          product: "live-base-wallet-risk",
+          price: INTENTFENCE_WALLET_RISK_PRICE_USD,
+          amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+          recommended_for: "recipient and counterparty screening before a Base payment",
+        },
+        {
           path: "/api/x402-assessments",
+          method: "POST",
           product: "caller-observed-x402-quote-assessment",
+          price: INTENTFENCE_PRICE_USD,
+          amount_atomic: INTENTFENCE_PRICE_ATOMIC,
           recommended_for: "caller-observed x402 quotes before signing an approved target payment",
         },
         {
           path: "/api/preflight/verified",
+          method: "POST",
           product: "signed-declared-input-preflight",
+          price: INTENTFENCE_PRICE_USD,
+          amount_atomic: INTENTFENCE_PRICE_ATOMIC,
           recommended_for: "general consequential agent actions",
         },
       ],
@@ -41,7 +57,7 @@ export function GET() {
         url: INTENTFENCE_FACILITATOR_URL,
       },
       flow: [
-        "POST without payment and read the PAYMENT-REQUIRED response header.",
+        "Call the chosen endpoint without payment and read the PAYMENT-REQUIRED response header.",
         "Create and sign the exact USDC payment with an x402-compatible wallet.",
         "Retry with PAYMENT-SIGNATURE; a successful response includes PAYMENT-RESPONSE.",
       ],

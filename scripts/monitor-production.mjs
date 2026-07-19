@@ -100,6 +100,21 @@ assert.equal(
   `${baseUrl}/api/x402-assessments`,
 );
 
+const walletRiskAddress = settlementWallet;
+const walletRiskUrl = `${baseUrl}/api/wallet-risk?address=${walletRiskAddress}`;
+const walletRiskRequiredResponse = await fetchWithTimeout(walletRiskUrl, {
+  headers: monitorHeaders,
+});
+assert.equal(walletRiskRequiredResponse.status, 402);
+const walletRiskRequiredHeader = walletRiskRequiredResponse.headers.get("payment-required");
+assert.ok(walletRiskRequiredHeader, "wallet-risk PAYMENT-REQUIRED header missing");
+const walletRiskPaymentRequired = JSON.parse(
+  Buffer.from(walletRiskRequiredHeader, "base64").toString("utf8"),
+);
+assert.equal(walletRiskPaymentRequired.accepts[0].amount, "2000");
+assert.equal(walletRiskPaymentRequired.accepts[0].network, "eip155:8453");
+assert.equal(walletRiskPaymentRequired.resource.url, walletRiskUrl);
+
 const mcpResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
   method: "POST",
   headers: {
@@ -122,6 +137,10 @@ assert.ok(
     (tool) => tool.name === "intentfence_verified_preflight",
   ),
   "paid MCP tool missing",
+);
+assert.ok(
+  mcp.result.tools.some((tool) => tool.name === "intentfence_wallet_risk"),
+  "live wallet-risk MCP tool missing",
 );
 assert.ok(
   mcp.result.tools.some(
@@ -338,6 +357,8 @@ console.log(
       health: health.status,
       paid_mcp_challenge: true,
       x402_assessment_challenge: true,
+      wallet_risk_challenge: true,
+      wallet_risk_amount_atomic: walletRiskPaymentRequired.accepts[0].amount,
       x402_amount_atomic: paymentRequired.accepts[0].amount,
       settled_calls: metrics.settled_calls,
       revenue_usdc: metrics.revenue_usdc,

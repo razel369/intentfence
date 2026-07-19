@@ -5,7 +5,10 @@ import { INTENTFENCE_USDC_CONTRACT } from "./x402.ts";
 const MAX_RESERVATION_MS = 10 * 60 * 1_000;
 const MIN_RESERVATION_MS = 30 * 1_000;
 
-export type X402ReservationProduct = "verified-preflight" | "x402-assessment";
+export type X402ReservationProduct =
+  | "verified-preflight"
+  | "x402-assessment"
+  | "wallet-risk";
 
 export class X402PaymentReservationInputError extends Error {
   constructor(message: string) {

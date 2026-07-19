@@ -3,7 +3,7 @@
   "name": "io.github.razel369/intentfence",
   "title": "IntentFence Payment Firewall",
   "description": "Caller-observed x402 quote assessment plus free and x402-paid signed preflight receipts for autonomous-agent payments.",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "remotes": [
     {
       "type": "streamable-http",

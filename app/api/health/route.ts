@@ -12,6 +12,7 @@ import {
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
+  INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
 } from "../../../lib/x402";
 import { checkIntentFenceFacilitator } from "../../../lib/x402-health";
 
@@ -86,7 +87,7 @@ export async function GET() {
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.7.1",
+      version: "0.8.0",
       status,
       checks: {
         database,
@@ -101,6 +102,7 @@ export async function GET() {
           facilitator_supports_route: facilitatorSupportsRoute,
           network: INTENTFENCE_NETWORK,
           amount_atomic: INTENTFENCE_PRICE_ATOMIC,
+          wallet_risk_amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
         },
       },
       protocol: {
@@ -110,6 +112,7 @@ export async function GET() {
         a2a: true,
         x402: true,
         caller_observed_x402_quote_assessment: true,
+        live_base_wallet_risk: true,
       },
     },
     {

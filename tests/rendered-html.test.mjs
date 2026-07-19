@@ -25,14 +25,15 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.7 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+test("publishes the IntentFence 0.8 protocol entry points in the site", async () => {
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
     source("app/api/preflight/verified/route.ts"),
     source("app/api/x402-assessments/route.ts"),
     source("app/api/x402-assessments/preview/route.ts"),
+    source("app/api/wallet-risk/route.ts"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
     source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
@@ -43,7 +44,7 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   ]);
 
   assert.match(layout, /IntentFence/);
-  assert.match(page, /Open protocol \/ v0\.7/);
+  assert.match(page, /Open protocol \/ v0\.8/);
   assert.match(page, /POST \/api\/receipts\/verify/);
   assert.match(growth, /ES256-signed policy receipt/);
   assert.match(growth, /Install IntentFence in VS Code/);
@@ -57,11 +58,12 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.match(paidRoute, /"POST \/api\/preflight\/verified": intentFencePaidRouteConfig/);
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
-  assert.equal(manifest.version, "0.7.1");
+  assert.match(walletRiskRoute, /"GET \/api\/wallet-risk": walletRiskRouteConfig/);
+  assert.equal(manifest.version, "0.8.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
-  assert.equal(agentCard.version, "0.7.1");
+  assert.equal(agentCard.version, "0.8.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
@@ -69,6 +71,9 @@ test("publishes the IntentFence 0.7 protocol entry points in the site", async ()
   assert.equal(x402Manifest.payment.x402.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
   assert.equal(openapi.paths["/api/preflight/verified"].post["x-x402-price"], "$0.005");
   assert.equal(openapi.paths["/api/x402-assessments"].post["x-x402-price"], "$0.005");
+  assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
+  assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
+  assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_wallet_risk"), true);
   assert.equal(
     openapi.paths["/api/x402-assessments/preview"].post["x-marketplace"].name,
     "PayanAgent",

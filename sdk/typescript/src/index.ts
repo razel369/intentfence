@@ -95,6 +95,40 @@ export type X402AssessmentDecision = {
   };
 };
 
+export type WalletRiskDecision = {
+  intentfence: "0.7";
+  request_id: string;
+  status: "safe_to_proceed" | "needs_review" | "denied";
+  risk_level: "low" | "medium" | "critical";
+  risk_score: number;
+  assessed_at: string;
+  verification_tier: "live-base-wallet-risk+x402-settled";
+  subject: {
+    address: string;
+    network: "eip155:8453";
+    account_type: "eoa" | "contract";
+  };
+  observed: {
+    block_number: string;
+    transaction_count: string;
+    native_balance_wei: string;
+    usdc_balance_atomic: string;
+    code_sha256: string | null;
+    malicious_flags: string[];
+    malicious_contracts_created: number;
+    intelligence_source: string;
+  };
+  checks: Array<{ name: string; status: "pass" | "review" | "deny"; detail: string }>;
+  receipt: {
+    id: string;
+    signed: true;
+    assurance: "live-base-wallet-risk";
+    expires_at: string;
+    payment_amount_atomic: "2000";
+    signature: { jws: string; kid: string; alg: "ES256"; verify_url: string };
+  };
+};
+
 export class IntentFenceHttpError extends Error {
   constructor(
     message: string,
@@ -162,6 +196,28 @@ export class IntentFenceClient {
       );
     }
     return await response.json() as X402AssessmentDecision;
+  }
+
+  async assessWalletRisk(
+    address: string,
+    options: { paymentSignature?: string } = {},
+  ) {
+    const url = new URL(`${this.baseUrl}/api/wallet-risk`);
+    url.searchParams.set("address", address);
+    const response = await this.request(url, {
+      method: "GET",
+      headers: options.paymentSignature
+        ? { "PAYMENT-SIGNATURE": options.paymentSignature }
+        : {},
+    });
+    if (!response.ok) {
+      throw new IntentFenceHttpError(
+        `IntentFence returned HTTP ${response.status}.`,
+        response.status,
+        response,
+      );
+    }
+    return await response.json() as WalletRiskDecision;
   }
 
   async verifyReceipt(jws: string) {

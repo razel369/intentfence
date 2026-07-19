@@ -12,7 +12,13 @@ import {
   X402AssessmentValidationError,
 } from "../../lib/x402-assessment";
 import {
+  validateWalletRiskInput,
+  walletRiskInputSchema,
+  WalletRiskValidationError,
+} from "../../lib/wallet-risk";
+import {
   createIntentFencePaymentRequired,
+  createWalletRiskPaymentRequired,
   createX402AssessmentPaymentRequired,
   decodeX402Header,
   encodeX402Header,
@@ -227,6 +233,55 @@ function callX402Assessment(
   });
 }
 
+async function callWalletRisk(
+  request: Request,
+  input: ReturnType<typeof validateWalletRiskInput>,
+  payment: Record<string, unknown>,
+) {
+  const paidEndpoint = new URL("/api/wallet-risk", request.url);
+  paidEndpoint.searchParams.set("address", input.address);
+  const response = await fetch(paidEndpoint, {
+    method: "GET",
+    headers: {
+      "PAYMENT-SIGNATURE": encodeX402Header(payment),
+      "X-IntentFence-Source": "mcp-wallet-risk",
+    },
+  });
+  const rawBody = await response.text();
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody) as unknown;
+  } catch {
+    body = {
+      error: "upstream_invalid_response",
+      message: "The wallet-risk assessment returned invalid JSON.",
+    };
+  }
+  if (response.status === 402) {
+    const required = decodeX402Header(response.headers.get("PAYMENT-REQUIRED"));
+    const paymentRequired = isRecord(required)
+      ? required
+      : createWalletRiskPaymentRequired(paidEndpoint.toString(), "Payment verification failed");
+    return toolError("Payment verification failed", paymentRequired);
+  }
+  if (!response.ok || !isRecord(body)) {
+    const message = isRecord(body) && typeof body.detail === "string"
+      ? body.detail
+      : "The wallet-risk assessment could not be processed.";
+    return toolError(message);
+  }
+  const paymentResponseHeader = response.headers.get("PAYMENT-RESPONSE");
+  const paymentResponse = decodeX402Header(paymentResponseHeader) ?? paymentResponseHeader;
+  return {
+    content: [{ type: "text", text: JSON.stringify(body) }],
+    structuredContent: body,
+    isError: false,
+    _meta: paymentResponse
+      ? { [MCP_PAYMENT_RESPONSE_META_KEY]: paymentResponse }
+      : undefined,
+  };
+}
+
 export function OPTIONS(request: Request) {
   if (!validOrigin(request)) return new Response(null, { status: 403 });
   return new Response(null, { status: 204, headers: corsHeaders(request) });
@@ -283,8 +338,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.7.1" },
-      instructions: "Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a Base USDC ceiling and caller-approved payee allowlist, binds the signed receipt to the quote hash, and never contacts the target or verifies merchant identity. Supply allowed_payees for safe_to_proceed; omission yields needs_review. intentfence_preflight remains a free declared-input preview; intentfence_verified_preflight returns a paid signed policy decision.",
+      serverInfo: { name: "IntentFence", version: "0.8.0" },
+      instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient address with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. A low-risk wallet result means no listed flags were observed at assessment time; it does not prove identity or ownership. intentfence_preflight remains a free declared-input preview; the other tools return paid signed decisions.",
     }, protocolVersion);
   }
 
@@ -294,7 +349,7 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 3 },
+      metadata: { protocol: "mcp", tools: 4 },
     });
     return jsonRpc(request, body.id, {
       tools: [
@@ -319,6 +374,13 @@ export async function POST(request: Request) {
           inputSchema: x402AssessmentInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
         },
+        {
+          name: "intentfence_wallet_risk",
+          title: "IntentFence Wallet Risk",
+          description: "Paid recipient assessment ($0.002 USDC on Base). Checks live Base activity plus GoPlus malicious-address intelligence and returns a five-minute ES256 receipt. A low-risk result means no listed flags were observed and the address was established on Base; it does not prove identity, ownership, authorization, or future behavior.",
+          inputSchema: walletRiskInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+        },
       ],
     });
   }
@@ -329,7 +391,8 @@ export async function POST(request: Request) {
     if (
       toolName !== "intentfence_preflight" &&
       toolName !== "intentfence_verified_preflight" &&
-      toolName !== "intentfence_x402_assessment"
+      toolName !== "intentfence_x402_assessment" &&
+      toolName !== "intentfence_wallet_risk"
     ) {
       return jsonRpc(request, body.id, {
         content: [{ type: "text", text: "Unknown tool name." }],
@@ -337,6 +400,24 @@ export async function POST(request: Request) {
       });
     }
     try {
+      if (toolName === "intentfence_wallet_risk") {
+        const input = validateWalletRiskInput(toolParams.arguments ?? {});
+        const payment = x402PaymentFromParams(toolParams);
+        const paidEndpoint = new URL("/api/wallet-risk", request.url);
+        paidEndpoint.searchParams.set("address", input.address);
+        if (!payment) {
+          const paymentRequired = createWalletRiskPaymentRequired(paidEndpoint.toString());
+          await recordFunnelEvent({
+            eventName: "payment_required",
+            request,
+            subject: input.address,
+            metadata: { protocol: "mcp-x402", product: "wallet-risk" },
+          });
+          return jsonRpc(request, body.id, toolError("Payment required", paymentRequired));
+        }
+        return jsonRpc(request, body.id, await callWalletRisk(request, input, payment));
+      }
+
       if (toolName === "intentfence_x402_assessment") {
         const input = validateX402AssessmentInput(toolParams.arguments ?? {});
         const payment = x402PaymentFromParams(toolParams);
@@ -385,7 +466,8 @@ export async function POST(request: Request) {
       });
     } catch (error) {
       const message = error instanceof PreflightValidationError ||
-          error instanceof X402AssessmentValidationError
+          error instanceof X402AssessmentValidationError ||
+          error instanceof WalletRiskValidationError
         ? error.message
         : "The IntentFence request could not be processed.";
       return jsonRpc(request, body.id, {

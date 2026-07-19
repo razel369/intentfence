@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json",
-  "title": "IntentFence 0.5/0.6 Signed Receipt Claims",
+  "title": "IntentFence 0.5/0.6/0.7 Signed Receipt Claims",
   "type": "object",
   "additionalProperties": true,
   "required": [
@@ -25,9 +25,9 @@
     "iat": { "type": "integer" },
     "exp": { "type": "integer" },
     "jti": { "type": "string", "minLength": 1, "maxLength": 200 },
-    "intentfence_version": { "enum": ["0.5", "0.6"] },
+    "intentfence_version": { "enum": ["0.5", "0.6", "0.7"] },
     "assurance": {
-      "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment"]
+      "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-base-wallet-risk"]
     },
     "request_id": { "type": "string", "format": "uuid" },
     "decision": {
@@ -36,29 +36,7 @@
     "subject": { "type": ["string", "null"] },
     "action": { "type": ["object", "null"] },
     "checks": { "type": "array" },
-    "evidence": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "assessed_at",
-        "target_url_sha256",
-        "target_origin",
-        "target_pathname",
-        "target_method",
-        "payment_requirements_sha256"
-      ],
-      "properties": {
-        "assessed_at": { "type": "string", "format": "date-time" },
-        "target_url_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-        "target_origin": { "type": "string", "format": "uri" },
-        "target_pathname": { "type": "string" },
-        "target_method": { "enum": ["GET", "HEAD", "POST"] },
-        "payment_requirements_sha256": {
-          "type": "string",
-          "pattern": "^[0-9a-f]{64}$"
-        }
-      }
-    },
+    "evidence": { "type": "object" },
     "payment": {
       "type": "object",
       "additionalProperties": false,
@@ -82,7 +60,18 @@
       "then": {
         "required": ["evidence"],
         "properties": {
-          "intentfence_version": { "const": "0.6" }
+          "intentfence_version": { "const": "0.6" },
+          "evidence": {
+            "type": "object",
+            "required": [
+              "assessed_at",
+              "target_url_sha256",
+              "target_origin",
+              "target_pathname",
+              "target_method",
+              "payment_requirements_sha256"
+            ]
+          }
         }
       }
     },
@@ -95,6 +84,30 @@
       "then": {
         "properties": {
           "intentfence_version": { "const": "0.5" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "assurance": { "const": "live-base-wallet-risk" }
+        }
+      },
+      "then": {
+        "required": ["evidence"],
+        "properties": {
+          "intentfence_version": { "const": "0.7" },
+          "evidence": {
+            "type": "object",
+            "required": [
+              "assessed_at",
+              "address",
+              "network",
+              "block_number",
+              "malicious_flags",
+              "intelligence_source"
+            ]
+          }
         }
       }
     }

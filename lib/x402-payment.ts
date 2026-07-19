@@ -2,6 +2,7 @@ import type { RouteConfig } from "@x402/core/server";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { preflightInputSchema } from "./preflight";
 import { x402AssessmentInputSchema } from "./x402-assessment";
+import { walletRiskInputSchema } from "./wallet-risk";
 import {
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
@@ -9,6 +10,8 @@ import {
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
   INTENTFENCE_USDC_CONTRACT,
+  INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+  INTENTFENCE_WALLET_RISK_PRICE_USD,
 } from "./x402";
 
 export const INTENTFENCE_SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
@@ -190,13 +193,95 @@ export const x402AssessmentRouteConfig = {
   }),
 } satisfies RouteConfig;
 
+export const walletRiskDiscoveryExtensions = declareDiscoveryExtension({
+  input: {
+    address: "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
+  },
+  inputSchema: walletRiskInputSchema,
+  output: {
+    example: {
+      intentfence: "0.7",
+      request_id: "7d7fbf44-3c39-4eca-89d6-b44d756c8df1",
+      status: "safe_to_proceed",
+      risk_level: "low",
+      risk_score: 5,
+      verification_tier: "live-base-wallet-risk+x402-settled",
+      receipt: { signed: true, assurance: "live-base-wallet-risk" },
+    },
+    schema: {
+      type: "object",
+      properties: {
+        intentfence: { type: "string", const: "0.7" },
+        request_id: { type: "string", format: "uuid" },
+        status: {
+          type: "string",
+          enum: ["safe_to_proceed", "needs_review", "denied"],
+        },
+        risk_level: { type: "string", enum: ["low", "medium", "critical"] },
+        risk_score: { type: "integer", minimum: 0, maximum: 100 },
+        observed: { type: "object" },
+        checks: { type: "array", items: { type: "object" } },
+        receipt: { type: "object" },
+      },
+      required: ["intentfence", "request_id", "status", "risk_level", "risk_score", "observed", "checks", "receipt"],
+    },
+  },
+});
+
+export const walletRiskPaymentRequiredExtensions = {
+  bazaar: {
+    ...walletRiskDiscoveryExtensions.bazaar,
+    info: {
+      ...walletRiskDiscoveryExtensions.bazaar.info,
+      input: {
+        ...walletRiskDiscoveryExtensions.bazaar.info.input,
+        method: "GET" as const,
+      },
+    },
+  },
+};
+
+export const walletRiskRouteConfig = {
+  accepts: {
+    scheme: "exact",
+    price: INTENTFENCE_WALLET_RISK_PRICE_USD,
+    network: INTENTFENCE_NETWORK,
+    payTo: INTENTFENCE_PAY_TO,
+  },
+  description:
+    "Check a Base recipient before payment using live Base RPC activity and GoPlus malicious-address intelligence. Returns a signed, five-minute risk receipt; it does not prove identity or ownership.",
+  mimeType: "application/json",
+  serviceName: "IntentFence Wallet Risk",
+  tags: [
+    "ai-agents",
+    "counterparty-risk",
+    "malicious-address",
+    "payment-safety",
+    "wallet-intelligence",
+  ],
+  iconUrl: `${INTENTFENCE_SITE_URL}/favicon.svg`,
+  unpaidResponseBody: () => ({
+    contentType: "application/json",
+    body: {
+      error: "payment_required",
+      message: `Pay ${INTENTFENCE_WALLET_RISK_PRICE_USD} in USDC on Base for a live wallet-risk assessment.`,
+      payment_info: `${INTENTFENCE_SITE_URL}/api/payments`,
+    },
+  }),
+} satisfies RouteConfig;
+
 function createPaymentRequired(
   resourceUrl: string,
-  routeConfig: typeof intentFencePaidRouteConfig | typeof x402AssessmentRouteConfig,
+  routeConfig:
+    | typeof intentFencePaidRouteConfig
+    | typeof x402AssessmentRouteConfig
+    | typeof walletRiskRouteConfig,
   extensions:
     | typeof intentFencePaymentRequiredExtensions
-    | typeof x402AssessmentPaymentRequiredExtensions,
+    | typeof x402AssessmentPaymentRequiredExtensions
+    | typeof walletRiskPaymentRequiredExtensions,
   error: string,
+  amountAtomic = INTENTFENCE_PRICE_ATOMIC,
 ) {
   return {
     x402Version: 2,
@@ -213,7 +298,7 @@ function createPaymentRequired(
       {
         scheme: "exact",
         network: INTENTFENCE_NETWORK,
-        amount: INTENTFENCE_PRICE_ATOMIC,
+        amount: amountAtomic,
         asset: INTENTFENCE_USDC_CONTRACT,
         payTo: INTENTFENCE_PAY_TO,
         maxTimeoutSeconds: INTENTFENCE_PAYMENT_TIMEOUT_SECONDS,
@@ -242,6 +327,19 @@ export function createX402AssessmentPaymentRequired(
     x402AssessmentRouteConfig,
     x402AssessmentPaymentRequiredExtensions,
     error,
+  );
+}
+
+export function createWalletRiskPaymentRequired(
+  resourceUrl: string,
+  error = "Payment required",
+) {
+  return createPaymentRequired(
+    resourceUrl,
+    walletRiskRouteConfig,
+    walletRiskPaymentRequiredExtensions,
+    error,
+    INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
   );
 }
 

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "intentfence"
-version = "0.7.1"
+version = "0.8.0"
 description = "IntentFence x402 quote-assessment, spend-policy, and signed-receipt client for AI agent runtimes."
 readme = "README.md"
 requires-python = ">=3.11"

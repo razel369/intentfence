@@ -2,11 +2,12 @@
   "spec": "agent402-service-manifest/1",
   "version": 1,
   "name": "IntentFence",
-  "description": "Assess and sign an exact caller-observed x402 quote before payment, or obtain a signed policy preflight for an autonomous agent action.",
+  "description": "Check a Base recipient with live wallet-risk intelligence, assess an exact caller-observed x402 quote, or obtain a signed policy preflight.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "resources": [
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
-    "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments"
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk"
   ],
   "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
   "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
@@ -23,12 +24,13 @@
     }
   },
   "capabilities": {
-    "tools": 3,
+    "tools": 4,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
     "signedReceipts": "ES256",
-    "callerObservedX402QuoteAssessment": true
+    "callerObservedX402QuoteAssessment": true,
+    "liveBaseWalletRisk": true
   },
   "tags": [
     "ai-agents",
@@ -36,6 +38,8 @@
     "security",
     "spend-control",
     "merchant-risk",
+    "wallet-intelligence",
+    "malicious-address",
     "quote-assessment",
     "x402",
     "mcp"

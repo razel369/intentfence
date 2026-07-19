@@ -31,6 +31,12 @@ const assessmentFlow = `target -> 402 + PAYMENT-REQUIRED
 -> agent signs 0.005 USDC on Base and retries
 -> signed SHA-256-bound quote assessment`;
 
+const walletRiskFlow = `GET /api/wallet-risk?address=0x...
+-> 402 + PAYMENT-REQUIRED
+-> agent signs 0.002 USDC on Base and retries
+-> live Base + malicious-address intelligence
+-> five-minute ES256 risk receipt`;
+
 const agentSkillInstall = `npx skills add razel369/intentfence \\
   --skill guard-x402-payments`;
 
@@ -49,9 +55,25 @@ const plans = [
   },
   {
     key: "verified",
+    name: "Wallet Risk",
+    price: "0.002 USDC",
+    note: "per live Base recipient assessment",
+    features: [
+      "Agent pays directly",
+      "No account or API key",
+      "Live Base activity evidence",
+      "Malicious-address and sanctions flags",
+      "Five-minute ES256 risk receipt",
+      "Machine-readable MCP and REST discovery",
+      "No stored wallet credentials",
+    ],
+    featured: true,
+  },
+  {
+    key: "quote",
     name: "x402 Quote Safety",
     price: "0.005 USDC",
-    note: "per assessment or signed preflight - live on Base",
+    note: "per exact quote assessment or signed preflight",
     features: [
       "Agent pays directly",
       "No account or API key",
@@ -62,7 +84,6 @@ const plans = [
       "Machine-readable discovery",
       "Payment audit record",
     ],
-    featured: true,
   },
   {
     key: "pilot",
@@ -281,20 +302,33 @@ export default function GrowthSections() {
 
         <div className="interface-grid">
           <article>
-            <span>01 / x402 QUOTE</span>
+            <span>01 / WALLET RISK</span>
+            <h3>GET /api/wallet-risk</h3>
+            <p>Check the recipient with live Base activity and malicious-address intelligence for 0.002 USDC before signing a payment.</p>
+          </article>
+          <article>
+            <span>02 / x402 QUOTE</span>
             <h3>POST /api/x402-assessments</h3>
             <p>Send the base64 <code>PAYMENT-REQUIRED</code> challenge (up to 16 KiB) and validate Base USDC, price, caller-approved payee, and URL binding.</p>
           </article>
           <article>
-            <span>02 / PAID MCP</span>
+            <span>03 / PAID MCP</span>
             <h3>intentfence_x402_assessment</h3>
             <p>MCP agents forward the exact challenge they received, pay the 0.005 USDC IntentFence fee, and get a signed assessment.</p>
           </article>
           <article>
-            <span>03 / FREE REST</span>
+            <span>04 / FREE REST</span>
             <h3>POST /api/preflight</h3>
             <p>Unsigned declared-input policy preview for any runtime, workflow, or backend.</p>
           </article>
+        </div>
+
+        <div className="quickstart">
+          <div className="code-topline">
+            <span>Live Base recipient assessment</span>
+            <a href="/openapi.json">0.002 USDC</a>
+          </div>
+          <pre><code>{walletRiskFlow}</code></pre>
         </div>
 
         <div className="quickstart">
@@ -324,10 +358,10 @@ export default function GrowthSections() {
 
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
-          <div className="section-kicker">x402 quote safety - autonomous service-fee settlement</div>
-          <h2 id="pricing-title">Observe the quote. Pay for signed evidence.</h2>
+          <div className="section-kicker">Wallet and x402 quote safety - autonomous service-fee settlement</div>
+          <h2 id="pricing-title">Check the recipient. Observe the quote. Pay for signed evidence.</h2>
           <p>
-            Agents pay 0.005 USDC per quote assessment or signed preflight with no account or API key. IntentFence never fetches or pays the target; it validates and signs the exact caller-observed challenge. A safe result requires an explicit matching payee allowlist. Teams can apply to put the guard directly in a real payment path.
+            Agents pay 0.002 USDC for live Base wallet risk, or 0.005 USDC for an exact quote assessment or signed preflight, with no account or API key. A low-risk wallet result means no listed malicious flags were observed; it does not prove identity or ownership. Teams can apply to put the guard directly in a real payment path.
           </p>
         </div>
         <div className="pricing-grid">
@@ -342,7 +376,7 @@ export default function GrowthSections() {
               </ul>
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
-              ) : item.key === "verified" ? (
+              ) : item.key === "verified" || item.key === "quote" ? (
                 <a className="plan-button" href="#agent-wallet-checkout">Copy the capped checkout</a>
               ) : (
                 <button className="plan-button" onClick={() => selectPlan(item.key)}>Request founding access</button>
@@ -350,7 +384,7 @@ export default function GrowthSections() {
             </article>
           ))}
         </div>
-        <p className="pricing-note">The 0.005 USDC endpoints are live. Founding Integration is an application, not a checkout; no subscription is charged before scope and success criteria are agreed.</p>
+        <p className="pricing-note">The 0.002 and 0.005 USDC endpoints are live. Founding Integration is an application, not a checkout; no subscription is charged before scope and success criteria are agreed.</p>
       </section>
 
       <section className="founding-section" id="founding-access">

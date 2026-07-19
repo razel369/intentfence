@@ -1,11 +1,12 @@
 # IntentFence
 
 IntentFence is a payment-policy firewall for autonomous AI agents. Before an
-agent signs an x402 payment, it can forward the exact `PAYMENT-REQUIRED`
+agent signs an x402 payment, it can check the recipient with live Base activity
+and malicious-address intelligence, then forward the exact `PAYMENT-REQUIRED`
 challenge it just observed. IntentFence validates the Base USDC quote against
 the agent's ceiling and pre-approved payee allowlist, binds the challenge with
 SHA-256, and returns a signed assessment. It checks quote integrity and policy
-fit; it does not verify merchant identity, reputation, or delivery. It also
+fit; it does not prove merchant identity, ownership, or delivery. It also
 supports declared merchant/purpose, cost, data-retention, and approval policy
 preflights.
 
@@ -28,6 +29,7 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Free REST preview | `POST /api/preflight` |
 | Paid x402 decision | `POST /api/preflight/verified` |
 | Paid caller-observed x402 quote assessment | `POST /api/x402-assessments` |
+| Paid live Base wallet-risk assessment | `GET /api/wallet-risk?address=...` |
 | Receipt verification | `POST /api/receipts/verify` |
 | Public ES256 keys | `GET /.well-known/jwks.json` |
 | MCP Streamable HTTP | `/api/mcp` (`intentfence_verified_preflight` is x402-paid) |
@@ -36,9 +38,16 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Public aggregate metrics | `GET /api/metrics` |
 | OpenAPI | `GET /openapi.json` |
 
-Each paid endpoint costs 0.005 USDC on Base through x402. A successful call
+Wallet risk costs 0.002 USDC; signed preflight and exact-quote assessment cost
+0.005 USDC on Base through x402. A successful call
 returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
 IntentFence ES256 compact-JWS receipt.
+
+Wallet risk is the recommended first check before paying a Base recipient. It
+uses live Base RPC activity and GoPlus malicious-address intelligence. A
+`safe_to_proceed` result means no listed malicious flags were observed and the
+address was established on Base at assessment time; it does not prove identity,
+ownership, authorization, or future behavior.
 
 The quote assessment is the recommended check after an x402 merchant returns
 its unpaid challenge and before the agent signs the merchant payment.
@@ -159,6 +168,21 @@ uses assurance `caller-observed-x402-quote-assessment` and verification tier
 `x402-quote-assessment+x402-settled`; x402 settlement covers the 0.005 USDC
 IntentFence assessment fee, not the target payment.
 
+## Live Base wallet risk
+
+The first call returns an x402 challenge for 0.002 USDC:
+
+```bash
+curl -i "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk?address=0x1111111111111111111111111111111111111111"
+```
+
+Retry the same URL with a valid x402 v2 `PAYMENT-SIGNATURE`. The successful
+response includes Base account activity, native and USDC balances, a code hash
+for contracts, current malicious-address flags, pass/review/deny checks, and a
+five-minute ES256 receipt with assurance `live-base-wallet-risk`. If a required
+live source is unavailable, the endpoint fails closed and does not intentionally
+settle the assessment fee.
+
 ## Important trust boundary
 
 Declared-input receipts attest only that IntentFence evaluated caller-supplied
@@ -166,7 +190,8 @@ policy data. Quote-assessment receipts bind the exact caller-observed
 `PAYMENT-REQUIRED` challenge; they do not prove that IntentFence contacted the
 merchant, or prove merchant identity, delivery, or downstream enforcement. The
 receipt-signing key is separate from the USDC recipient wallet. IntentFence
-never needs a payer's seed phrase or wallet private key.
+never needs a payer's seed phrase or wallet private key. Wallet-risk receipts
+report observed evidence at one point in time and are not identity attestations.
 
 ## Local development
 

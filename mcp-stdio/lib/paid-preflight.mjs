@@ -38,24 +38,31 @@ export function createPaidIntentFenceHandler({
   source,
   endpoint,
   failureMessage,
+  method = "POST",
+  query,
 }) {
-  const paidEndpoint = `${SITE_URL}${endpoint}`;
   return async (arguments_, extra) => {
     try {
       const input = validateInput(arguments_);
+      const paidEndpoint = new URL(`${SITE_URL}${endpoint}`);
+      if (query) {
+        for (const [key, value] of Object.entries(query(input))) {
+          paidEndpoint.searchParams.set(key, value);
+        }
+      }
       const payment = extra?._meta?.[PAYMENT_META_KEY];
       const headers = {
-        "Content-Type": "application/json",
         "X-IntentFence-Source": source,
+        ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
       };
       if (payment && typeof payment === "object") {
         headers["PAYMENT-SIGNATURE"] = encode(payment);
       }
 
       const response = await fetch(paidEndpoint, {
-        method: "POST",
+        method,
         headers,
-        body: JSON.stringify(input),
+        ...(method === "POST" ? { body: JSON.stringify(input) } : {}),
       });
       const body = await responseJson(response);
 

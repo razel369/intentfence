@@ -73,7 +73,26 @@ export type AssessmentReceiptClaims = Omit<
   };
 };
 
-export type VerifiableReceiptClaims = ReceiptClaims | AssessmentReceiptClaims;
+export type WalletRiskReceiptClaims = Omit<
+  ReceiptClaims,
+  "intentfence_version" | "assurance"
+> & {
+  intentfence_version: "0.7";
+  assurance: "live-base-wallet-risk";
+  evidence: {
+    assessed_at: string;
+    address: string;
+    network: "eip155:8453";
+    block_number: string;
+    malicious_flags: string[];
+    intelligence_source: string;
+  };
+};
+
+export type VerifiableReceiptClaims =
+  | ReceiptClaims
+  | AssessmentReceiptClaims
+  | WalletRiskReceiptClaims;
 
 export type SignedReceipt = ReceiptDecision["receipt"] & {
   signed: true;
@@ -100,6 +119,14 @@ export type SignedAssessmentReceipt = Omit<
   "assurance" | "note"
 > & {
   assurance: "caller-observed-x402-quote-assessment";
+  note: string;
+};
+
+export type SignedWalletRiskReceipt = Omit<
+  SignedReceipt,
+  "assurance" | "note"
+> & {
+  assurance: "live-base-wallet-risk";
   note: string;
 };
 
@@ -332,6 +359,72 @@ export async function createSignedAssessmentReceipt(
   };
 }
 
+export async function createSignedWalletRiskReceipt(
+  decision: ReceiptDecision & {
+    assessed_at: string;
+    subject: { address: string; network: "eip155:8453" };
+    observed: {
+      block_number: string;
+      malicious_flags: string[];
+      intelligence_source: string;
+    };
+  },
+  privateJwk: string,
+  payment: { network: string; asset: string; amountAtomic: string; payTo: string },
+): Promise<SignedWalletRiskReceipt> {
+  const issuedAtSeconds = Math.floor(new Date(decision.receipt.issued_at).getTime() / 1000);
+  const claims: WalletRiskReceiptClaims = {
+    iss: SITE_URL,
+    aud: RECEIPT_AUDIENCE,
+    iat: issuedAtSeconds,
+    exp: issuedAtSeconds + ASSESSMENT_RECEIPT_TTL_SECONDS,
+    jti: decision.receipt.id,
+    intentfence_version: "0.7",
+    assurance: "live-base-wallet-risk",
+    request_id: decision.request_id,
+    decision: decision.status,
+    subject: decision.receipt.subject,
+    action: decision.receipt.action,
+    checks: decision.checks,
+    evidence: {
+      assessed_at: decision.assessed_at,
+      address: decision.subject.address,
+      network: decision.subject.network,
+      block_number: decision.observed.block_number,
+      malicious_flags: decision.observed.malicious_flags,
+      intelligence_source: decision.observed.intelligence_source,
+    },
+    payment: {
+      protocol: "x402-v2",
+      network: payment.network,
+      asset: payment.asset,
+      amount_atomic: payment.amountAtomic,
+      pay_to: payment.payTo,
+    },
+  };
+  const jws = await signReceiptClaims(claims, privateJwk);
+  return {
+    ...decision.receipt,
+    signed: true,
+    assurance: "live-base-wallet-risk",
+    expires_at: new Date(claims.exp * 1000).toISOString(),
+    payment_assurance: "x402-settled",
+    payment_network: payment.network,
+    payment_asset: payment.asset,
+    payment_amount_atomic: payment.amountAtomic,
+    pay_to: payment.payTo,
+    signature: {
+      format: "JWS Compact",
+      alg: "ES256",
+      kid: INTENTFENCE_SIGNING_KID,
+      jws,
+      verify_url: `${SITE_URL}/api/receipts/verify`,
+      jwks_url: `${SITE_URL}/.well-known/jwks.json`,
+    },
+    note: "IntentFence signed live Base RPC evidence and malicious-address intelligence for five minutes. A low-risk result is not proof of identity, ownership, authorization, or future behavior. PAYMENT-RESPONSE separately proves settlement of the assessment fee.",
+  };
+}
+
 export async function verifyReceipt(
   jws: string,
   now = Date.now(),
@@ -365,11 +458,16 @@ export async function verifyReceipt(
       claims.intentfence_version === "0.6" &&
       claims.assurance === "caller-observed-x402-quote-assessment" &&
       isRecord(claims.evidence);
+    const walletRiskReceipt =
+      isRecord(claims) &&
+      claims.intentfence_version === "0.7" &&
+      claims.assurance === "live-base-wallet-risk" &&
+      isRecord(claims.evidence);
     if (
       !isRecord(claims) ||
       claims.iss !== SITE_URL ||
       claims.aud !== RECEIPT_AUDIENCE ||
-      (!policyReceipt && !assessmentReceipt) ||
+      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt) ||
       typeof claims.iat !== "number" ||
       typeof claims.exp !== "number" ||
       typeof claims.jti !== "string" ||
@@ -380,7 +478,7 @@ export async function verifyReceipt(
     const nowSeconds = Math.floor(now / 1000);
     if (claims.iat > nowSeconds + 300) return { valid: false as const, reason: "issued_in_future" };
     if (claims.exp <= nowSeconds) return { valid: false as const, reason: "expired" };
-    const maxLifetime = assessmentReceipt
+    const maxLifetime = assessmentReceipt || walletRiskReceipt
       ? ASSESSMENT_RECEIPT_TTL_SECONDS
       : RECEIPT_TTL_SECONDS;
     if (claims.exp - claims.iat > maxLifetime) {

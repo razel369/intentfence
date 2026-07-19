@@ -24,7 +24,7 @@ npm --prefix intentfence/mcp-stdio ci
 node intentfence/mcp-stdio/bin/intentfence-mcp.mjs
 ```
 
-The server exposes three tools:
+The server exposes four tools:
 
 - `intentfence_preflight` is a free, unsigned declared-input preview.
 - `intentfence_verified_preflight` returns a standard x402 challenge for 0.005
@@ -37,6 +37,10 @@ The server exposes three tools:
   `method` (`GET`, `HEAD`, or `POST`), `payment_required`, and `policy` with
   `max_price_usdc` plus optional `allowed_payees`. A safe result requires an
   explicit matching allowlist entry; omitting it yields `needs_review`.
+- `intentfence_wallet_risk` checks a Base recipient with live Base RPC activity
+  and GoPlus malicious-address intelligence for 0.002 USDC. It returns a
+  five-minute ES256 receipt. A low-risk result is not proof of identity,
+  ownership, authorization, or future behavior.
 
 The server never receives a seed phrase or private key and does not execute the
 downstream payment. IntentFence never fetches or pays the target; it validates

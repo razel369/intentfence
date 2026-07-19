@@ -75,6 +75,40 @@ test("rejects a tampered receipt and an expired receipt", async () => {
   );
 });
 
+test("verifies a short-lived live Base wallet-risk receipt", async () => {
+  const now = Date.now();
+  const nowSeconds = Math.floor(now / 1000);
+  const keys = await keyPair();
+  const walletClaims = {
+    ...claims(nowSeconds),
+    exp: nowSeconds + 300,
+    jti: "if_wallet_test",
+    intentfence_version: "0.7",
+    assurance: "live-base-wallet-risk",
+    action: {
+      type: "wallet.counterparty-risk",
+      resource: "eip155:8453:0x1111111111111111111111111111111111111111",
+    },
+    evidence: {
+      assessed_at: new Date(now).toISOString(),
+      address: "0x1111111111111111111111111111111111111111",
+      network: "eip155:8453",
+      block_number: "123",
+      malicious_flags: [],
+      intelligence_source: "GoPlus",
+    },
+    payment: {
+      ...claims(nowSeconds).payment,
+      amount_atomic: "2000",
+    },
+  };
+  const jws = await signReceiptClaims(walletClaims, keys.privateJwk);
+  const result = await verifyReceipt(jws, now, keys.publicJwk);
+  assert.equal(result.valid, true);
+  assert.equal(result.claims.assurance, "live-base-wallet-risk");
+  assert.equal(result.claims.payment.amount_atomic, "2000");
+});
+
 test("published JWKS contains the production signing key", async () => {
   const jwks = JSON.parse(await readFile(new URL("../public/.well-known/jwks.json", import.meta.url), "utf8"));
   assert.equal(jwks.keys.length, 1);

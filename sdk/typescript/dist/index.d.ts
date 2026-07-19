@@ -109,6 +109,48 @@ export type X402AssessmentDecision = {
         note: string;
     };
 };
+export type WalletRiskDecision = {
+    intentfence: "0.7";
+    request_id: string;
+    status: "safe_to_proceed" | "needs_review" | "denied";
+    risk_level: "low" | "medium" | "critical";
+    risk_score: number;
+    assessed_at: string;
+    verification_tier: "live-base-wallet-risk+x402-settled";
+    subject: {
+        address: string;
+        network: "eip155:8453";
+        account_type: "eoa" | "contract";
+    };
+    observed: {
+        block_number: string;
+        transaction_count: string;
+        native_balance_wei: string;
+        usdc_balance_atomic: string;
+        code_sha256: string | null;
+        malicious_flags: string[];
+        malicious_contracts_created: number;
+        intelligence_source: string;
+    };
+    checks: Array<{
+        name: string;
+        status: "pass" | "review" | "deny";
+        detail: string;
+    }>;
+    receipt: {
+        id: string;
+        signed: true;
+        assurance: "live-base-wallet-risk";
+        expires_at: string;
+        payment_amount_atomic: "2000";
+        signature: {
+            jws: string;
+            kid: string;
+            alg: "ES256";
+            verify_url: string;
+        };
+    };
+};
 export declare class IntentFenceHttpError extends Error {
     readonly status: number;
     readonly response: Response;
@@ -132,6 +174,9 @@ export declare class IntentFenceClient {
     assessX402(input: X402AssessmentInput, options?: {
         paymentSignature?: string;
     }): Promise<X402AssessmentDecision>;
+    assessWalletRisk(address: string, options?: {
+        paymentSignature?: string;
+    }): Promise<WalletRiskDecision>;
     verifyReceipt(jws: string): Promise<{
         valid: boolean;
         claims?: unknown;

@@ -4,6 +4,7 @@ import { createInterface } from "node:readline";
 
 import { negotiateProtocolVersion } from "../lib/protocol-version.mjs";
 import { validateX402AssessmentInput } from "../lib/x402-assessment.mjs";
+import { validateWalletRiskInput } from "../lib/wallet-risk.mjs";
 
 const baseUrl = (process.env.INTENTFENCE_BASE_URL ??
   "https://agentpass-protocol.rmalka06.chatgpt.site").replace(/\/$/u, "");
@@ -77,6 +78,19 @@ const assessmentInputSchema = {
   },
 };
 
+const walletRiskInputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["address"],
+  properties: {
+    address: {
+      type: "string",
+      pattern: "^0x[0-9a-fA-F]{40}$",
+      description: "Base recipient or counterparty address to assess before payment.",
+    },
+  },
+};
+
 const tools = [
   {
     name: "intentfence_preflight",
@@ -97,6 +111,13 @@ const tools = [
     title: "IntentFence x402 Quote Assessment",
     description: "Paid assessment costing 0.005 USDC on Base. The caller forwards its exact PAYMENT-REQUIRED header; IntentFence validates the quote, payee, asset, price, timeout, and resource binding without contacting the target, then returns a short-lived signed receipt bound to the quote hash.",
     inputSchema: assessmentInputSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  {
+    name: "intentfence_wallet_risk",
+    title: "IntentFence Wallet Risk",
+    description: "Paid recipient assessment costing 0.002 USDC on Base. Checks live Base activity and malicious-address intelligence, then returns a five-minute signed receipt. A low-risk result is not proof of identity or ownership.",
+    inputSchema: walletRiskInputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   },
 ];
@@ -133,10 +154,13 @@ async function callTool(params) {
   }
 
   const assessment = name === "intentfence_x402_assessment";
-  const paid = name === "intentfence_verified_preflight" || assessment;
+  const walletRisk = name === "intentfence_wallet_risk";
+  const paid = name === "intentfence_verified_preflight" || assessment || walletRisk;
   const arguments_ = assessment
     ? validateX402AssessmentInput(params?.arguments ?? {})
-    : params?.arguments ?? {};
+    : walletRisk
+      ? validateWalletRiskInput(params?.arguments ?? {})
+      : params?.arguments ?? {};
   const payment = params?._meta?.["x402/payment"];
   const headers = {
     "Content-Type": "application/json",
@@ -146,10 +170,12 @@ async function callTool(params) {
     headers["PAYMENT-SIGNATURE"] = encode(payment);
   }
 
-  const response = await fetch(
-    `${baseUrl}${assessment ? "/api/x402-assessments" : paid ? "/api/preflight/verified" : "/api/preflight"}`,
-    { method: "POST", headers, body: JSON.stringify(arguments_) },
-  );
+  const endpoint = walletRisk
+    ? `${baseUrl}/api/wallet-risk?address=${encodeURIComponent(arguments_.address)}`
+    : `${baseUrl}${assessment ? "/api/x402-assessments" : paid ? "/api/preflight/verified" : "/api/preflight"}`;
+  const response = await fetch(endpoint, walletRisk
+    ? { method: "GET", headers }
+    : { method: "POST", headers, body: JSON.stringify(arguments_) });
   const text = await response.text();
   let body;
   try {
@@ -200,8 +226,8 @@ lines.on("line", async (line) => {
       result(request.id, {
         protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.7.1" },
-        instructions: "Before signing an x402 payment, forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. It validates the quote against a caller-approved payment policy without contacting the target or verifying merchant identity, then returns a signed assessment. The free preflight remains an unsigned declared-input preview.",
+        serverInfo: { name: "intentfence", version: "0.8.0" },
+        instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. The free preflight remains an unsigned declared-input preview.",
       });
       return;
     }

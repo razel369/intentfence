@@ -18,7 +18,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function finalizeIntentFenceSettlement(
   request: Request,
   response: Response,
-  product: "verified-preflight" | "x402-assessment",
+  product: "verified-preflight" | "x402-assessment" | "wallet-risk",
+  amountAtomic = INTENTFENCE_PRICE_ATOMIC,
 ) {
   const settlementResponse = response.headers.get("PAYMENT-RESPONSE");
   const requestId = response.headers.get("X-IntentFence-Request-ID");
@@ -65,7 +66,7 @@ export async function finalizeIntentFenceSettlement(
               requestId,
               network: INTENTFENCE_NETWORK,
               asset: INTENTFENCE_ASSET,
-              amountAtomic: INTENTFENCE_PRICE_ATOMIC,
+              amountAtomic,
               payTo: INTENTFENCE_PAY_TO,
               settlementResponse: settlementResponse.slice(0, 4096),
               status: "settled",
@@ -102,7 +103,7 @@ export async function finalizeIntentFenceSettlement(
         request,
         requestId,
         metadata: {
-          amount_atomic: INTENTFENCE_PRICE_ATOMIC,
+          amount_atomic: amountAtomic,
           protocol: "x402-v2",
           product,
           audit_persisted: auditWritten,
