@@ -8,6 +8,7 @@ import {
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
 } from "../../../lib/x402";
+import { AGENTIC_WALLET_CHECKOUT } from "../../../lib/agentic-wallet-checkout";
 
 export function GET() {
   return Response.json(
@@ -43,6 +44,7 @@ export function GET() {
         "Create and sign the exact USDC payment with an x402-compatible wallet.",
         "Retry with PAYMENT-SIGNATURE; a successful response includes PAYMENT-RESPONSE.",
       ],
+      buyer_quickstart: AGENTIC_WALLET_CHECKOUT,
       custody: "IntentFence never receives wallet private keys and cannot initiate transfers.",
       documentation: "/openapi.json",
     },

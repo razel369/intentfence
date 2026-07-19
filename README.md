@@ -115,6 +115,13 @@ creating a signer and is payment-disabled by default:
 
 <https://github.com/razel369/intentfence/tree/main/examples/x402-buyer>
 
+Agents that already use Coinbase Agentic Wallet can retrieve a complete capped
+checkout from `GET /api/payments` under `buyer_quickstart`. The published
+command is pinned to a verified CLI version, includes a valid policy body, and
+sets `--max-amount 5000` so it cannot authorize more than the 0.005 USDC
+IntentFence fee. Review the body and explicitly authorize the real payment
+before running it.
+
 Gemini CLI can install the repository directly, without waiting for an npm
 package or gallery crawl:
 

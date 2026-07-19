@@ -11,6 +11,7 @@ Before signing an x402 payment, an agent should make its intended unpaid request
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
+- Capped Agentic Wallet checkout: read `buyer_quickstart` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 - Cross-agent payment guard skill: https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments
 - Agent Skill installer: npx skills add razel369/intentfence --skill guard-x402-payments
@@ -26,6 +27,8 @@ Before signing an x402 payment, an agent should make its intended unpaid request
 ## Autonomous payment
 
 Both paid endpoints use x402 v2 and cost 0.005 USDC on Base mainnet (eip155:8453). POST without payment, read PAYMENT-REQUIRED, sign the payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+
+An agent with an authenticated Coinbase Agentic Wallet can retrieve a complete, versioned command from `GET /api/payments` under `buyer_quickstart`. It must review the request and obtain explicit authorization before running the command. The command caps the charge at exactly 5000 USDC atomic units (0.005 USDC) and never sends wallet credentials to IntentFence.
 
 For autonomous discovery, read `/.well-known/x402` or the OpenAPI document, then call the assessment endpoint with any x402 v2 client that supports Base USDC.
 

@@ -8,6 +8,12 @@ import {
   INTENTFENCE_VSCODE_MANUAL_CONFIG,
   INTENTFENCE_VSCODE_SERVER,
 } from "../lib/mcp-install.ts";
+import {
+  AGENTIC_WALLET_CHECKOUT,
+  AGENTIC_WALLET_CHECKOUT_COMMAND,
+  AGENTIC_WALLET_CHECKOUT_REQUEST,
+} from "../lib/agentic-wallet-checkout.ts";
+import { validatePreflightInput } from "../lib/preflight.ts";
 
 const root = new URL("../", import.meta.url);
 
@@ -116,6 +122,31 @@ test("ships a cross-agent x402 guard with a capped buyer path", async () => {
   assert.match(metadata, /\$guard-x402-payments/u);
   assert.match(growth, /npx skills add razel369\/intentfence/u);
   assert.match(readme, /--skill guard-x402-payments/u);
+});
+
+test("publishes a directly executable and strictly capped agent checkout", async () => {
+  const [paymentRoute, growth, manifest, x402Manifest, llms, readme] = await Promise.all([
+    source("app/api/payments/route.ts"),
+    source("app/GrowthSections.tsx"),
+    source("public/.well-known/intentfence.json").then(JSON.parse),
+    source("public/.well-known/x402").then(JSON.parse),
+    source("public/llms.txt"),
+    source("README.md"),
+  ]);
+
+  assert.doesNotThrow(() => validatePreflightInput(AGENTIC_WALLET_CHECKOUT_REQUEST));
+  assert.match(AGENTIC_WALLET_CHECKOUT_COMMAND, /awal@2\.12\.1 x402 pay/u);
+  assert.match(AGENTIC_WALLET_CHECKOUT_COMMAND, /--max-amount 5000/u);
+  assert.match(AGENTIC_WALLET_CHECKOUT_COMMAND, /utm_source=agent_wallet_checkout/u);
+  assert.equal(AGENTIC_WALLET_CHECKOUT.max_amount_atomic, "5000");
+  assert.equal(AGENTIC_WALLET_CHECKOUT.requires_explicit_authorization, true);
+  assert.match(paymentRoute, /buyer_quickstart: AGENTIC_WALLET_CHECKOUT/u);
+  assert.match(growth, /Copy capped checkout command/u);
+  assert.match(growth, /MAX 0\.005 USDC/u);
+  assert.match(manifest.payments.buyerQuickstart, /\/api\/payments/u);
+  assert.match(x402Manifest.buyerQuickstart, /\/api\/payments/u);
+  assert.match(llms, /buyer_quickstart/u);
+  assert.match(readme, /--max-amount 5000/u);
 });
 
 test("does not publish a private signing key", async () => {

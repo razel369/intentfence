@@ -5,6 +5,10 @@ import {
   INTENTFENCE_VSCODE_INSTALL_URL,
   INTENTFENCE_VSCODE_MANUAL_CONFIG,
 } from "../lib/mcp-install";
+import {
+  AGENTIC_WALLET_CHECKOUT_COMMAND,
+  AGENTIC_WALLET_CLI_VERSION,
+} from "../lib/agentic-wallet-checkout";
 
 const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight \\
   -H "Content-Type: application/json" \\
@@ -78,10 +82,17 @@ export default function GrowthSections() {
   const [plan, setPlan] = useState("pilot");
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [checkoutCopied, setCheckoutCopied] = useState(false);
 
   function selectPlan(nextPlan: string) {
     setPlan(nextPlan);
     document.getElementById("founding-access")?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function copyAgentCheckout() {
+    await navigator.clipboard?.writeText(AGENTIC_WALLET_CHECKOUT_COMMAND);
+    setCheckoutCopied(true);
+    window.setTimeout(() => setCheckoutCopied(false), 1800);
   }
 
   async function submitLead(event: FormEvent<HTMLFormElement>) {
@@ -205,6 +216,34 @@ export default function GrowthSections() {
           </div>
         </div>
 
+        <div className="mcp-install-card" id="agent-wallet-checkout">
+          <div className="mcp-install-copy">
+            <span>DIRECT AGENT CHECKOUT</span>
+            <h3>Pay for a signed policy receipt in one capped x402 command.</h3>
+            <p>
+              For agents that already have Coinbase Agentic Wallet, this command
+              sends a complete policy request and caps the real Base USDC charge
+              at exactly 0.005. Review the request first; IntentFence never sees
+              wallet credentials and cannot initiate the payment itself.
+            </p>
+            <div className="mcp-install-actions">
+              <button className="button mcp-install-button" onClick={copyAgentCheckout}>
+                {checkoutCopied ? "Checkout command copied" : "Copy capped checkout command"}
+              </button>
+              <a className="mcp-install-docs" href="/api/payments">
+                Read machine payment metadata <span aria-hidden="true">&#8599;</span>
+              </a>
+            </div>
+          </div>
+          <div className="mcp-install-config">
+            <div className="code-topline">
+              <span>Agentic Wallet v{AGENTIC_WALLET_CLI_VERSION}</span>
+              <span>MAX 0.005 USDC</span>
+            </div>
+            <pre><code>{AGENTIC_WALLET_CHECKOUT_COMMAND}</code></pre>
+          </div>
+        </div>
+
         <div className="interface-grid">
           <article>
             <span>01 / x402 QUOTE</span>
@@ -269,7 +308,7 @@ export default function GrowthSections() {
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
               ) : item.key === "verified" ? (
-                <a className="plan-button" href="https://github.com/razel369/intentfence/tree/main/examples/x402-buyer">Run the paid buyer example</a>
+                <a className="plan-button" href="#agent-wallet-checkout">Copy the capped checkout</a>
               ) : (
                 <button className="plan-button" onClick={() => selectPlan(item.key)}>Request founding access</button>
               )}

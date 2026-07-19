@@ -9,6 +9,7 @@
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments"
   ],
   "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
+  "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
   "payment": {
     "x402": {
       "version": 2,

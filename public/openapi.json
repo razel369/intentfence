@@ -310,7 +310,7 @@
     "/api/payments": {
       "get": {
         "operationId": "getPaymentMetadata",
-        "summary": "Read live x402 price, network, recipient, and flow",
+        "summary": "Read live x402 price, recipient, flow, and capped Agentic Wallet checkout",
         "security": [],
         "responses": {
           "200": {
