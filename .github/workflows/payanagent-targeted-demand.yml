@@ -1,0 +1,24 @@
+name: Target one matching PayanAgent request
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: intentfence-targeted-payanagent-demand
+  cancel-in-progress: true
+
+jobs:
+  pursue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v5
+      - name: Bid once or fulfill if assigned
+        env:
+          PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
+        run: node scripts/payanagent-targeted-demand.mjs
