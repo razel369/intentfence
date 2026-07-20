@@ -381,6 +381,44 @@ assert.ok(
   "one or more x402scan paid-resource listings are missing",
 );
 
+const agent402Origin = new URL(baseUrl).origin;
+const agent402IndexResponse = await fetchWithRetry(
+  "https://agent402.tools/api/index",
+  {},
+  30_000,
+);
+assert.equal(agent402IndexResponse.status, 200, "Agent402 index is unavailable");
+const agent402Index = await json(agent402IndexResponse);
+const agent402Seller = agent402Index.sellers?.find(
+  (seller) => seller.origin === agent402Origin,
+);
+assert.ok(agent402Seller, "IntentFence is missing from the Agent402 index");
+assert.equal(agent402Seller.routable, true, "IntentFence is not routable on Agent402");
+assert.ok(agent402Seller.health > 0, "IntentFence has no healthy Agent402 crawl");
+
+const agent402RouteResponse = await fetchWithRetry(
+  "https://agent402.tools/api/route",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      task: "x402 payment safety policy preflight",
+      include: "external",
+      top: 25,
+    }),
+  },
+  30_000,
+);
+assert.equal(agent402RouteResponse.status, 200, "Agent402 router is unavailable");
+const agent402Route = await json(agent402RouteResponse);
+const agent402PreflightRank = agent402Route.results?.findIndex(
+  (result) => result.seller === agent402Origin,
+) + 1;
+assert.ok(
+  agent402PreflightRank > 0,
+  "IntentFence preflight is missing from the Agent402 router's top 25 results",
+);
+
 let bazaarListed = false;
 try {
   const bazaarResponse = await fetchWithTimeout(
@@ -597,6 +635,10 @@ console.log(
       revenue_usdc: metrics.revenue_usdc,
       official_mcp_registry: true,
       x402scan_registered: true,
+      agent402_indexed: true,
+      agent402_routable: agent402Seller.routable,
+      agent402_health: agent402Seller.health,
+      agent402_preflight_rank: agent402PreflightRank,
       payanagent_delivery_protected: true,
       payanagent_delivery_verified: payanAgentDeliveryVerified,
       coinbase_bazaar_listed: bazaarListed,
