@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: intentfence-targeted-payanagent-demand
@@ -27,3 +28,23 @@ jobs:
           PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
           PAYANAGENT_DELIVERY_SECRET: ${{ secrets.PAYANAGENT_DELIVERY_SECRET }}
         run: node scripts/payanagent-demand-scanner.mjs
+      - name: Open one demand-scanner incident on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing="$(gh issue list --state open --search 'IntentFence PayanAgent demand scanner failing in:title' --json number --jq '.[0].number // empty')"
+          if [ -z "$existing" ]; then
+            gh issue create --title "IntentFence PayanAgent demand scanner failing" --body "The scheduled PayanAgent acquisition and fulfillment loop failed. Inspect this workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
+          exit 1
+      - name: Close recovered demand-scanner incident
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          existing="$(gh issue list --state open --search 'IntentFence PayanAgent demand scanner failing in:title' --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "PayanAgent demand scanner recovered in $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            gh issue close "$existing"
+          fi
