@@ -424,6 +424,7 @@ let payanAgentCpiChallengeReady = false;
 let payanAgentWalletRiskOfferId = null;
 let payanAgentWalletRiskOfferListed = false;
 let payanAgentWalletRiskChallengeReady = false;
+let payanAgentWalletRiskDiscoverable = false;
 let payanAgentSales = 0;
 let payanAgentDistinctBuyers = 0;
 let payanAgentRevenueUsdc = 0;
@@ -543,6 +544,15 @@ try {
       ? detail._id
       : null;
   }
+  const walletRiskDiscoverResponse = await fetchWithTimeout(
+    "https://payanagent.com/api/v1/discover?q=Base%20wallet%20risk&offerType=api&limit=200",
+  );
+  if (walletRiskDiscoverResponse.ok) {
+    const walletRiskDiscover = await json(walletRiskDiscoverResponse);
+    payanAgentWalletRiskDiscoverable = (walletRiskDiscover.offers ?? []).some(
+      (offer) => offer._id === payanAgentWalletRiskOfferIdConfigured,
+    );
+  }
   if (payanAgentWalletRiskOfferId) {
     const walletRiskChallengeResponse = await fetchWithTimeout(
       `https://payanagent.com/x402/${payanAgentWalletRiskOfferId}`,
@@ -601,6 +611,7 @@ console.log(
       payanagent_wallet_risk_offer_id: payanAgentWalletRiskOfferId,
       payanagent_wallet_risk_offer_listed: payanAgentWalletRiskOfferListed,
       payanagent_wallet_risk_challenge_ready: payanAgentWalletRiskChallengeReady,
+      payanagent_wallet_risk_discoverable: payanAgentWalletRiskDiscoverable,
       payanagent_sales: payanAgentSales,
       payanagent_distinct_buyers: payanAgentDistinctBuyers,
       payanagent_revenue_usdc: payanAgentRevenueUsdc,

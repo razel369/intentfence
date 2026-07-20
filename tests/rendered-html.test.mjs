@@ -128,6 +128,9 @@ test("lists a protected one-cent Base wallet screen on PayanAgent", async () => 
   assert.match(syncScript, /priceCents: 1/u);
   assert.match(syncScript, /counterparty screening, not identity verification/u);
   assert.match(syncScript, /live-base-wallet-risk\+marketplace-delivery/u);
+  assert.match(syncScript, /Base wallet risk and sanctions check for AI agents/u);
+  assert.match(syncScript, /x402 payment safety and security check for AI agents/u);
+  assert.match(syncScript, /IntentFence agent profile/u);
 });
 
 test("encodes a reviewable VS Code remote MCP installation", () => {

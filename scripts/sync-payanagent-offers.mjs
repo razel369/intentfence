@@ -60,6 +60,24 @@ const walletRiskOutputSchema = JSON.stringify({
   },
 });
 
+const desiredAgentProfile = {
+  description:
+    "IntentFence is an AI-agent payment safety API for x402 and Base USDC. Searchable tools include Base wallet risk and sanctions screening before paying, x402 PAYMENT-REQUIRED quote security checks, policy preflight, and official U.S. CPI data. Results are machine-readable, evidence-backed, and fail closed when required live evidence is unavailable.",
+  tags: [
+    "ai-agents",
+    "x402",
+    "payment-safety",
+    "wallet-risk",
+    "sanctions",
+    "phishing",
+    "counterparty-risk",
+    "base-usdc",
+    "policy-preflight",
+    "audit",
+  ],
+  agentUrl: serviceUrl,
+};
+
 const offers = [
   {
     title: "Official U.S. CPI & inflation data",
@@ -91,7 +109,7 @@ const offers = [
     idHint: quoteOfferId,
     title: "x402 quote safety assessment",
     description:
-      "Submit the exact caller-observed PAYMENT-REQUIRED header before signing a target payment. IntentFence checks x402 v2 structure, exact scheme, Base mainnet, canonical USDC and EIP-712 domain, caller price ceiling, explicit payee allowlist, timeout, transfer method, extensions, and exact resource binding. Returns safe_to_proceed, needs_review, or denied with check-level evidence. PayanAgent settles 0.01 USDC to the seller and supplies its settlement receipt; the direct signed IntentFence route remains available separately.",
+      "x402 payment safety and security check for AI agents before signing a target payment. Submit the exact caller-observed PAYMENT-REQUIRED header. IntentFence checks x402 v2 structure, exact scheme, Base mainnet, canonical USDC and EIP-712 domain, caller price ceiling, explicit payee allowlist, timeout, transfer method, extensions, and exact resource binding. Returns safe_to_proceed, needs_review, or denied with check-level evidence. PayanAgent settles 0.01 USDC to the seller and supplies its settlement receipt; the direct signed IntentFence route remains available separately.",
     category: "Trust",
     tags: ["x402", "quote", "payment-safety", "usdc", "base", "payee", "policy", "preflight"],
     priceCents: 1,
@@ -108,7 +126,7 @@ const offers = [
     idHint: walletRiskOfferId,
     title: "Check a Base wallet before paying",
     description:
-      "Submit one Base recipient address before sending USDC. IntentFence checks live Base account activity, contract code, native and USDC balances, plus GoPlus malicious-address and sanctions intelligence, then returns safe_to_proceed, needs_review, or denied with evidence. This is counterparty screening, not identity verification or a guarantee of future behavior. PayanAgent settles 0.01 USDC directly to the IntentFence wallet and attaches its receipt.",
+      "Base wallet risk and sanctions check for AI agents before an x402 or USDC payment. Submit one Base wallet address. IntentFence performs live wallet screening for sanctions, phishing, mixers, money laundering, cybercrime, malicious contracts, account code, transaction activity, and native/USDC balances using GoPlus intelligence and chain-verified Base RPC evidence. Returns safe_to_proceed, needs_review, or denied with check-level evidence. This is counterparty screening, not identity verification or a guarantee of future behavior. PayanAgent settles 0.01 USDC directly to the IntentFence wallet and attaches its receipt.",
     category: "Trust",
     tags: [
       "base",
@@ -187,6 +205,21 @@ async function findOwnedOffer(title, idHint) {
 }
 
 const results = [];
+const currentAgent = await marketplaceJson(`/api/v1/agents/${sellerId}`);
+const profileMatches =
+  currentAgent.description === desiredAgentProfile.description &&
+  currentAgent.agentUrl === desiredAgentProfile.agentUrl &&
+  JSON.stringify(currentAgent.tags ?? []) === JSON.stringify(desiredAgentProfile.tags);
+if (profileMatches) {
+  results.push({ title: "IntentFence agent profile", action: "unchanged" });
+} else {
+  await marketplaceJson(`/api/v1/agents/${sellerId}`, {
+    method: "PATCH",
+    body: JSON.stringify(desiredAgentProfile),
+  });
+  results.push({ title: "IntentFence agent profile", action: "updated" });
+}
+
 for (const desired of offers) {
   const { idHint, ...payload } = desired;
   const existing = await findOwnedOffer(payload.title, idHint);
