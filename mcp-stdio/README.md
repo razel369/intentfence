@@ -15,15 +15,34 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 For the verified one-click VS Code link and manual remote-server configuration,
 see the root README's **Install in VS Code** section.
 
-For a local stdio server, run the immutable public 0.9.0 release directly. It
+For a local stdio server, run the immutable public 0.10.0 release directly. It
 does not require an npm account or source checkout:
 
 ```bash
-npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz intentfence-mcp
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz intentfence-mcp
 ```
 
 The release artifact SHA-256 is
-`2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89`.
+`726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312`.
+
+## Opt-in automatic payment
+
+Generic MCP clients can buy a paid IntentFence result in one tool call when the
+local stdio process receives all three settings:
+
+```text
+INTENTFENCE_EVM_PRIVATE_KEY=<buyer-controlled 0x-prefixed key>
+INTENTFENCE_MAX_AUTO_PAYMENT_USDC=0.005
+INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC=0.05
+```
+
+Keep the key in a runtime secret manager or process environment, never in a
+committed MCP configuration. Automatic payment is otherwise disabled. Before
+signing, the package requires `exact` Base-mainnet USDC, the published
+IntentFence recipient, a price within the per-call ceiling, and capacity in the
+process-lifetime budget. Budget is reserved before signing and is not restored
+after a failed attempt, preventing retry loops or concurrent calls from
+overspending. The buyer's private key never leaves the local MCP process.
 
 The server exposes five tools:
 
@@ -46,8 +65,9 @@ The server exposes five tools:
   latest complete month or a requested `YYYY-MM` period for 0.001 USDC and
   returns a signed provenance receipt.
 
-The server never receives a seed phrase or private key and does not execute the
-downstream payment. IntentFence never fetches or pays the target; it validates
+The hosted IntentFence server never receives a seed phrase or private key. The
+optional local auto-payment mode signs only the IntentFence service fee inside
+the buyer-controlled process. IntentFence never fetches or pays the target; it validates
 the supplied challenge, signs its SHA-256 binding with assurance
 `caller-observed-x402-quote-assessment`, and settles only its 0.005 USDC
 assessment fee. It does not independently prove real-world authorization.

@@ -79,16 +79,37 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ### Install the local stdio MCP package
 
 Agents and MCP clients that require a local process can run the immutable public
-0.9.0 release directly. This does not require an npm account, repository clone,
+0.10.0 release directly. This does not require an npm account, repository clone,
 or IntentFence API key:
 
 ```bash
-npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz intentfence-mcp
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz intentfence-mcp
 ```
 
 The release artifact is built and tested by GitHub Actions. Its SHA-256 digest
-is `2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89`.
+is `726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312`.
 Use the hosted endpoint above when the client supports Streamable HTTP.
+
+#### Opt-in one-call payment for local agents
+
+The local stdio package can handle the x402 challenge, sign it, retry the tool
+call, and return the settled result without requiring special MCP-client
+support. Automatic payment is disabled unless all three values below are set:
+
+```text
+INTENTFENCE_EVM_PRIVATE_KEY=<buyer-controlled 0x-prefixed key>
+INTENTFENCE_MAX_AUTO_PAYMENT_USDC=0.005
+INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC=0.05
+```
+
+Supply the key through the agent runtime's secret manager or process
+environment; never commit it to an MCP configuration file. The package signs
+only `exact` Base-mainnet USDC requirements addressed to the published
+IntentFence recipient, rejects any payment above the per-call ceiling, and
+reserves every attempted signature against the process-lifetime budget before
+signing. Failed attempts remain reserved, so retry loops and concurrent calls
+cannot exceed the cap. The private key stays in the buyer's local process and is
+never sent to IntentFence.
 
 ### Install in VS Code
 
@@ -97,8 +118,9 @@ then select **Install IntentFence in VS Code**.
 
 The install action contains only the public server name, transport, and URL. VS
 Code asks you to review and trust the server before its first start. The free
-policy-preview tool works with no API key; paid tools still need an
-x402-capable wallet flow controlled by the caller.
+policy-preview tool works with no API key. Paid calls through the hosted server
+need an x402-capable client; runtimes without one can use the budget-capped local
+stdio mode above.
 
 Manual `.vscode/mcp.json` or user-profile fallback:
 

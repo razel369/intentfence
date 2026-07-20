@@ -23,11 +23,28 @@
         "args": [
           "--yes",
           "--package",
-          "https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz",
+          "https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz",
           "intentfence-mcp"
         ],
-        "release": "https://github.com/razel369/intentfence/releases/tag/mcp-v0.9.0",
-        "sha256": "2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89"
+        "release": "https://github.com/razel369/intentfence/releases/tag/mcp-v0.10.0",
+        "sha256": "726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312",
+        "autoPayment": {
+          "enabledByDefault": false,
+          "requiredEnv": [
+            "INTENTFENCE_EVM_PRIVATE_KEY",
+            "INTENTFENCE_MAX_AUTO_PAYMENT_USDC",
+            "INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC"
+          ],
+          "policy": {
+            "scheme": "exact",
+            "network": "eip155:8453",
+            "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
+            "perPaymentCeilingEnv": "INTENTFENCE_MAX_AUTO_PAYMENT_USDC",
+            "processBudgetEnv": "INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC"
+          },
+          "secretHandling": "Buyer key remains in the local stdio process and must be supplied by a runtime secret manager or process environment."
+        }
       },
       "tools": [
         "intentfence_preflight",

@@ -84,12 +84,22 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   assert.deepEqual(manifest.interfaces.mcp.stdio.args, [
     "--yes",
     "--package",
-    "https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz",
+    "https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz",
     "intentfence-mcp",
   ]);
   assert.equal(
     manifest.interfaces.mcp.stdio.sha256,
-    "2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89",
+    "726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312",
+  );
+  assert.equal(manifest.interfaces.mcp.stdio.autoPayment.enabledByDefault, false);
+  assert.deepEqual(manifest.interfaces.mcp.stdio.autoPayment.requiredEnv, [
+    "INTENTFENCE_EVM_PRIVATE_KEY",
+    "INTENTFENCE_MAX_AUTO_PAYMENT_USDC",
+    "INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC",
+  ]);
+  assert.equal(
+    manifest.interfaces.mcp.stdio.autoPayment.policy.payTo,
+    "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
   );
   assert.equal(agentCard.version, "0.10.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
@@ -261,10 +271,11 @@ test("publishes a quote-pinned Coinbase AgentKit adapter", async () => {
 });
 
 test("does not publish a private signing key", async () => {
-  const [jwksText, receiptSource, runtimeSecretSource] = await Promise.all([
+  const [jwksText, receiptSource, runtimeSecretSource, autoPaymentSource] = await Promise.all([
     source("public/.well-known/jwks.json"),
     source("lib/receipts.ts"),
     source("lib/runtime-secrets.ts"),
+    source("mcp-stdio/lib/auto-payment.mjs"),
   ]);
   const jwks = JSON.parse(jwksText);
 
@@ -273,16 +284,18 @@ test("does not publish a private signing key", async () => {
   assert.doesNotMatch(jwksText, /"d"\s*:/);
   assert.doesNotMatch(receiptSource, /BEGIN PRIVATE KEY|"d"\s*:/);
   assert.match(runtimeSecretSource, /INTENTFENCE_SIGNING_PRIVATE_JWK/);
+  assert.match(autoPaymentSource, /INTENTFENCE_EVM_PRIVATE_KEY/u);
+  assert.doesNotMatch(autoPaymentSource, /console\.(?:log|error).*privateKey/u);
 });
 
 test("monitors the live x402Scout listing without buying a synthetic health check", async () => {
   const monitor = await source("scripts/monitor-production.mjs");
 
   assert.match(monitor, /https:\/\/x402scout\.com\/catalog/u);
-  assert.match(monitor, /mcp-v0\.9\.0/u);
+  assert.match(monitor, /mcp-v0\.10\.0/u);
   assert.match(
     monitor,
-    /sha256:2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89/u,
+    /sha256:726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312/u,
   );
   assert.match(monitor, /4f5739b7-799f-412b-8cc7-6c8d4ae6edd9/u);
   assert.match(monitor, /d11b67ab-debd-493a-b7c9-d41adfabb498/u);
@@ -318,7 +331,7 @@ test("can release an immutable account-free MCP install artifact", async () => {
   for (const documentation of [rootReadme, packageReadme, llms]) {
     assert.match(
       documentation,
-      /releases\/download\/mcp-v0\.9\.0\/razel369-intentfence-mcp-0\.9\.0\.tgz/u,
+      /releases\/download\/mcp-v0\.10\.0\/razel369-intentfence-mcp-0\.10\.0\.tgz/u,
     );
   }
 });
