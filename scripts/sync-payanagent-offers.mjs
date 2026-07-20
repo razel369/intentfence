@@ -15,6 +15,7 @@ const sellerId =
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const primaryOfferId = process.env.PAYANAGENT_PRIMARY_OFFER_ID?.trim();
 const quoteOfferId = process.env.PAYANAGENT_QUOTE_OFFER_ID?.trim();
+const walletRiskOfferId = process.env.PAYANAGENT_WALLET_RISK_OFFER_ID?.trim();
 const obsoleteOfferIds = (process.env.PAYANAGENT_OBSOLETE_OFFER_IDS ?? "")
   .split(",")
   .map((value) => value.trim())
@@ -104,6 +105,7 @@ const offers = [
       "Checks a live x402 quote against a caller-owned ceiling and payee allowlist before payment.",
   },
   {
+    idHint: walletRiskOfferId,
     title: "Check a Base wallet before paying",
     description:
       "Submit one Base recipient address before sending USDC. IntentFence checks live Base account activity, contract code, native and USDC balances, plus GoPlus malicious-address and sanctions intelligence, then returns safe_to_proceed, needs_review, or denied with evidence. This is counterparty screening, not identity verification or a guarantee of future behavior. PayanAgent settles 0.01 USDC directly to the IntentFence wallet and attaches its receipt.",

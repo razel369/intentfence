@@ -9,6 +9,7 @@ const payanAgentDeliverySecret = process.env.PAYANAGENT_DELIVERY_SECRET?.trim();
 const payanAgentAgentId = "j57d8w639k1c1d33k0hf5g7d5h8atk9g";
 const payanAgentOfferId = "kh7bwc280yqjr5607mejn1e1ks8atesm";
 const payanAgentQuoteOfferIdConfigured = "kh7d72cgr8csya3n8pwgky0r258at4qa";
+const payanAgentWalletRiskOfferIdConfigured = "kh7f6f2h7ve965s1tdtx6w3zfd8axmp6";
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const input = {
   subject: "did:web:intentfence-monitor",
@@ -527,25 +528,20 @@ try {
         cpiChallenge.accepts?.[0]?.payTo?.toLowerCase() === settlementWallet.toLowerCase();
     }
   }
-  const walletRiskSearchResponse = await fetchWithTimeout(
-    "https://payanagent.com/api/v1/offers?q=Check%20a%20Base%20wallet%20before%20paying&limit=20",
+  const walletRiskDetailResponse = await fetchWithTimeout(
+    `https://payanagent.com/api/v1/offers/${payanAgentWalletRiskOfferIdConfigured}`,
   );
-  if (walletRiskSearchResponse.ok) {
-    const walletRiskSearch = await json(walletRiskSearchResponse);
-    for (const candidate of walletRiskSearch.offers ?? []) {
-      if (candidate.title !== "Check a Base wallet before paying") continue;
-      const detailResponse = await fetchWithTimeout(
-        `https://payanagent.com/api/v1/offers/${candidate._id}`,
-      );
-      if (!detailResponse.ok) continue;
-      const detailPayload = await json(detailResponse);
-      const detail = detailPayload.offer ?? detailPayload;
-      if (detail.sellerId === payanAgentAgentId && detail.isActive !== false) {
-        payanAgentWalletRiskOfferId = detail._id;
-        payanAgentWalletRiskOfferListed = true;
-        break;
-      }
-    }
+  if (walletRiskDetailResponse.ok) {
+    const detailPayload = await json(walletRiskDetailResponse);
+    const detail = detailPayload.offer ?? detailPayload;
+    payanAgentWalletRiskOfferListed =
+      detail._id === payanAgentWalletRiskOfferIdConfigured &&
+      detail.sellerId === payanAgentAgentId &&
+      detail.title === "Check a Base wallet before paying" &&
+      detail.isActive !== false;
+    payanAgentWalletRiskOfferId = payanAgentWalletRiskOfferListed
+      ? detail._id
+      : null;
   }
   if (payanAgentWalletRiskOfferId) {
     const walletRiskChallengeResponse = await fetchWithTimeout(
