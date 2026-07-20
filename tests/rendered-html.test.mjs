@@ -26,7 +26,7 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.9 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
@@ -37,6 +37,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
     source("app/api/wallet-risk/preview/route.ts"),
     source("app/api/us-cpi/route.ts"),
     source("app/api/us-cpi/preview/route.ts"),
+    source("lib/x402.ts"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
     source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
@@ -71,6 +72,8 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.match(usCpiRoute, /"GET \/api\/us-cpi": usCpiRouteConfig/);
   assert.match(usCpiPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
+  assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
+  assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
   assert.equal(manifest.version, "0.9.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
