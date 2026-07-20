@@ -264,3 +264,14 @@ test("does not publish a private signing key", async () => {
   assert.doesNotMatch(receiptSource, /BEGIN PRIVATE KEY|"d"\s*:/);
   assert.match(runtimeSecretSource, /INTENTFENCE_SIGNING_PRIVATE_JWK/);
 });
+
+test("monitors the live x402Scout listing without buying a synthetic health check", async () => {
+  const monitor = await source("scripts/monitor-production.mjs");
+
+  assert.match(monitor, /https:\/\/x402scout\.com\/catalog/u);
+  assert.match(monitor, /4f5739b7-799f-412b-8cc7-6c8d4ae6edd9/u);
+  assert.match(monitor, /x402ScoutWalletRisk\.price_usd, 0\.002/u);
+  assert.match(monitor, /x402ScoutWalletRisk\.status, "active"/u);
+  assert.match(monitor, /x402ScoutWalletRisk\.facilitator_compatible, true/u);
+  assert.doesNotMatch(monitor, /x402scout\.com\/health\//u);
+});

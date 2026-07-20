@@ -12,6 +12,8 @@ const payanAgentQuoteOfferIdConfigured = "kh7d72cgr8csya3n8pwgky0r258at4qa";
 const payanAgentReadinessOfferIdConfigured = "kh7bq10drx7cwf2djcc1aqgpvn8axce3";
 const payanAgentWalletRiskOfferIdConfigured = "kh7f6f2h7ve965s1tdtx6w3zfd8axmp6";
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
+const x402ScoutWalletRiskId = "4f5739b7-799f-412b-8cc7-6c8d4ae6edd9";
+const baseUsdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 const input = {
   subject: "did:web:intentfence-monitor",
   action: { type: "payment.healthcheck", resource: "synthetic" },
@@ -382,6 +384,31 @@ assert.ok(
   "one or more x402scan paid-resource listings are missing",
 );
 
+const x402ScoutCatalogResponse = await fetchWithRetry(
+  "https://x402scout.com/catalog",
+  {},
+  30_000,
+);
+assert.equal(
+  x402ScoutCatalogResponse.status,
+  200,
+  "x402Scout catalog is unavailable",
+);
+const x402ScoutCatalog = await json(x402ScoutCatalogResponse);
+const x402ScoutWalletRisk = x402ScoutCatalog.endpoints?.find(
+  (endpoint) => endpoint.id === x402ScoutWalletRiskId,
+);
+assert.ok(
+  x402ScoutWalletRisk,
+  "IntentFence wallet-risk service is missing from x402Scout",
+);
+assert.equal(x402ScoutWalletRisk.url, `${baseUrl}/api/wallet-risk`);
+assert.equal(x402ScoutWalletRisk.price_usd, 0.002);
+assert.equal(x402ScoutWalletRisk.network, "base-mainnet");
+assert.equal(x402ScoutWalletRisk.asset_address?.toLowerCase(), baseUsdcAddress);
+assert.equal(x402ScoutWalletRisk.status, "active");
+assert.equal(x402ScoutWalletRisk.facilitator_compatible, true);
+
 const agent402Origin = new URL(baseUrl).origin;
 const agent402IndexResponse = await fetchWithRetry(
   "https://agent402.tools/api/index",
@@ -685,6 +712,12 @@ console.log(
       revenue_usdc: metrics.revenue_usdc,
       official_mcp_registry: true,
       x402scan_registered: true,
+      x402scout_registered: true,
+      x402scout_service_id: x402ScoutWalletRisk.id,
+      x402scout_health: x402ScoutWalletRisk.health_status,
+      x402scout_price_usd: x402ScoutWalletRisk.price_usd,
+      x402scout_facilitator_compatible:
+        x402ScoutWalletRisk.facilitator_compatible,
       agent402_indexed: true,
       agent402_routable: agent402Seller.routable,
       agent402_health: agent402Seller.health,
