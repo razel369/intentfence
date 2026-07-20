@@ -38,7 +38,7 @@ jobs:
         shell: bash
         run: |
           version="$(node -p "require('./package.json').version")"
-          filename="$(npm pack --json | jq -r '.[0].filename')"
+          filename="$(npm pack --ignore-scripts --json | jq -r '.[0].filename')"
           test -n "$version"
           test -f "$filename"
           echo "version=$version" >> "$GITHUB_OUTPUT"

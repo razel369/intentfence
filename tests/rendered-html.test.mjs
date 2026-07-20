@@ -287,7 +287,7 @@ test("can release an immutable account-free MCP install artifact", async () => {
   assert.match(workflow, /contents: write/u);
   assert.match(workflow, /working-directory: mcp-stdio/u);
   assert.match(workflow, /run: npm test/u);
-  assert.match(workflow, /npm pack --json/u);
+  assert.match(workflow, /npm pack --ignore-scripts --json/u);
   assert.match(workflow, /gh release create/u);
   assert.match(workflow, /mcp-v\$\{VERSION\}/u);
   assert.match(workflow, /refusing to replace an immutable install artifact/u);
