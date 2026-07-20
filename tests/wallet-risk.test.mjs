@@ -12,13 +12,17 @@ const TEST_ADDRESS = "0x1111111111111111111111111111111111111111";
 
 function mockFetch({ flags = {}, nonce = "0x1", code = "0x", usdc = "0x7530" } = {}) {
   return async (url) => {
-    if (String(url).startsWith("https://mainnet.base.org")) {
+    if (
+      String(url).startsWith("https://base-rpc.publicnode.com") ||
+      String(url).startsWith("https://mainnet.base.org")
+    ) {
       return Response.json([
         { jsonrpc: "2.0", id: 1, result: "0x100" },
         { jsonrpc: "2.0", id: 2, result: nonce },
         { jsonrpc: "2.0", id: 3, result: "0x0" },
         { jsonrpc: "2.0", id: 4, result: code },
         { jsonrpc: "2.0", id: 5, result: usdc },
+        { jsonrpc: "2.0", id: 6, result: "0x2105" },
       ]);
     }
     if (String(url).startsWith("https://api.gopluslabs.io/")) {
@@ -46,6 +50,59 @@ test("wallet-risk input validation normalizes addresses and rejects burn address
     () => validateWalletRiskInput({ address: "0x0000000000000000000000000000000000000000" }),
     WalletRiskValidationError,
   );
+});
+
+test("wallet-risk falls back to a second chain-verified Base RPC", async () => {
+  const originalFetch = globalThis.fetch;
+  let primaryCalls = 0;
+  let fallbackCalls = 0;
+  const healthy = mockFetch();
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith("https://base-rpc.publicnode.com")) {
+      primaryCalls += 1;
+      return Response.json([{ jsonrpc: "2.0", id: 1, result: "0x100" }]);
+    }
+    if (String(url).startsWith("https://mainnet.base.org")) {
+      fallbackCalls += 1;
+    }
+    return healthy(url, init);
+  };
+  try {
+    const decision = await assessWalletRisk({ address: TEST_ADDRESS });
+    assert.equal(decision.status, "safe_to_proceed");
+    assert.equal(primaryCalls, 1);
+    assert.equal(fallbackCalls, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("wallet-risk rejects evidence from a non-Base RPC", async () => {
+  const originalFetch = globalThis.fetch;
+  const healthy = mockFetch();
+  globalThis.fetch = async (url, init) => {
+    if (
+      String(url).startsWith("https://base-rpc.publicnode.com") ||
+      String(url).startsWith("https://mainnet.base.org")
+    ) {
+      const response = await healthy(url, init);
+      const payload = await response.json();
+      return Response.json(
+        payload.map((entry) =>
+          entry.id === 6 ? { ...entry, result: "0x1" } : entry,
+        ),
+      );
+    }
+    return healthy(url, init);
+  };
+  try {
+    await assert.rejects(
+      () => assessWalletRisk({ address: TEST_ADDRESS }),
+      /wrong network/u,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("wallet-risk returns a low-risk decision only when live sources are complete", async () => {

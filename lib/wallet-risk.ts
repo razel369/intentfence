@@ -1,6 +1,9 @@
 import { INTENTFENCE_NETWORK, INTENTFENCE_USDC_CONTRACT } from "./x402.ts";
 
-const BASE_RPC_URL = "https://mainnet.base.org";
+const BASE_RPC_URLS = [
+  "https://base-rpc.publicnode.com",
+  "https://mainnet.base.org",
+] as const;
 const GOPLUS_ADDRESS_URL = "https://api.gopluslabs.io/api/v1/address_security";
 const UPSTREAM_TIMEOUT_MS = 6_000;
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -132,9 +135,9 @@ function parseHex(value: unknown, field: string) {
   return BigInt(value);
 }
 
-async function fetchBaseEvidence(address: string) {
+async function fetchBaseEvidenceFrom(rpcUrl: string, address: string) {
   const paddedAddress = address.slice(2).padStart(64, "0");
-  const response = await fetchWithTimeout(BASE_RPC_URL, {
+  const response = await fetchWithTimeout(rpcUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify([
@@ -151,6 +154,7 @@ async function fetchBaseEvidence(address: string) {
           "latest",
         ],
       },
+      { jsonrpc: "2.0", id: 6, method: "eth_chainId", params: [] },
     ]),
   });
   if (!response.ok) {
@@ -166,8 +170,11 @@ async function fetchBaseEvidence(address: string) {
       results.set(entry.id, entry.result);
     }
   }
-  if (results.size !== 5) {
+  if (results.size !== 6) {
     throw new WalletRiskUpstreamError("Base RPC did not return complete wallet evidence.");
+  }
+  if (parseHex(results.get(6), "chain ID") !== 8453n) {
+    throw new WalletRiskUpstreamError("Base RPC returned evidence from the wrong network.");
   }
   const code = results.get(4);
   if (typeof code !== "string" || !/^0x[0-9a-fA-F]*$/u.test(code)) {
@@ -180,6 +187,22 @@ async function fetchBaseEvidence(address: string) {
     code,
     usdcBalanceAtomic: parseHex(results.get(5), "USDC balance"),
   };
+}
+
+async function fetchBaseEvidence(address: string) {
+  let lastError: unknown;
+  for (const rpcUrl of BASE_RPC_URLS) {
+    try {
+      return await fetchBaseEvidenceFrom(rpcUrl, address);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw new WalletRiskUpstreamError(
+    lastError instanceof Error
+      ? lastError.message
+      : "Base RPC evidence is temporarily unavailable.",
+  );
 }
 
 async function fetchGoPlusEvidence(address: string) {
