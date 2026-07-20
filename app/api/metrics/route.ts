@@ -1,4 +1,4 @@
-import { count, countDistinct, eq, sql } from "drizzle-orm";
+import { and, count, countDistinct, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { leads, paymentAudits, usageEvents } from "../../../db/schema";
 import { INTENTFENCE_PRICE_ATOMIC } from "../../../lib/x402";
@@ -15,7 +15,10 @@ export async function GET() {
           latestSettlementAt: sql<number | null>`max(${paymentAudits.createdAt})`,
         })
         .from(paymentAudits)
-        .where(eq(paymentAudits.status, "settled")),
+        .where(and(
+          eq(paymentAudits.status, "settled"),
+          eq(paymentAudits.sourceKind, "external"),
+        )),
       db.select({ submitted: count() }).from(leads),
       db
         .select({ eventName: usageEvents.eventName, total: count() })
@@ -42,7 +45,7 @@ export async function GET() {
           : null,
         leads_submitted: leadRows[0]?.submitted ?? 0,
         funnel_events: eventTotals,
-        note: "Counts come from IntentFence D1 settlement and funnel records; failed or unverified payments are excluded from revenue.",
+        note: "Counts come from IntentFence D1 settlement and funnel records; failed, unverified, and platform-verification payments are excluded from customer revenue.",
       },
       {
         headers: {

@@ -4,7 +4,11 @@ import test from "node:test";
 const { checkIntentFenceFacilitator, supportsIntentFenceRoute } = await import(
   "../lib/x402-health.ts"
 );
-const { fetchIntentFenceSupportedKinds } = await import("../lib/x402.ts");
+const {
+  fetchIntentFenceSupportedKinds,
+  getIntentFenceRuntimeSupportedKinds,
+  intentFenceX402Server,
+} = await import("../lib/x402.ts");
 
 const supportedPayload = {
   kinds: [
@@ -61,5 +65,17 @@ test("loads supported kinds with a Worker-compatible facilitator request", async
   await assert.rejects(
     fetchIntentFenceSupportedKinds(async () => Response.json({ kinds: null })),
     /invalid supported payment kinds/u,
+  );
+});
+
+test("initializes the paid runtime from the pinned Base capability", async () => {
+  const supported = getIntentFenceRuntimeSupportedKinds();
+  assert.deepEqual(supported.kinds, [
+    { x402Version: 2, scheme: "exact", network: "eip155:8453" },
+  ]);
+  await intentFenceX402Server.initialize();
+  assert.equal(
+    intentFenceX402Server.getSupportedKind(2, "eip155:8453", "exact")?.scheme,
+    "exact",
   );
 });

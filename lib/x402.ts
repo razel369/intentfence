@@ -56,10 +56,30 @@ export async function fetchIntentFenceSupportedKinds(
   } as SupportedResponse;
 }
 
+/**
+ * Keep the paid request cold path independent from the facilitator's
+ * `/supported` endpoint. The live health check still verifies that endpoint,
+ * while verify and settle remain delegated to PayAI. This exact Base route is
+ * the only capability the service advertises and accepts.
+ */
+export function getIntentFenceRuntimeSupportedKinds(): SupportedResponse {
+  return {
+    kinds: [
+      {
+        x402Version: 2,
+        scheme: "exact",
+        network: INTENTFENCE_NETWORK,
+      },
+    ],
+    extensions: ["bazaar"],
+    signers: { "eip155:*": [] },
+  } as SupportedResponse;
+}
+
 const facilitatorClient = {
   verify: httpFacilitatorClient.verify.bind(httpFacilitatorClient),
   settle: httpFacilitatorClient.settle.bind(httpFacilitatorClient),
-  getSupported: fetchIntentFenceSupportedKinds,
+  getSupported: async () => getIntentFenceRuntimeSupportedKinds(),
 };
 
 export const intentFenceX402Server = new x402ResourceServer(facilitatorClient)

@@ -24,6 +24,7 @@ export const paymentAudits = sqliteTable(
     payerAddress: text("payer_address"),
     transactionHash: text("transaction_hash"),
     facilitator: text("facilitator"),
+    sourceKind: text("source_kind").notNull().default("external"),
     decisionStatus: text("decision_status"),
     receiptId: text("receipt_id"),
     createdAt: integer("created_at", { mode: "timestamp" }).notNull(),

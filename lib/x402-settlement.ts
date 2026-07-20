@@ -10,6 +10,7 @@ import {
 } from "./x402";
 import { decodeX402Header } from "./x402-payment";
 import { isSuccessfulX402Settlement } from "./x402-settlement-status";
+import { classifySettlementSource } from "./x402-settlement-source";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -23,6 +24,7 @@ export async function finalizeIntentFenceSettlement(
 ) {
   const settlementResponse = response.headers.get("PAYMENT-RESPONSE");
   const requestId = response.headers.get("X-IntentFence-Request-ID");
+  const sourceKind = classifySettlementSource(request);
 
   if (settlementResponse && requestId && isSuccessfulX402Settlement(response)) {
     let auditWritten = false;
@@ -73,6 +75,7 @@ export async function finalizeIntentFenceSettlement(
               payerAddress,
               transactionHash,
               facilitator: INTENTFENCE_FACILITATOR,
+              sourceKind,
               decisionStatus,
               receiptId,
               createdAt: new Date(),
@@ -99,7 +102,9 @@ export async function finalizeIntentFenceSettlement(
     response.headers.set("X-IntentFence-Audit-Status", auditWritten ? "persisted" : "failed");
     await Promise.all([
       recordFunnelEvent({
-        eventName: "payment_settled",
+        eventName: sourceKind === "external"
+          ? "payment_settled"
+          : "payment_verification_settled",
         request,
         requestId,
         metadata: {
@@ -107,6 +112,7 @@ export async function finalizeIntentFenceSettlement(
           protocol: "x402-v2",
           product,
           audit_persisted: auditWritten,
+          source_kind: sourceKind,
         },
       }),
       recordFunnelEvent({
