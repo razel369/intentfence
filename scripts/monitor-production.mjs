@@ -9,6 +9,7 @@ const payanAgentDeliverySecret = process.env.PAYANAGENT_DELIVERY_SECRET?.trim();
 const payanAgentAgentId = "j57d8w639k1c1d33k0hf5g7d5h8atk9g";
 const payanAgentOfferId = "kh7bwc280yqjr5607mejn1e1ks8atesm";
 const payanAgentQuoteOfferIdConfigured = "kh7d72cgr8csya3n8pwgky0r258at4qa";
+const payanAgentReadinessOfferIdConfigured = "kh79sp39hh7ayghkvfy6avb6158axpsg";
 const payanAgentWalletRiskOfferIdConfigured = "kh7f6f2h7ve965s1tdtx6w3zfd8axmp6";
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const input = {
@@ -456,6 +457,9 @@ let payanAgentFreePreviewOfferDeactivated = false;
 let payanAgentQuoteOfferId = null;
 let payanAgentQuoteOfferListed = false;
 let payanAgentQuoteChallengeReady = false;
+let payanAgentReadinessOfferListed = false;
+let payanAgentReadinessChallengeReady = false;
+let payanAgentReadinessDiscoverable = false;
 let payanAgentCpiOfferId = null;
 let payanAgentCpiOfferListed = false;
 let payanAgentCpiChallengeReady = false;
@@ -524,6 +528,54 @@ try {
         quoteChallenge.accepts?.[0]?.amount === "10000" &&
         quoteChallenge.accepts?.[0]?.network === "eip155:8453" &&
         quoteChallenge.accepts?.[0]?.payTo?.toLowerCase() ===
+          settlementWallet.toLowerCase();
+    }
+  }
+  const readinessDetailResponse = await fetchWithTimeout(
+    `https://payanagent.com/api/v1/offers/${payanAgentReadinessOfferIdConfigured}`,
+  );
+  if (readinessDetailResponse.ok) {
+    const detailPayload = await json(readinessDetailResponse);
+    const detail = detailPayload.offer ?? detailPayload;
+    payanAgentReadinessOfferListed =
+      detail._id === payanAgentReadinessOfferIdConfigured &&
+      detail.sellerId === payanAgentAgentId &&
+      detail.title === "Verify x402 endpoint readiness before paying" &&
+      detail.priceCents === 1 &&
+      detail.isActive !== false;
+  }
+  const readinessDiscoverResponse = await fetchWithTimeout(
+    "https://payanagent.com/api/v1/discover?q=x402%20endpoint%20readiness&offerType=api&limit=200",
+  );
+  if (readinessDiscoverResponse.ok) {
+    const readinessDiscover = await json(readinessDiscoverResponse);
+    payanAgentReadinessDiscoverable = (readinessDiscover.offers ?? []).some(
+      (offer) => offer._id === payanAgentReadinessOfferIdConfigured,
+    );
+  }
+  if (payanAgentReadinessOfferListed) {
+    const readinessChallengeResponse = await fetchWithTimeout(
+      `https://payanagent.com/x402/${payanAgentReadinessOfferIdConfigured}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: "agent:intentfence-monitor",
+          target_url: "https://merchant.example.com/paid",
+          policy: { max_price_usdc: "0.10" },
+        }),
+      },
+    );
+    const readinessChallengeHeader =
+      readinessChallengeResponse.headers.get("payment-required");
+    if (readinessChallengeResponse.status === 402 && readinessChallengeHeader) {
+      const readinessChallenge = JSON.parse(
+        Buffer.from(readinessChallengeHeader, "base64").toString("utf8"),
+      );
+      payanAgentReadinessChallengeReady =
+        readinessChallenge.accepts?.[0]?.amount === "10000" &&
+        readinessChallenge.accepts?.[0]?.network === "eip155:8453" &&
+        readinessChallenge.accepts?.[0]?.payTo?.toLowerCase() ===
           settlementWallet.toLowerCase();
     }
   }
@@ -647,6 +699,10 @@ console.log(
       payanagent_quote_offer_id: payanAgentQuoteOfferId,
       payanagent_quote_offer_listed: payanAgentQuoteOfferListed,
       payanagent_quote_challenge_ready: payanAgentQuoteChallengeReady,
+      payanagent_readiness_offer_id: payanAgentReadinessOfferIdConfigured,
+      payanagent_readiness_offer_listed: payanAgentReadinessOfferListed,
+      payanagent_readiness_challenge_ready: payanAgentReadinessChallengeReady,
+      payanagent_readiness_discoverable: payanAgentReadinessDiscoverable,
       payanagent_cpi_offer_id: payanAgentCpiOfferId,
       payanagent_cpi_offer_listed: payanAgentCpiOfferListed,
       payanagent_cpi_challenge_ready: payanAgentCpiChallengeReady,
