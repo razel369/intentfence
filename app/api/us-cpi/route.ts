@@ -32,6 +32,7 @@ import {
 } from "../../../lib/x402";
 import {
   createUsCpiPaymentRequired,
+  decodeX402Header,
   encodeX402Header,
   INTENTFENCE_SITE_URL,
   usCpiRouteConfig,
@@ -297,6 +298,19 @@ export async function GET(request: NextRequest) {
 
   const reservationHash = reservationByRequest.get(request);
   reservationByRequest.delete(request);
+  if (response.status === 402) {
+    const paymentRequired = decodeX402Header(response.headers.get("PAYMENT-REQUIRED"));
+    const paymentError = paymentRequired && typeof paymentRequired === "object"
+      && "error" in paymentRequired && typeof paymentRequired.error === "string"
+      ? paymentRequired.error
+      : "payment_rejected";
+    console.warn("IntentFence U.S. CPI paid request rejected", {
+      paymentError,
+      sourceKind: request.headers.get("user-agent")?.startsWith("Tollbooth-")
+        ? "platform_verification"
+        : "external",
+    });
+  }
   if (reservationHash && !isSuccessfulX402Settlement(response)) {
     await releaseReservationQuietly(reservationHash, "settlement_not_confirmed");
   }
