@@ -247,7 +247,7 @@ lines.on("line", async (line) => {
       result(request.id, {
         protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.10.0" },
+        serverInfo: { name: "intentfence", version: "0.10.1" },
         instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. The free preflight remains an unsigned declared-input preview.",
       });
       return;

@@ -15,15 +15,15 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 For the verified one-click VS Code link and manual remote-server configuration,
 see the root README's **Install in VS Code** section.
 
-For a local stdio server, run the immutable public 0.10.0 release directly. It
+For a local stdio server, run the immutable public 0.10.1 release directly. It
 does not require an npm account or source checkout:
 
 ```bash
-npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz intentfence-mcp
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz intentfence-mcp
 ```
 
-The release artifact SHA-256 is
-`726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312`.
+The GitHub release page publishes the immutable artifact SHA-256 alongside the
+download.
 
 ## Opt-in automatic payment
 
