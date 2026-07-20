@@ -1,13 +1,14 @@
 {
   "name": "IntentFence",
-  "version": "0.10.0",
-  "description": "Signed official U.S. CPI data, live Base wallet-risk intelligence, caller-observed x402 quote assessment, and payment-policy receipts for autonomous AI agents.",
+  "version": "0.11.0",
+  "description": "Live x402 endpoint readiness, signed official U.S. CPI data, Base wallet-risk intelligence, quote assessment, and payment-policy receipts for autonomous AI agents.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
     "rest": {
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
+      "x402Readiness": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
       "walletRisk": "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
       "usCpi": "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi",
       "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
@@ -23,11 +24,11 @@
         "args": [
           "--yes",
           "--package",
-          "https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz",
+          "https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz",
           "intentfence-mcp"
         ],
-        "release": "https://github.com/razel369/intentfence/releases/tag/mcp-v0.10.1",
-        "sha256": "3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e",
+        "release": "https://github.com/razel369/intentfence/releases/tag/mcp-v0.11.0",
+        "sha256": "PENDING_RELEASE",
         "autoPayment": {
           "enabledByDefault": false,
           "requiredEnv": [
@@ -50,10 +51,11 @@
         "intentfence_preflight",
         "intentfence_verified_preflight",
         "intentfence_x402_assessment",
+        "intentfence_x402_readiness",
         "intentfence_wallet_risk",
         "intentfence_us_cpi"
       ],
-      "paidTools": ["intentfence_verified_preflight", "intentfence_x402_assessment", "intentfence_wallet_risk", "intentfence_us_cpi"]
+      "paidTools": ["intentfence_verified_preflight", "intentfence_x402_assessment", "intentfence_x402_readiness", "intentfence_wallet_risk", "intentfence_us_cpi"]
     },
     "a2a": {
       "protocolVersion": "1.0",
@@ -63,7 +65,7 @@
   "receipts": {
     "format": "JWS Compact",
     "algorithm": "ES256",
-    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-base-wallet-risk", "official-source-data"],
+    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-x402-endpoint-readiness", "live-base-wallet-risk", "official-source-data"],
     "jwks": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json",
     "schema": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json"
   },
@@ -74,6 +76,7 @@
     "endpoints": [
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk"
       ,"https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
     ],
@@ -82,6 +85,7 @@
     "offers": [
       { "endpoint": "/api/us-cpi", "method": "GET", "price": "0.001 USDC", "amountAtomic": "1000" },
       { "endpoint": "/api/wallet-risk", "method": "GET", "price": "0.002 USDC", "amountAtomic": "2000" },
+      { "endpoint": "/api/x402-readiness", "method": "POST", "price": "0.002 USDC", "amountAtomic": "2000" },
       { "endpoint": "/api/x402-assessments", "method": "POST", "price": "0.005 USDC", "amountAtomic": "5000" },
       { "endpoint": "/api/preflight/verified", "method": "POST", "price": "0.005 USDC", "amountAtomic": "5000" }
     ],
@@ -94,5 +98,5 @@
     "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json"
   },
   "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
-  "terms": "The free preflight is unsigned. Wallet risk uses live Base and third-party malicious-address intelligence; a low-risk result does not prove identity, ownership, authorization, or future behavior. The quote assessment validates the exact caller-observed PAYMENT-REQUIRED value; IntentFence never pays the target. x402 proves settlement of the IntentFence service fee. Keep independent authorization controls for consequential actions."
+  "terms": "The free preflight is unsigned. Live readiness makes one bounded credential-free request, blocks redirects and private-network targets, and never pays the target. Wallet risk uses live Base and third-party intelligence; a low-risk result does not prove identity, ownership, authorization, or future behavior. x402 proves settlement of the IntentFence service fee. Keep independent authorization controls for consequential actions."
 }

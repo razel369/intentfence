@@ -15,15 +15,15 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 For the verified one-click VS Code link and manual remote-server configuration,
 see the root README's **Install in VS Code** section.
 
-For a local stdio server, run the immutable public 0.10.1 release directly. It
+For a local stdio server, run the immutable public 0.11.0 release directly. It
 does not require an npm account or source checkout:
 
 ```bash
-npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz intentfence-mcp
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz intentfence-mcp
 ```
 
 The immutable release artifact SHA-256 is
-`3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e`.
+`PENDING_RELEASE`.
 
 ## Opt-in automatic payment
 
@@ -44,7 +44,7 @@ process-lifetime budget. Budget is reserved before signing and is not restored
 after a failed attempt, preventing retry loops or concurrent calls from
 overspending. The buyer's private key never leaves the local MCP process.
 
-The server exposes five tools:
+The server exposes six tools:
 
 - `intentfence_preflight` is a free, unsigned declared-input preview.
 - `intentfence_verified_preflight` returns a standard x402 challenge for 0.005
@@ -57,6 +57,8 @@ The server exposes five tools:
   `method` (`GET`, `HEAD`, or `POST`), `payment_required`, and `policy` with
   `max_price_usdc` plus optional `allowed_payees`. A safe result requires an
   explicit matching allowlist entry; omitting it yields `needs_review`.
+- `intentfence_wallet_risk` checks a Base recipient with live Base RPC activity
+- `intentfence_x402_readiness` accepts a public HTTPS `target_url`, makes one bounded credential-free request without following redirects or paying the target, validates the live challenge, and returns a five-minute signed result for 0.002 USDC. Private-network targets are rejected before contact.
 - `intentfence_wallet_risk` checks a Base recipient with live Base RPC activity
   and GoPlus malicious-address intelligence for 0.002 USDC. It returns a
   five-minute ES256 receipt. A low-risk result is not proof of identity,

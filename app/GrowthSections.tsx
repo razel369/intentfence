@@ -331,12 +331,17 @@ export default function GrowthSections() {
             <p>Send the base64 <code>PAYMENT-REQUIRED</code> challenge (up to 16 KiB) and validate Base USDC, price, caller-approved payee, and URL binding.</p>
           </article>
           <article>
-            <span>03 / PAID MCP</span>
+            <span>03 / LIVE x402 READINESS</span>
+            <h3>POST /api/x402-readiness</h3>
+            <p>Give IntentFence only the endpoint URL. It makes one bounded no-payment request, blocks redirects and private networks, validates the live challenge, and signs the result for 0.002 USDC.</p>
+          </article>
+          <article>
+            <span>04 / PAID MCP</span>
             <h3>intentfence_x402_assessment</h3>
             <p>MCP agents forward the exact challenge they received, pay the 0.005 USDC IntentFence fee, and get a signed assessment.</p>
           </article>
           <article>
-            <span>04 / FREE REST</span>
+            <span>05 / FREE REST</span>
             <h3>POST /api/preflight</h3>
             <p>Unsigned declared-input policy preview for any runtime, workflow, or backend.</p>
           </article>

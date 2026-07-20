@@ -8,6 +8,7 @@ const MIN_RESERVATION_MS = 30 * 1_000;
 export type X402ReservationProduct =
   | "verified-preflight"
   | "x402-assessment"
+  | "x402-readiness"
   | "wallet-risk"
   | "us-cpi";
 

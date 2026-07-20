@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.7.1",
+  "version": "0.11.0",
   "deprecatedAlias": true,
   "canonicalManifest": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/intentfence.json",
   "description": "IntentFence is the successor name for this spend and action policy gateway.",
@@ -10,6 +10,7 @@
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
+      "x402Readiness": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
       "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
       "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json"
     },

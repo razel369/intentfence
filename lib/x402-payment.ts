@@ -2,6 +2,7 @@ import type { RouteConfig } from "@x402/core/server";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { preflightInputSchema } from "./preflight";
 import { x402AssessmentInputSchema } from "./x402-assessment";
+import { x402ReadinessInputSchema } from "./x402-readiness";
 import { walletRiskInputSchema } from "./wallet-risk";
 import { usCpiInputSchema } from "./us-cpi";
 import {
@@ -10,6 +11,8 @@ import {
   INTENTFENCE_PAYMENT_TIMEOUT_SECONDS,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
+  INTENTFENCE_READINESS_PRICE_ATOMIC,
+  INTENTFENCE_READINESS_PRICE_USD,
   INTENTFENCE_USDC_CONTRACT,
   INTENTFENCE_US_CPI_PRICE_ATOMIC,
   INTENTFENCE_US_CPI_PRICE_USD,
@@ -87,6 +90,74 @@ export const intentFencePaidRouteConfig = {
     body: {
       error: "payment_required",
       message: `Pay ${INTENTFENCE_PRICE_USD} in USDC on Base to run this verified preflight.`,
+      payment_info: `${INTENTFENCE_SITE_URL}/api/payments`,
+    },
+  }),
+} satisfies RouteConfig;
+
+export const x402ReadinessDiscoveryExtensions = declareDiscoveryExtension({
+  input: {
+    target_url: `${INTENTFENCE_SITE_URL}/api/wallet-risk?address=${INTENTFENCE_PAY_TO}`,
+    method: "GET",
+    max_price_usdc: "0.01",
+    allowed_payees: [INTENTFENCE_PAY_TO],
+  },
+  inputSchema: x402ReadinessInputSchema,
+  bodyType: "json",
+  output: {
+    example: {
+      intentfence: "0.9",
+      request_id: "7d7fbf44-3c39-4eca-89d6-b44d756c8df1",
+      status: "ready",
+      verification_tier: "live-x402-readiness+x402-settled",
+      observed: { http_status: 402, payment_required_present: true, redirect_blocked: false },
+      receipt: { signed: true, assurance: "live-x402-endpoint-readiness" },
+    },
+    schema: {
+      type: "object",
+      properties: {
+        intentfence: { type: "string", const: "0.9" },
+        request_id: { type: "string", format: "uuid" },
+        status: { type: "string", enum: ["ready", "ready_with_review", "not_ready"] },
+        verification_tier: { type: "string", const: "live-x402-readiness+x402-settled" },
+        target: { type: "object" },
+        observed: { type: "object" },
+        checks: { type: "array", items: { type: "object" } },
+        assessment: { type: ["object", "null"] },
+        receipt: { type: "object" },
+      },
+      required: ["intentfence", "request_id", "status", "verification_tier", "target", "observed", "checks", "assessment", "receipt"],
+    },
+  },
+});
+
+export const x402ReadinessPaymentRequiredExtensions = {
+  bazaar: {
+    ...x402ReadinessDiscoveryExtensions.bazaar,
+    info: {
+      ...x402ReadinessDiscoveryExtensions.bazaar.info,
+      input: { ...x402ReadinessDiscoveryExtensions.bazaar.info.input, method: "POST" as const },
+    },
+  },
+};
+
+export const x402ReadinessRouteConfig = {
+  accepts: {
+    scheme: "exact",
+    price: INTENTFENCE_READINESS_PRICE_USD,
+    network: INTENTFENCE_NETWORK,
+    payTo: INTENTFENCE_PAY_TO,
+  },
+  description: "Make one bounded credential-free request to a public HTTPS endpoint, block redirects and private-network targets, validate its live x402 challenge against a price ceiling and optional payee allowlist, and return a signed five-minute readiness receipt. IntentFence never pays the target.",
+  mimeType: "application/json",
+  serviceName: "IntentFence x402 Readiness",
+  tags: ["ai-agents", "endpoint-readiness", "payment-safety", "ssrf-protection", "x402"],
+  iconUrl: `${INTENTFENCE_SITE_URL}/favicon.svg`,
+  unpaidResponseBody: () => ({
+    contentType: "application/json",
+    body: {
+      error: "payment_required",
+      message: `Pay ${INTENTFENCE_READINESS_PRICE_USD} in USDC on Base for a live x402 endpoint readiness check and signed receipt.`,
       payment_info: `${INTENTFENCE_SITE_URL}/api/payments`,
     },
   }),
@@ -355,11 +426,13 @@ function createPaymentRequired(
   routeConfig:
     | typeof intentFencePaidRouteConfig
     | typeof x402AssessmentRouteConfig
+    | typeof x402ReadinessRouteConfig
     | typeof walletRiskRouteConfig
     | typeof usCpiRouteConfig,
   extensions:
     | typeof intentFencePaymentRequiredExtensions
     | typeof x402AssessmentPaymentRequiredExtensions
+    | typeof x402ReadinessPaymentRequiredExtensions
     | typeof walletRiskPaymentRequiredExtensions
     | typeof usCpiPaymentRequiredExtensions,
   error: string,
@@ -422,6 +495,19 @@ export function createWalletRiskPaymentRequired(
     walletRiskPaymentRequiredExtensions,
     error,
     INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+  );
+}
+
+export function createX402ReadinessPaymentRequired(
+  resourceUrl: string,
+  error = "Payment required",
+) {
+  return createPaymentRequired(
+    resourceUrl,
+    x402ReadinessRouteConfig,
+    x402ReadinessPaymentRequiredExtensions,
+    error,
+    INTENTFENCE_READINESS_PRICE_ATOMIC,
   );
 }
 

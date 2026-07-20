@@ -8,6 +8,7 @@ globalThis.crypto ??= webcrypto;
 const {
   INTENTFENCE_SIGNING_KID,
   createSignedOfficialDataReceipt,
+  createSignedReadinessReceipt,
   signReceiptClaims,
   validateReceiptSigningKey,
   verifyReceipt,
@@ -145,6 +146,37 @@ test("signs and verifies official BLS CPI provenance", async () => {
   assert.equal(result.valid, true);
   assert.equal(result.claims.assurance, "official-source-data");
   assert.equal(result.claims.payment.amount_atomic, "1000");
+});
+
+test("signs and verifies a five-minute live x402 readiness receipt", async () => {
+  const now = Date.now();
+  const issuedAt = new Date(now).toISOString();
+  const keys = await keyPair();
+  const receipt = await createSignedReadinessReceipt({
+    request_id: "00000000-0000-4000-8000-000000000009",
+    status: "ready",
+    checked_at: issuedAt,
+    target: { origin: "https://merchant.example", pathname: "/paid", method: "GET" },
+    observed: { http_status: 402, payment_required_present: true, redirect_blocked: false },
+    checks: [],
+    assessment: { observed: { payment_requirements_sha256: "a".repeat(64) } },
+    receipt: {
+      id: "if_ready_test",
+      issued_at: issuedAt,
+      subject: "agent://receipt-test",
+      action: { type: "x402.endpoint-readiness", resource: "https://merchant.example/paid" },
+    },
+  }, keys.privateJwk, {
+    network: "eip155:8453",
+    asset: "USDC",
+    amountAtomic: "2000",
+    payTo: "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
+  });
+  const result = await verifyReceipt(receipt.signature.jws, now, keys.publicJwk);
+  assert.equal(result.valid, true);
+  assert.equal(result.claims.assurance, "live-x402-endpoint-readiness");
+  assert.equal(result.claims.decision, "safe_to_proceed");
+  assert.equal(result.claims.evidence.payment_requirements_sha256, "a".repeat(64));
 });
 
 test("published JWKS contains the production signing key", async () => {

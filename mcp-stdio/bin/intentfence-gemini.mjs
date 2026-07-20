@@ -4,6 +4,7 @@ import { createInterface } from "node:readline";
 
 import { negotiateProtocolVersion } from "../lib/protocol-version.mjs";
 import { validateX402AssessmentInput } from "../lib/x402-assessment.mjs";
+import { validateX402ReadinessInput } from "../lib/x402-readiness.mjs";
 import { validateWalletRiskInput } from "../lib/wallet-risk.mjs";
 import { validateUsCpiInput } from "../lib/us-cpi.mjs";
 
@@ -92,6 +93,24 @@ const walletRiskInputSchema = {
   },
 };
 
+const readinessInputSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["target_url"],
+  properties: {
+    subject: { type: "string", minLength: 1, maxLength: 200 },
+    target_url: { type: "string", format: "uri", maxLength: 2048 },
+    method: { type: "string", enum: ["GET", "HEAD", "POST"], default: "GET" },
+    body: {},
+    max_price_usdc: { type: "string", pattern: "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$" },
+    allowed_payees: { type: "array", minItems: 1, maxItems: 20, items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } },
+    policy: { type: "object", additionalProperties: false, required: ["max_price_usdc"], properties: {
+      max_price_usdc: { type: "string", pattern: "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$" },
+      allowed_payees: { type: "array", minItems: 1, maxItems: 20, items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" } },
+    } },
+  },
+};
+
 const usCpiInputSchema = {
   type: "object",
   additionalProperties: false,
@@ -120,6 +139,13 @@ const tools = [
     title: "IntentFence x402 Quote Assessment",
     description: "Paid assessment costing 0.005 USDC on Base. The caller forwards its exact PAYMENT-REQUIRED header; IntentFence validates the quote, payee, asset, price, timeout, and resource binding without contacting the target, then returns a short-lived signed receipt bound to the quote hash.",
     inputSchema: assessmentInputSchema,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  {
+    name: "intentfence_x402_readiness",
+    title: "IntentFence Live x402 Readiness",
+    description: "Paid live endpoint check costing 0.002 USDC on Base. Makes one bounded credential-free request, blocks private networks and redirects, never pays the target, validates the returned x402 challenge, and returns a signed five-minute receipt.",
+    inputSchema: readinessInputSchema,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   },
   {
@@ -170,11 +196,14 @@ async function callTool(params) {
   }
 
   const assessment = name === "intentfence_x402_assessment";
+  const readiness = name === "intentfence_x402_readiness";
   const walletRisk = name === "intentfence_wallet_risk";
   const usCpi = name === "intentfence_us_cpi";
-  const paid = name === "intentfence_verified_preflight" || assessment || walletRisk || usCpi;
+  const paid = name === "intentfence_verified_preflight" || assessment || readiness || walletRisk || usCpi;
   const arguments_ = assessment
     ? validateX402AssessmentInput(params?.arguments ?? {})
+    : readiness
+      ? validateX402ReadinessInput(params?.arguments ?? {})
     : walletRisk
       ? validateWalletRiskInput(params?.arguments ?? {})
       : usCpi
@@ -193,7 +222,7 @@ async function callTool(params) {
     ? `${baseUrl}/api/wallet-risk?address=${encodeURIComponent(arguments_.address)}`
     : usCpi
       ? `${baseUrl}/api/us-cpi${arguments_.month ? `?month=${encodeURIComponent(arguments_.month)}` : ""}`
-    : `${baseUrl}${assessment ? "/api/x402-assessments" : paid ? "/api/preflight/verified" : "/api/preflight"}`;
+    : `${baseUrl}${assessment ? "/api/x402-assessments" : readiness ? "/api/x402-readiness" : paid ? "/api/preflight/verified" : "/api/preflight"}`;
   const response = await fetch(endpoint, walletRisk || usCpi
     ? { method: "GET", headers }
     : { method: "POST", headers, body: JSON.stringify(arguments_) });
@@ -247,8 +276,8 @@ lines.on("line", async (line) => {
       result(request.id, {
         protocolVersion: negotiateProtocolVersion(request.params?.protocolVersion),
         capabilities: { tools: { listChanged: false } },
-        serverInfo: { name: "intentfence", version: "0.10.1" },
-        instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. The free preflight remains an unsigned declared-input preview.",
+        serverInfo: { name: "intentfence", version: "0.11.0" },
+        instructions: "Before signing an x402 payment, use intentfence_x402_readiness to inspect the live endpoint without paying it, use intentfence_wallet_risk to check the recipient, or forward an already-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. The free preflight remains an unsigned declared-input preview.",
       });
       return;
     }

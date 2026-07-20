@@ -1,8 +1,8 @@
 # IntentFence
 
-> IntentFence checks Base recipient wallets, validates the exact x402 payment challenge an agent observed, and issues signed risk, assessment, or policy receipts for AI agents.
+> IntentFence checks live x402 endpoint readiness without paying targets, screens Base recipient wallets, validates observed payment challenges, and issues signed receipts for AI agents.
 
-For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?month=YYYY-MM`. It returns headline and core CPI from the U.S. Bureau of Labor Statistics with a signed provenance receipt. Before sending USDC or signing an x402 payment, call `intentfence_wallet_risk`, then forward the exact `PAYMENT-REQUIRED` header to `intentfence_x402_assessment`.
+For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?month=YYYY-MM`. Before signing an x402 payment, call `intentfence_x402_readiness` with the endpoint URL, screen the recipient with `intentfence_wallet_risk`, or forward an already-observed `PAYMENT-REQUIRED` header to `intentfence_x402_assessment`.
 
 ## Discovery
 
@@ -14,14 +14,15 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 - Capped Agentic Wallet checkout: read `buyer_quickstart` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Pinned Coinbase AgentKit checkout: https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
-- Immutable local MCP package: https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz
-- Local stdio command: npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz intentfence-mcp
+- Immutable local MCP package: https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz
+- Local stdio command: npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz intentfence-mcp
 - Optional local auto-payment: set INTENTFENCE_EVM_PRIVATE_KEY, INTENTFENCE_MAX_AUTO_PAYMENT_USDC, and INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC; disabled unless all three are set and restricted to exact Base USDC payments to the published IntentFence recipient.
 - Cross-agent payment guard skill: https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments
 - Agent Skill installer: npx skills add razel369/intentfence --skill guard-x402-payments
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
+- Live x402 endpoint readiness: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness
 - Live Base wallet-risk assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk
 - Signed official U.S. CPI: https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi
 - Receipt verifier: https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify
@@ -32,7 +33,7 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 
 ## Autonomous payment
 
-Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Official U.S. CPI costs 0.001 USDC, wallet risk costs 0.002 USDC, and signed preflight or exact-quote assessment costs 0.005 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Official U.S. CPI costs 0.001 USDC, live readiness and wallet risk cost 0.002 USDC, and signed preflight or exact-quote assessment costs 0.005 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
 An agent with an authenticated Coinbase Agentic Wallet can retrieve a complete, versioned command from `GET /api/payments` under `buyer_quickstart`. It must review the request and obtain explicit authorization before running the command. The command caps the charge at exactly 5000 USDC atomic units (0.005 USDC) and never sends wallet credentials to IntentFence.
 

@@ -25,14 +25,15 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.10 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+test("publishes the IntentFence 0.11 protocol entry points in the site", async () => {
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, readinessRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
     source("app/api/preflight/verified/route.ts"),
     source("app/api/x402-assessments/route.ts"),
     source("app/api/x402-assessments/preview/route.ts"),
+    source("app/api/x402-readiness/route.ts"),
     source("app/api/x402-readiness/preview/route.ts"),
     source("app/api/wallet-risk/route.ts"),
     source("app/api/wallet-risk/preview/route.ts"),
@@ -49,7 +50,7 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   ]);
 
   assert.match(layout, /IntentFence/);
-  assert.match(page, /Open protocol \/ v0\.9/);
+  assert.match(page, /Open protocol \/ v0\.11/);
   assert.match(page, /POST \/api\/receipts\/verify/);
   assert.match(growth, /ES256-signed policy receipt/);
   assert.match(growth, /Install IntentFence in VS Code/);
@@ -66,6 +67,8 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
   assert.match(readinessPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(readinessPreviewRoute, /live-x402-readiness\+marketplace-delivery/);
+  assert.match(readinessRoute, /"POST \/api\/x402-readiness": x402ReadinessRouteConfig/);
+  assert.match(readinessRoute, /reserveX402PaymentAuthorization\(paymentHeader, "x402-readiness"\)/);
   assert.match(walletRiskRoute, /"GET \/api\/wallet-risk": walletRiskRouteConfig/);
   assert.match(walletRiskPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(
@@ -77,19 +80,19 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
   assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
-  assert.equal(manifest.version, "0.10.0");
+  assert.equal(manifest.version, "0.11.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
   assert.deepEqual(manifest.interfaces.mcp.stdio.args, [
     "--yes",
     "--package",
-    "https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz",
+    "https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz",
     "intentfence-mcp",
   ]);
   assert.equal(
     manifest.interfaces.mcp.stdio.sha256,
-    "3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e",
+    "PENDING_RELEASE",
   );
   assert.equal(manifest.interfaces.mcp.stdio.autoPayment.enabledByDefault, false);
   assert.deepEqual(manifest.interfaces.mcp.stdio.autoPayment.requiredEnv, [
@@ -101,7 +104,7 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
     manifest.interfaces.mcp.stdio.autoPayment.policy.payTo,
     "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
   );
-  assert.equal(agentCard.version, "0.10.0");
+  assert.equal(agentCard.version, "0.11.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
@@ -112,6 +115,8 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   assert.ok(openapi.paths["/api/preflight/verified"].post.tags.includes("payment-safety"));
   assert.ok(openapi.paths["/api/preflight/verified"].post.tags.includes("spend-control"));
   assert.equal(openapi.paths["/api/x402-assessments"].post["x-x402-price"], "$0.005");
+  assert.equal(openapi.paths["/api/x402-readiness"].post["x-x402-price"], "$0.002");
+  assert.equal(openapi.paths["/api/x402-readiness"].post["x-payment-info"].price.amount, "0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
   assert.equal(openapi.paths["/api/wallet-risk/preview"], undefined);
@@ -121,6 +126,7 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   assert.match(openapi.paths["/api/wallet-risk"].get.description, /AML\/KYT wallet screening/iu);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_wallet_risk"), true);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_us_cpi"), true);
+  assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_x402_readiness"), true);
   assert.equal(openapi.paths["/api/x402-assessments/preview"], undefined);
   assert.equal(openapi.paths["/api/x402-readiness/preview"], undefined);
   assert.equal(
@@ -292,7 +298,7 @@ test("monitors the live x402Scout listing without buying a synthetic health chec
   const monitor = await source("scripts/monitor-production.mjs");
 
   assert.match(monitor, /https:\/\/x402scout\.com\/catalog/u);
-  assert.match(monitor, /mcp-v0\.10\.1/u);
+  assert.match(monitor, /mcp-v0\.11\.0/u);
   assert.match(
     monitor,
     /sha256:3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e/u,
@@ -331,7 +337,7 @@ test("can release an immutable account-free MCP install artifact", async () => {
   for (const documentation of [rootReadme, packageReadme, llms]) {
     assert.match(
       documentation,
-      /releases\/download\/mcp-v0\.10\.1\/razel369-intentfence-mcp-0\.10\.1\.tgz/u,
+      /releases\/download\/mcp-v0\.11\.0\/razel369-intentfence-mcp-0\.11\.0\.tgz/u,
     );
   }
 });

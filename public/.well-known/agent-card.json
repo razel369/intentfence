@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
-  "description": "Assesses exact caller-observed x402 quotes before payment and preflights declared agent spend policy.",
-  "version": "0.10.0",
+  "description": "Checks live x402 endpoint readiness without paying targets, assesses observed quotes, and preflights declared agent spend policy.",
+  "version": "0.11.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
@@ -24,6 +24,15 @@
       "examples": [
         "Check whether a declared 428.20 USD quote is within a declared 500 USD ceiling."
       ],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
+    {
+      "id": "intentfence-x402-readiness",
+      "name": "Live x402 endpoint readiness",
+      "description": "Make one bounded credential-free request to a public HTTPS endpoint, block redirects and private-network targets, validate its live x402 challenge, and return a signed receipt without paying the target.",
+      "tags": ["x402", "endpoint-readiness", "payment-safety", "SSRF", "USDC"],
+      "examples": ["Check whether this endpoint currently returns a canonical Base USDC x402 challenge to an approved payee."],
       "inputModes": ["application/json", "text/plain"],
       "outputModes": ["application/json", "text/plain"]
     },

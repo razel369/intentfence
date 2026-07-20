@@ -106,11 +106,30 @@ export type OfficialDataReceiptClaims = Omit<
   };
 };
 
+export type ReadinessReceiptClaims = Omit<
+  ReceiptClaims,
+  "intentfence_version" | "assurance"
+> & {
+  intentfence_version: "0.9";
+  assurance: "live-x402-endpoint-readiness";
+  evidence: {
+    checked_at: string;
+    target_origin: string;
+    target_pathname: string;
+    target_method: "GET" | "HEAD" | "POST";
+    http_status: number | null;
+    payment_required_present: boolean;
+    redirect_blocked: boolean;
+    payment_requirements_sha256: string | null;
+  };
+};
+
 export type VerifiableReceiptClaims =
   | ReceiptClaims
   | AssessmentReceiptClaims
   | WalletRiskReceiptClaims
-  | OfficialDataReceiptClaims;
+  | OfficialDataReceiptClaims
+  | ReadinessReceiptClaims;
 
 export type SignedReceipt = ReceiptDecision["receipt"] & {
   signed: true;
@@ -153,6 +172,14 @@ export type SignedOfficialDataReceipt = Omit<
   "assurance" | "note"
 > & {
   assurance: "official-source-data";
+  note: string;
+};
+
+export type SignedReadinessReceipt = Omit<
+  SignedReceipt,
+  "assurance" | "note"
+> & {
+  assurance: "live-x402-endpoint-readiness";
   note: string;
 };
 
@@ -519,6 +546,94 @@ export async function createSignedOfficialDataReceipt(
   };
 }
 
+export async function createSignedReadinessReceipt(
+  decision: {
+    request_id: string;
+    status: "ready" | "ready_with_review" | "not_ready";
+    checked_at: string;
+    target: {
+      origin: string;
+      pathname: string;
+      method: "GET" | "HEAD" | "POST";
+    };
+    observed: {
+      http_status: number | null;
+      payment_required_present: boolean;
+      redirect_blocked: boolean;
+    };
+    checks: unknown[];
+    assessment: { observed?: { payment_requirements_sha256?: string } } | null;
+    receipt: {
+      id: string;
+      issued_at: string;
+      subject: string;
+      action: unknown;
+    };
+  },
+  privateJwk: string,
+  payment: { network: string; asset: string; amountAtomic: string; payTo: string },
+): Promise<SignedReadinessReceipt> {
+  const issuedAtSeconds = Math.floor(new Date(decision.receipt.issued_at).getTime() / 1000);
+  const mappedDecision = decision.status === "ready"
+    ? "safe_to_proceed"
+    : decision.status === "ready_with_review"
+      ? "needs_review"
+      : "denied";
+  const claims: ReadinessReceiptClaims = {
+    iss: SITE_URL,
+    aud: RECEIPT_AUDIENCE,
+    iat: issuedAtSeconds,
+    exp: issuedAtSeconds + ASSESSMENT_RECEIPT_TTL_SECONDS,
+    jti: decision.receipt.id,
+    intentfence_version: "0.9",
+    assurance: "live-x402-endpoint-readiness",
+    request_id: decision.request_id,
+    decision: mappedDecision,
+    subject: decision.receipt.subject,
+    action: decision.receipt.action,
+    checks: decision.checks,
+    evidence: {
+      checked_at: decision.checked_at,
+      target_origin: decision.target.origin,
+      target_pathname: decision.target.pathname,
+      target_method: decision.target.method,
+      http_status: decision.observed.http_status,
+      payment_required_present: decision.observed.payment_required_present,
+      redirect_blocked: decision.observed.redirect_blocked,
+      payment_requirements_sha256:
+        decision.assessment?.observed?.payment_requirements_sha256 ?? null,
+    },
+    payment: {
+      protocol: "x402-v2",
+      network: payment.network,
+      asset: payment.asset,
+      amount_atomic: payment.amountAtomic,
+      pay_to: payment.payTo,
+    },
+  };
+  const jws = await signReceiptClaims(claims, privateJwk);
+  return {
+    ...decision.receipt,
+    signed: true,
+    assurance: "live-x402-endpoint-readiness",
+    expires_at: new Date(claims.exp * 1000).toISOString(),
+    payment_assurance: "x402-settled",
+    payment_network: payment.network,
+    payment_asset: payment.asset,
+    payment_amount_atomic: payment.amountAtomic,
+    pay_to: payment.payTo,
+    signature: {
+      format: "JWS Compact",
+      alg: "ES256",
+      kid: INTENTFENCE_SIGNING_KID,
+      jws,
+      verify_url: `${SITE_URL}/api/receipts/verify`,
+      jwks_url: `${SITE_URL}/.well-known/jwks.json`,
+    },
+    note: "IntentFence signed the bounded live endpoint check for five minutes. The check never paid the target, followed redirects, or forwarded credentials. Re-check the current challenge immediately before signing its payment.",
+  };
+}
+
 export async function verifyReceipt(
   jws: string,
   now = Date.now(),
@@ -562,11 +677,16 @@ export async function verifyReceipt(
       claims.intentfence_version === "0.8" &&
       claims.assurance === "official-source-data" &&
       isRecord(claims.evidence);
+    const readinessReceipt =
+      isRecord(claims) &&
+      claims.intentfence_version === "0.9" &&
+      claims.assurance === "live-x402-endpoint-readiness" &&
+      isRecord(claims.evidence);
     if (
       !isRecord(claims) ||
       claims.iss !== SITE_URL ||
       claims.aud !== RECEIPT_AUDIENCE ||
-      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt && !officialDataReceipt) ||
+      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt && !officialDataReceipt && !readinessReceipt) ||
       typeof claims.iat !== "number" ||
       typeof claims.exp !== "number" ||
       typeof claims.jti !== "string" ||
@@ -577,7 +697,7 @@ export async function verifyReceipt(
     const nowSeconds = Math.floor(now / 1000);
     if (claims.iat > nowSeconds + 300) return { valid: false as const, reason: "issued_in_future" };
     if (claims.exp <= nowSeconds) return { valid: false as const, reason: "expired" };
-    const maxLifetime = assessmentReceipt || walletRiskReceipt
+    const maxLifetime = assessmentReceipt || walletRiskReceipt || readinessReceipt
       ? ASSESSMENT_RECEIPT_TTL_SECONDS
       : RECEIPT_TTL_SECONDS;
     if (claims.exp - claims.iat > maxLifetime) {

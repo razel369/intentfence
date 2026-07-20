@@ -298,7 +298,7 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open protocol / v0.9</div>
+          <div className="section-kicker">Open protocol / v0.11</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
             Forward the caller-observed x402 challenge before signing a payment

@@ -33,7 +33,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client(
-  { name: "intentfence-stdio-smoke", version: "0.10.0" },
+  { name: "intentfence-stdio-smoke", version: "0.11.0" },
   { capabilities: {} },
 );
 
@@ -44,7 +44,8 @@ try {
   );
 
   const listed = await client.listTools();
-  assert.equal(listed.tools.length, 5);
+  assert.equal(listed.tools.length, 6);
+  assert.equal(listed.tools.some((tool) => tool.name === "intentfence_x402_readiness"), true);
   assert.equal(listed.tools.some((tool) => tool.name === "intentfence_us_cpi"), true);
   assert.equal(listed.tools[0].name, "intentfence_preflight");
   assert.ok(listed.tools.some((tool) => tool.name === "intentfence_verified_preflight"));

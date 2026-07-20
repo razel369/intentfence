@@ -17,6 +17,11 @@ import {
   WalletRiskValidationError,
 } from "../../lib/wallet-risk";
 import {
+  validateX402ReadinessInput,
+  x402ReadinessInputSchema,
+  X402ReadinessValidationError,
+} from "../../lib/x402-readiness";
+import {
   usCpiInputSchema,
   UsCpiValidationError,
   validateUsCpiInput,
@@ -26,6 +31,7 @@ import {
   createUsCpiPaymentRequired,
   createWalletRiskPaymentRequired,
   createX402AssessmentPaymentRequired,
+  createX402ReadinessPaymentRequired,
   decodeX402Header,
   encodeX402Header,
 } from "../../lib/x402-payment";
@@ -157,8 +163,8 @@ async function callPaidIntentFenceTool(
   input: unknown,
   payment: Record<string, unknown>,
   options: {
-    path: "/api/preflight/verified" | "/api/x402-assessments";
-    source: "mcp" | "mcp-x402-assessment";
+    path: "/api/preflight/verified" | "/api/x402-assessments" | "/api/x402-readiness";
+    source: "mcp" | "mcp-x402-assessment" | "mcp-x402-readiness";
     invalidResponseMessage: string;
     failedMessage: string;
     paymentRequired: (resourceUrl: string, error?: string) => Record<string, unknown>;
@@ -236,6 +242,20 @@ function callX402Assessment(
     invalidResponseMessage: "The x402 quote assessment returned invalid JSON.",
     failedMessage: "The x402 quote assessment could not be processed.",
     paymentRequired: createX402AssessmentPaymentRequired,
+  });
+}
+
+function callX402Readiness(
+  request: Request,
+  input: ReturnType<typeof validateX402ReadinessInput>,
+  payment: Record<string, unknown>,
+) {
+  return callPaidIntentFenceTool(request, input, payment, {
+    path: "/api/x402-readiness",
+    source: "mcp-x402-readiness",
+    invalidResponseMessage: "The x402 endpoint readiness service returned invalid JSON.",
+    failedMessage: "The x402 endpoint readiness check could not be processed.",
+    paymentRequired: createX402ReadinessPaymentRequired,
   });
 }
 
@@ -388,8 +408,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.10.0" },
-      instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient address, then forward the exact PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_us_cpi returns signed official U.S. inflation data. intentfence_preflight is a free preview; the other tools are paid.",
+      serverInfo: { name: "IntentFence", version: "0.11.0" },
+      instructions: "Before signing an x402 payment, use intentfence_x402_readiness to inspect a live endpoint without paying it, use intentfence_wallet_risk to check the recipient address, or forward an already-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_us_cpi returns signed official U.S. inflation data. intentfence_preflight is a free preview; the other tools are paid.",
     }, protocolVersion);
   }
 
@@ -399,7 +419,7 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 5 },
+      metadata: { protocol: "mcp", tools: 6 },
     });
     return jsonRpc(request, body.id, {
       tools: [
@@ -422,6 +442,13 @@ export async function POST(request: Request) {
           title: "IntentFence x402 Quote Assessment",
           description: "Paid assessment ($0.005 USDC on Base). Forward the exact base64 or base64url PAYMENT-REQUIRED header observed by the caller. IntentFence validates the quote, canonical Base USDC asset, price ceiling, payee allowlist, timeout, and resource binding without contacting the target, then returns a short-lived ES256 receipt bound to the quote hash. Supply allowed_payees for safe_to_proceed; omission yields needs_review.",
           inputSchema: x402AssessmentInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+        },
+        {
+          name: "intentfence_x402_readiness",
+          title: "IntentFence Live x402 Readiness",
+          description: "Paid live endpoint check ($0.002 USDC on Base). Makes one bounded credential-free request to a public HTTPS target, blocks private networks and redirects, never pays the target, validates the returned x402 challenge, and returns a signed five-minute receipt.",
+          inputSchema: x402ReadinessInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
         },
         {
@@ -449,6 +476,7 @@ export async function POST(request: Request) {
       toolName !== "intentfence_preflight" &&
       toolName !== "intentfence_verified_preflight" &&
       toolName !== "intentfence_x402_assessment" &&
+      toolName !== "intentfence_x402_readiness" &&
       toolName !== "intentfence_wallet_risk" &&
       toolName !== "intentfence_us_cpi"
     ) {
@@ -492,6 +520,23 @@ export async function POST(request: Request) {
           return jsonRpc(request, body.id, toolError("Payment required", paymentRequired));
         }
         return jsonRpc(request, body.id, await callWalletRisk(request, input, payment));
+      }
+
+      if (toolName === "intentfence_x402_readiness") {
+        const input = validateX402ReadinessInput(toolParams.arguments ?? {});
+        const payment = x402PaymentFromParams(toolParams);
+        if (!payment) {
+          const paidEndpoint = new URL("/api/x402-readiness", request.url).toString();
+          const paymentRequired = createX402ReadinessPaymentRequired(paidEndpoint);
+          await recordFunnelEvent({
+            eventName: "payment_required",
+            request,
+            subject: input.target_url,
+            metadata: { protocol: "mcp-x402", product: "x402-readiness" },
+          });
+          return jsonRpc(request, body.id, toolError("Payment required", paymentRequired));
+        }
+        return jsonRpc(request, body.id, await callX402Readiness(request, input, payment));
       }
 
       if (toolName === "intentfence_x402_assessment") {
@@ -543,6 +588,7 @@ export async function POST(request: Request) {
     } catch (error) {
       const message = error instanceof PreflightValidationError ||
           error instanceof X402AssessmentValidationError ||
+          error instanceof X402ReadinessValidationError ||
           error instanceof WalletRiskValidationError ||
           error instanceof UsCpiValidationError
         ? error.message

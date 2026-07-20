@@ -15,8 +15,8 @@ const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const x402ScoutWalletRiskId = "4f5739b7-799f-412b-8cc7-6c8d4ae6edd9";
 const x402ScoutUsCpiId = "d11b67ab-debd-493a-b7c9-d41adfabb498";
 const baseUsdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
-const mcpReleaseTag = "mcp-v0.10.1";
-const mcpReleaseAssetName = "razel369-intentfence-mcp-0.10.1.tgz";
+const mcpReleaseTag = "mcp-v0.11.0";
+const mcpReleaseAssetName = "razel369-intentfence-mcp-0.11.0.tgz";
 const mcpReleaseDigest =
   "sha256:3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e";
 const input = {
@@ -72,6 +72,7 @@ const healthResponse = await fetchWithTimeout(`${baseUrl}/api/health`, {
 assert.equal(healthResponse.status, 200, "health endpoint is not ready");
 const health = await json(healthResponse);
 assert.equal(health.status, "ok");
+assert.equal(health.version, "0.11.0");
 assert.equal(health.checks.database, true);
 assert.equal(health.checks.revenue_schema, true);
 assert.equal(health.checks.payment_reservation_schema, true);
@@ -80,6 +81,7 @@ assert.equal(health.checks.x402_configuration.ready, true);
 assert.equal(health.checks.x402_configuration.facilitator_reachable, true);
 assert.equal(health.checks.x402_configuration.facilitator_supports_route, true);
 assert.equal(health.checks.x402_configuration.amount_atomic, "5000");
+assert.equal(health.checks.x402_configuration.x402_readiness_amount_atomic, "2000");
 assert.equal(health.checks.x402_configuration.us_cpi_amount_atomic, "1000");
 
 const requiredResponse = await fetchWithTimeout(
@@ -133,6 +135,24 @@ assert.equal(
   assessmentPaymentRequired.resource.url,
   `${baseUrl}/api/x402-assessments`,
 );
+
+const readinessUrl = `${baseUrl}/api/x402-readiness`;
+const readinessRequiredResponse = await fetchWithTimeout(readinessUrl, {
+  method: "POST",
+  headers: { ...monitorHeaders, "Content-Type": "application/json" },
+  body: JSON.stringify({
+    target_url: `${baseUrl}/api/wallet-risk?address=${settlementWallet}`,
+    method: "GET",
+    max_price_usdc: "0.01",
+    allowed_payees: [settlementWallet],
+  }),
+});
+assert.equal(readinessRequiredResponse.status, 402);
+const readinessRequiredHeader = readinessRequiredResponse.headers.get("payment-required");
+assert.ok(readinessRequiredHeader, "readiness PAYMENT-REQUIRED header missing");
+const readinessPaymentRequired = JSON.parse(Buffer.from(readinessRequiredHeader, "base64").toString("utf8"));
+assert.equal(readinessPaymentRequired.accepts[0].amount, "2000");
+assert.equal(readinessPaymentRequired.resource.url, readinessUrl);
 
 const walletRiskAddress = settlementWallet;
 const walletRiskDiscoveryUrl = `${baseUrl}/api/wallet-risk`;
@@ -308,6 +328,10 @@ assert.ok(
     (tool) => tool.name === "intentfence_x402_assessment",
   ),
   "caller-observed x402 quote assessment MCP tool missing",
+);
+assert.ok(
+  mcp.result.tools.some((tool) => tool.name === "intentfence_x402_readiness"),
+  "live x402 readiness MCP tool missing",
 );
 assert.ok(
   mcp.result.tools.some((tool) => tool.name === "intentfence_us_cpi"),

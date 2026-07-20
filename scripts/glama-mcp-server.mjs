@@ -12,6 +12,7 @@ import {
   createPaidPreflightHandler,
 } from "../mcp-stdio/lib/paid-preflight.mjs";
 import { validateX402AssessmentInput } from "../mcp-stdio/lib/x402-assessment.mjs";
+import { validateX402ReadinessInput } from "../mcp-stdio/lib/x402-readiness.mjs";
 import { validateWalletRiskInput } from "../mcp-stdio/lib/wallet-risk.mjs";
 import { validateUsCpiInput } from "../mcp-stdio/lib/us-cpi.mjs";
 
@@ -21,14 +22,14 @@ const server = new McpServer(
   {
     name: "intentfence",
     title: "IntentFence Policy Gate",
-    version: "0.10.0",
+    version: "0.11.0",
     websiteUrl: SITE_URL,
     description:
       "A declared-input policy gate for autonomous AI actions, including spend, scope, data-retention, and human-approval constraints.",
   },
   {
     instructions:
-      "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient with live Base and malicious-address intelligence, then forward the exact caller-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_preflight remains a free declared-input preview.",
+      "Before signing an x402 payment, use intentfence_x402_readiness to inspect the live endpoint without paying it, use intentfence_wallet_risk to check the recipient, or forward an already-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_preflight remains a free declared-input preview.",
   },
 );
 
@@ -233,6 +234,33 @@ server.registerTool(
     source: "glama-mcp-x402-assessment",
     endpoint: "/api/x402-assessments",
     failureMessage: "The IntentFence x402 quote assessment could not be processed.",
+  }),
+);
+
+server.registerTool(
+  "intentfence_x402_readiness",
+  {
+    title: "Check a live x402 endpoint without paying it",
+    description: "Costs 0.002 USDC on Base. Makes one bounded credential-free request to a public HTTPS target, blocks private networks and redirects, never pays the target, validates the returned x402 challenge, and returns a signed five-minute readiness receipt.",
+    inputSchema: {
+      subject: z.string().trim().min(1).max(200).optional(),
+      target_url: z.string().url().max(2048),
+      method: z.enum(["GET", "HEAD", "POST"]).default("GET"),
+      body: z.unknown().optional(),
+      max_price_usdc: z.string().regex(/^(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,6})?$/u).optional(),
+      allowed_payees: z.array(z.string().regex(/^0x[0-9a-fA-F]{40}$/u)).min(1).max(20).optional(),
+      policy: z.object({
+        max_price_usdc: z.string().regex(/^(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,6})?$/u),
+        allowed_payees: z.array(z.string().regex(/^0x[0-9a-fA-F]{40}$/u)).min(1).max(20).optional(),
+      }).optional(),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  },
+  createPaidIntentFenceHandler({
+    validateInput: validateX402ReadinessInput,
+    source: "glama-mcp-x402-readiness",
+    endpoint: "/api/x402-readiness",
+    failureMessage: "The IntentFence x402 endpoint readiness check could not be processed.",
   }),
 );
 

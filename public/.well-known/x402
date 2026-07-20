@@ -2,11 +2,12 @@
   "spec": "agent402-service-manifest/1",
   "version": 1,
   "name": "IntentFence",
-  "description": "Retrieve signed official U.S. CPI data, screen a Base recipient, assess an exact x402 quote, or run a signed payment-safety and spend-control policy preflight before an AI agent acts.",
+  "description": "Check a live x402 endpoint without paying it, retrieve signed official U.S. CPI data, screen a Base recipient, assess an exact quote, or run a payment-policy preflight before an AI agent acts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "resources": [
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
   ],
@@ -25,12 +26,13 @@
     }
   },
   "capabilities": {
-    "tools": 5,
+    "tools": 6,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
     "signedReceipts": "ES256",
     "callerObservedX402QuoteAssessment": true,
+    "liveX402EndpointReadiness": true,
     "liveBaseWalletRisk": true,
     "signedOfficialUsCpi": true
   },
@@ -46,6 +48,7 @@
     "wallet-intelligence",
     "malicious-address",
     "quote-assessment",
+    "endpoint-readiness",
     "x402",
     "mcp"
   ]

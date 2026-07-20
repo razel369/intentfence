@@ -1,7 +1,7 @@
 # IntentFence
 
 IntentFence is a payment-policy firewall for autonomous AI agents. Before an
-agent signs an x402 payment, it can check the recipient with live Base activity
+agent signs an x402 payment, it can inspect the live endpoint without paying it, check the recipient with live Base activity
 and malicious-address intelligence, then forward the exact `PAYMENT-REQUIRED`
 challenge it just observed. IntentFence validates the Base USDC quote against
 the agent's ceiling and pre-approved payee allowlist, binds the challenge with
@@ -29,6 +29,7 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Free REST preview | `POST /api/preflight` |
 | Paid x402 decision | `POST /api/preflight/verified` |
 | Paid caller-observed x402 quote assessment | `POST /api/x402-assessments` |
+| Paid live x402 endpoint readiness | `POST /api/x402-readiness` |
 | Paid live Base wallet-risk assessment | `GET /api/wallet-risk?address=...` |
 | Paid signed official U.S. CPI data | `GET /api/us-cpi?month=YYYY-MM` |
 | Receipt verification | `POST /api/receipts/verify` |
@@ -39,7 +40,7 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Public aggregate metrics | `GET /api/metrics` |
 | OpenAPI | `GET /openapi.json` |
 
-Official U.S. CPI costs 0.001 USDC; wallet risk costs 0.002 USDC; signed preflight and exact-quote assessment cost
+Official U.S. CPI costs 0.001 USDC; live readiness and wallet risk cost 0.002 USDC; signed preflight and exact-quote assessment cost
 0.005 USDC on Base through x402. A successful call
 returns both the facilitator's `PAYMENT-RESPONSE` settlement header and an
 IntentFence ES256 compact-JWS receipt.
@@ -49,6 +50,8 @@ uses live Base RPC activity and GoPlus malicious-address intelligence. A
 `safe_to_proceed` result means no listed malicious flags were observed and the
 address was established on Base at assessment time; it does not prove identity,
 ownership, authorization, or future behavior.
+
+The live readiness check is the simplest first call when an agent only has an endpoint URL. It makes one bounded credential-free request, rejects private-network targets and redirects, validates the returned challenge, never pays the target, and signs the result for five minutes.
 
 The quote assessment is the recommended check after an x402 merchant returns
 its unpaid challenge and before the agent signs the merchant payment.
@@ -79,15 +82,15 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ### Install the local stdio MCP package
 
 Agents and MCP clients that require a local process can run the immutable public
-0.10.1 release directly. This does not require an npm account, repository clone,
+0.11.0 release directly. This does not require an npm account, repository clone,
 or IntentFence API key:
 
 ```bash
-npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz intentfence-mcp
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz intentfence-mcp
 ```
 
 The release artifact is built and tested by GitHub Actions. Its SHA-256 digest
-is `3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e`.
+is `PENDING_RELEASE`.
 Use the hosted endpoint above when the client supports Streamable HTTP.
 
 #### Opt-in one-call payment for local agents

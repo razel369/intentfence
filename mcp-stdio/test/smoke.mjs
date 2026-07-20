@@ -7,6 +7,10 @@ import {
   validateX402AssessmentInput,
   X402AssessmentValidationError,
 } from "../lib/x402-assessment.mjs";
+import {
+  validateX402ReadinessInput,
+  X402ReadinessValidationError,
+} from "../lib/x402-readiness.mjs";
 
 const callerObservedChallenge = Buffer.from(JSON.stringify({
   x402Version: 2,
@@ -41,6 +45,18 @@ assert.throws(
   X402AssessmentValidationError,
 );
 
+const validatedReadiness = validateX402ReadinessInput({
+  target_url: "https://merchant.example/paid",
+  max_price_usdc: "0.02",
+  allowed_payees: ["0x1111111111111111111111111111111111111111"],
+});
+assert.equal(validatedReadiness.method, "GET");
+assert.equal(validatedReadiness.policy.max_price_usdc, "0.02");
+assert.throws(
+  () => validateX402ReadinessInput({ target_url: "http://127.0.0.1/private" }),
+  X402ReadinessValidationError,
+);
+
 const packageDirectory = fileURLToPath(new URL("../", import.meta.url));
 const transport = new StdioClientTransport({
   command: process.execPath,
@@ -50,7 +66,7 @@ const transport = new StdioClientTransport({
 });
 
 const client = new Client(
-  { name: "intentfence-package-smoke", version: "0.10.1" },
+  { name: "intentfence-package-smoke", version: "0.11.0" },
   { capabilities: {} },
 );
 
@@ -58,7 +74,7 @@ try {
   await client.connect(transport);
 
   const listed = await client.listTools();
-  assert.equal(listed.tools.length, 5);
+  assert.equal(listed.tools.length, 6);
   assert.equal(listed.tools.some((tool) => tool.name === "intentfence_us_cpi"), true);
   assert.equal(listed.tools[0].name, "intentfence_preflight");
   assert.ok(listed.tools.some((tool) => tool.name === "intentfence_verified_preflight"));
@@ -72,6 +88,9 @@ try {
   );
   assert.ok(assessmentTool.inputSchema.properties.method.enum.includes("POST"));
   assert.equal(assessmentTool.inputSchema.properties.payment_required.maxLength, 16_384);
+  const readinessTool = listed.tools.find((tool) => tool.name === "intentfence_x402_readiness");
+  assert.ok(readinessTool);
+  assert.deepEqual(readinessTool.inputSchema.required, ["target_url"]);
   assert.deepEqual(listed.tools[0].inputSchema.required, ["subject", "action"]);
 
   const invalidAssessment = await client.callTool({

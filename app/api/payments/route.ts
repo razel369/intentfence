@@ -7,6 +7,8 @@ import {
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
+  INTENTFENCE_READINESS_PRICE_ATOMIC,
+  INTENTFENCE_READINESS_PRICE_USD,
   INTENTFENCE_US_CPI_PRICE_ATOMIC,
   INTENTFENCE_US_CPI_PRICE_USD,
   INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
@@ -38,6 +40,14 @@ export function GET() {
           price: INTENTFENCE_WALLET_RISK_PRICE_USD,
           amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
           recommended_for: "recipient and counterparty screening before a Base payment",
+        },
+        {
+          path: "/api/x402-readiness",
+          method: "POST",
+          product: "live-x402-endpoint-readiness",
+          price: INTENTFENCE_READINESS_PRICE_USD,
+          amount_atomic: INTENTFENCE_READINESS_PRICE_ATOMIC,
+          recommended_for: "checking a public x402 endpoint before the buyer signs or pays its challenge",
         },
         {
           path: "/api/x402-assessments",
