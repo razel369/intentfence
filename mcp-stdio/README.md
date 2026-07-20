@@ -23,7 +23,7 @@ npx --yes --package https://github.com/razel369/intentfence/releases/download/mc
 ```
 
 The immutable release artifact SHA-256 is
-`PENDING_RELEASE`.
+`f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9`.
 
 ## Opt-in automatic payment
 

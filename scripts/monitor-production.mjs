@@ -18,7 +18,7 @@ const baseUsdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 const mcpReleaseTag = "mcp-v0.11.0";
 const mcpReleaseAssetName = "razel369-intentfence-mcp-0.11.0.tgz";
 const mcpReleaseDigest =
-  "sha256:3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e";
+  "sha256:f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9";
 const input = {
   subject: "did:web:intentfence-monitor",
   action: { type: "payment.healthcheck", resource: "synthetic" },

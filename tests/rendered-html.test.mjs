@@ -92,7 +92,7 @@ test("publishes the IntentFence 0.11 protocol entry points in the site", async (
   ]);
   assert.equal(
     manifest.interfaces.mcp.stdio.sha256,
-    "PENDING_RELEASE",
+    "f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9",
   );
   assert.equal(manifest.interfaces.mcp.stdio.autoPayment.enabledByDefault, false);
   assert.deepEqual(manifest.interfaces.mcp.stdio.autoPayment.requiredEnv, [
@@ -301,7 +301,7 @@ test("monitors the live x402Scout listing without buying a synthetic health chec
   assert.match(monitor, /mcp-v0\.11\.0/u);
   assert.match(
     monitor,
-    /sha256:3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e/u,
+    /sha256:f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9/u,
   );
   assert.match(monitor, /4f5739b7-799f-412b-8cc7-6c8d4ae6edd9/u);
   assert.match(monitor, /d11b67ab-debd-493a-b7c9-d41adfabb498/u);

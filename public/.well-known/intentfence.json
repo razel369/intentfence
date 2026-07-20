@@ -28,7 +28,7 @@
           "intentfence-mcp"
         ],
         "release": "https://github.com/razel369/intentfence/releases/tag/mcp-v0.11.0",
-        "sha256": "PENDING_RELEASE",
+        "sha256": "f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9",
         "autoPayment": {
           "enabledByDefault": false,
           "requiredEnv": [

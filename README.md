@@ -90,7 +90,7 @@ npx --yes --package https://github.com/razel369/intentfence/releases/download/mc
 ```
 
 The release artifact is built and tested by GitHub Actions. Its SHA-256 digest
-is `PENDING_RELEASE`.
+is `f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9`.
 Use the hosted endpoint above when the client supports Streamable HTTP.
 
 #### Opt-in one-call payment for local agents
