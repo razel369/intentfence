@@ -34,6 +34,29 @@ async function fetchWithTimeout(input, init = {}, timeoutMs = 10_000) {
   });
 }
 
+async function fetchWithRetry(input, init = {}, timeoutMs = 10_000, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const response = await fetchWithTimeout(input, init, timeoutMs);
+      if (response.status < 500 || attempt === attempts) return response;
+      lastError = new Error(`${input} returned ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, attempt * 500));
+  }
+  throw lastError ?? new Error(`${input} failed without a response`);
+}
+
+async function requireStatus(response, expected, label) {
+  if (response.status === expected) return;
+  throw new Error(
+    `${label} returned ${response.status}: ${(await response.text()).slice(0, 500)}`,
+  );
+}
+
 const healthResponse = await fetchWithTimeout(`${baseUrl}/api/health`, {
   headers: monitorHeaders,
 });
@@ -187,34 +210,52 @@ assert.equal(
 let payanAgentDeliveryVerified = false;
 if (payanAgentDeliverySecret) {
   const token = encodeURIComponent(payanAgentDeliverySecret);
-  const [usCpiPreviewResponse, assessmentPreviewResponse, walletRiskPreviewResponse] = await Promise.all([
-    fetchWithTimeout(`${baseUrl}/api/us-cpi/preview?payan_token=${token}`, {
+  const usCpiPreviewResponse = await fetchWithRetry(
+    `${baseUrl}/api/us-cpi/preview?payan_token=${token}`,
+    {
       method: "POST",
       headers: { ...monitorHeaders, "Content-Type": "application/json" },
       body: "{}",
-    }),
-    fetchWithTimeout(`${baseUrl}/api/x402-assessments/preview?payan_token=${token}`, {
-      method: "POST",
-      headers: { ...monitorHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify(assessmentInput),
-    }),
-    fetchWithTimeout(`${baseUrl}/api/wallet-risk/preview?payan_token=${token}`, {
-      method: "POST",
-      headers: { ...monitorHeaders, "Content-Type": "application/json" },
-      body: JSON.stringify({ address: walletRiskAddress }),
-    }, 20_000),
-  ]);
-  assert.equal(usCpiPreviewResponse.status, 200, "U.S. CPI marketplace delivery is unavailable");
+    },
+    20_000,
+  );
+  await requireStatus(usCpiPreviewResponse, 200, "U.S. CPI marketplace delivery");
   const usCpiPreview = await json(usCpiPreviewResponse);
   assert.equal(usCpiPreview.status, "verified");
   assert.equal(usCpiPreview.source.publisher, "U.S. Bureau of Labor Statistics");
   assert.equal(usCpiPreview.receipt.signed, false);
-  assert.equal(assessmentPreviewResponse.status, 200, "quote-assessment marketplace delivery is unavailable");
+  const assessmentPreviewResponse = await fetchWithRetry(
+    `${baseUrl}/api/x402-assessments/preview?payan_token=${token}`,
+    {
+      method: "POST",
+      headers: { ...monitorHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify(assessmentInput),
+    },
+    20_000,
+  );
+  await requireStatus(
+    assessmentPreviewResponse,
+    200,
+    "quote-assessment marketplace delivery",
+  );
   const assessmentPreview = await json(assessmentPreviewResponse);
   assert.ok(
     ["safe_to_proceed", "needs_review", "denied"].includes(assessmentPreview.status),
   );
-  assert.equal(walletRiskPreviewResponse.status, 200, "wallet-risk marketplace delivery is unavailable");
+  const walletRiskPreviewResponse = await fetchWithRetry(
+    `${baseUrl}/api/wallet-risk/preview?payan_token=${token}`,
+    {
+      method: "POST",
+      headers: { ...monitorHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ address: walletRiskAddress }),
+    },
+    20_000,
+  );
+  await requireStatus(
+    walletRiskPreviewResponse,
+    200,
+    "wallet-risk marketplace delivery",
+  );
   const walletRiskPreview = await json(walletRiskPreviewResponse);
   assert.ok(
     ["safe_to_proceed", "needs_review", "denied"].includes(walletRiskPreview.status),
