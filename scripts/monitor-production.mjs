@@ -407,12 +407,14 @@ assert.equal(mcpReleaseAsset.state, "uploaded");
 assert.equal(mcpReleaseAsset.digest, mcpReleaseDigest);
 assert.ok(mcpReleaseAsset.size > 0, "public MCP release tarball is empty");
 
-const paidResources = [
+const requiredPaidResources = [
   { url: `${baseUrl}/api/preflight/verified`, method: "POST" },
   { url: `${baseUrl}/api/x402-assessments`, method: "POST" },
   { url: walletRiskDiscoveryUrl, method: "GET" },
   { url: usCpiDiscoveryUrl, method: "GET" },
 ];
+const x402ReadinessResource = { url: readinessUrl, method: "POST" };
+const paidResources = [...requiredPaidResources, x402ReadinessResource];
 const x402scanUrl = new URL(
   "https://www.x402scan.com/api/trpc/public.resources.checkRegistered",
 );
@@ -432,9 +434,10 @@ assert.equal(x402scanResponse.status, 200);
 const x402scan = await json(x402scanResponse);
 const registeredResources = x402scan?.[0]?.result?.data?.json?.registered ?? [];
 assert.ok(
-  paidResources.every(({ url }) => registeredResources.includes(url)),
+  requiredPaidResources.every(({ url }) => registeredResources.includes(url)),
   "one or more x402scan paid-resource listings are missing",
 );
+const x402scanReadinessRegistered = registeredResources.includes(readinessUrl);
 
 const x402ScoutCatalogResponse = await fetchWithRetry(
   "https://x402scout.com/catalog",
@@ -784,6 +787,7 @@ console.log(
       mcp_release_digest: mcpReleaseAsset.digest,
       mcp_release_downloads: mcpReleaseAsset.download_count,
       x402scan_registered: true,
+      x402scan_readiness_registered: x402scanReadinessRegistered,
       x402scout_registered: true,
       x402scout_service_id: x402ScoutWalletRisk.id,
       x402scout_health: x402ScoutWalletRisk.health_status,
