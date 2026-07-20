@@ -12,6 +12,7 @@ const serviceUrl = "https://agentpass-protocol.rmalka06.chatgpt.site";
 const sellerId =
   process.env.PAYANAGENT_AGENT_ID?.trim() ??
   "j57d8w639k1c1d33k0hf5g7d5h8atk9g";
+const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const primaryOfferId = process.env.PAYANAGENT_PRIMARY_OFFER_ID?.trim();
 const quoteOfferId = process.env.PAYANAGENT_QUOTE_OFFER_ID?.trim();
 const obsoleteOfferIds = (process.env.PAYANAGENT_OBSOLETE_OFFER_IDS ?? "")
@@ -23,6 +24,40 @@ const openapi = JSON.parse(
 );
 const protectedEndpoint = (path) =>
   `${serviceUrl}${path}?payan_token=${encodeURIComponent(deliverySecret)}`;
+
+const walletRiskOutputSchema = JSON.stringify({
+  type: "object",
+  required: [
+    "intentfence",
+    "request_id",
+    "status",
+    "risk_level",
+    "risk_score",
+    "subject",
+    "observed",
+    "checks",
+    "receipt",
+    "verification_tier",
+  ],
+  properties: {
+    intentfence: { type: "string", const: "0.7" },
+    request_id: { type: "string", format: "uuid" },
+    status: {
+      type: "string",
+      enum: ["safe_to_proceed", "needs_review", "denied"],
+    },
+    risk_level: { type: "string", enum: ["low", "medium", "critical"] },
+    risk_score: { type: "number" },
+    subject: { type: "object" },
+    observed: { type: "object" },
+    checks: { type: "array", items: { type: "object" } },
+    receipt: { type: "object" },
+    verification_tier: {
+      type: "string",
+      const: "live-base-wallet-risk+marketplace-delivery",
+    },
+  },
+});
 
 const offers = [
   {
@@ -67,6 +102,43 @@ const offers = [
     estimatedDurationSeconds: 2,
     previewDescription:
       "Checks a live x402 quote against a caller-owned ceiling and payee allowlist before payment.",
+  },
+  {
+    title: "Check a Base wallet before paying",
+    description:
+      "Submit one Base recipient address before sending USDC. IntentFence checks live Base account activity, contract code, native and USDC balances, plus GoPlus malicious-address and sanctions intelligence, then returns safe_to_proceed, needs_review, or denied with evidence. This is counterparty screening, not identity verification or a guarantee of future behavior. PayanAgent settles 0.01 USDC directly to the IntentFence wallet and attaches its receipt.",
+    category: "Trust",
+    tags: [
+      "base",
+      "wallet",
+      "usdc",
+      "counterparty-risk",
+      "sanctions",
+      "phishing",
+      "x402",
+      "payment-safety",
+    ],
+    priceCents: 1,
+    offerType: "api",
+    endpoint: protectedEndpoint("/api/wallet-risk/preview"),
+    httpMethod: "POST",
+    inputSchema: JSON.stringify({
+      type: "object",
+      additionalProperties: false,
+      required: ["address"],
+      properties: {
+        address: {
+          type: "string",
+          pattern: "^0x[0-9a-fA-F]{40}$",
+          description: "Base recipient or counterparty address to screen.",
+          example: settlementWallet,
+        },
+      },
+    }),
+    outputSchema: walletRiskOutputSchema,
+    estimatedDurationSeconds: 8,
+    previewDescription:
+      "One-address live Base risk screen with malicious-activity, sanctions, account, activity, and balance evidence.",
   },
 ];
 

@@ -170,11 +170,24 @@ assert.equal(
   404,
   "quote-assessment marketplace delivery must fail closed without its private token",
 );
+const walletRiskUnpaidDeliveryResponse = await fetchWithTimeout(
+  `${baseUrl}/api/wallet-risk/preview`,
+  {
+    method: "POST",
+    headers: { ...monitorHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify({ address: walletRiskAddress }),
+  },
+);
+assert.equal(
+  walletRiskUnpaidDeliveryResponse.status,
+  404,
+  "wallet-risk marketplace delivery must fail closed without its private token",
+);
 
 let payanAgentDeliveryVerified = false;
 if (payanAgentDeliverySecret) {
   const token = encodeURIComponent(payanAgentDeliverySecret);
-  const [usCpiPreviewResponse, assessmentPreviewResponse] = await Promise.all([
+  const [usCpiPreviewResponse, assessmentPreviewResponse, walletRiskPreviewResponse] = await Promise.all([
     fetchWithTimeout(`${baseUrl}/api/us-cpi/preview?payan_token=${token}`, {
       method: "POST",
       headers: { ...monitorHeaders, "Content-Type": "application/json" },
@@ -185,6 +198,11 @@ if (payanAgentDeliverySecret) {
       headers: { ...monitorHeaders, "Content-Type": "application/json" },
       body: JSON.stringify(assessmentInput),
     }),
+    fetchWithTimeout(`${baseUrl}/api/wallet-risk/preview?payan_token=${token}`, {
+      method: "POST",
+      headers: { ...monitorHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({ address: walletRiskAddress }),
+    }, 20_000),
   ]);
   assert.equal(usCpiPreviewResponse.status, 200, "U.S. CPI marketplace delivery is unavailable");
   const usCpiPreview = await json(usCpiPreviewResponse);
@@ -195,6 +213,15 @@ if (payanAgentDeliverySecret) {
   const assessmentPreview = await json(assessmentPreviewResponse);
   assert.ok(
     ["safe_to_proceed", "needs_review", "denied"].includes(assessmentPreview.status),
+  );
+  assert.equal(walletRiskPreviewResponse.status, 200, "wallet-risk marketplace delivery is unavailable");
+  const walletRiskPreview = await json(walletRiskPreviewResponse);
+  assert.ok(
+    ["safe_to_proceed", "needs_review", "denied"].includes(walletRiskPreview.status),
+  );
+  assert.equal(
+    walletRiskPreview.verification_tier,
+    "live-base-wallet-risk+marketplace-delivery",
   );
   payanAgentDeliveryVerified = true;
 }
@@ -352,6 +379,9 @@ let payanAgentQuoteChallengeReady = false;
 let payanAgentCpiOfferId = null;
 let payanAgentCpiOfferListed = false;
 let payanAgentCpiChallengeReady = false;
+let payanAgentWalletRiskOfferId = null;
+let payanAgentWalletRiskOfferListed = false;
+let payanAgentWalletRiskChallengeReady = false;
 let payanAgentSales = 0;
 let payanAgentDistinctBuyers = 0;
 let payanAgentRevenueUsdc = 0;
@@ -456,6 +486,48 @@ try {
         cpiChallenge.accepts?.[0]?.payTo?.toLowerCase() === settlementWallet.toLowerCase();
     }
   }
+  const walletRiskSearchResponse = await fetchWithTimeout(
+    "https://payanagent.com/api/v1/offers?q=Check%20a%20Base%20wallet%20before%20paying&limit=20",
+  );
+  if (walletRiskSearchResponse.ok) {
+    const walletRiskSearch = await json(walletRiskSearchResponse);
+    for (const candidate of walletRiskSearch.offers ?? []) {
+      if (candidate.title !== "Check a Base wallet before paying") continue;
+      const detailResponse = await fetchWithTimeout(
+        `https://payanagent.com/api/v1/offers/${candidate._id}`,
+      );
+      if (!detailResponse.ok) continue;
+      const detailPayload = await json(detailResponse);
+      const detail = detailPayload.offer ?? detailPayload;
+      if (detail.sellerId === payanAgentAgentId && detail.isActive !== false) {
+        payanAgentWalletRiskOfferId = detail._id;
+        payanAgentWalletRiskOfferListed = true;
+        break;
+      }
+    }
+  }
+  if (payanAgentWalletRiskOfferId) {
+    const walletRiskChallengeResponse = await fetchWithTimeout(
+      `https://payanagent.com/x402/${payanAgentWalletRiskOfferId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: walletRiskAddress }),
+      },
+    );
+    const walletRiskChallengeHeader =
+      walletRiskChallengeResponse.headers.get("payment-required");
+    if (walletRiskChallengeResponse.status === 402 && walletRiskChallengeHeader) {
+      const walletRiskChallenge = JSON.parse(
+        Buffer.from(walletRiskChallengeHeader, "base64").toString("utf8"),
+      );
+      payanAgentWalletRiskChallengeReady =
+        walletRiskChallenge.accepts?.[0]?.amount === "10000" &&
+        walletRiskChallenge.accepts?.[0]?.network === "eip155:8453" &&
+        walletRiskChallenge.accepts?.[0]?.payTo?.toLowerCase() ===
+          settlementWallet.toLowerCase();
+    }
+  }
 } catch {
   // Marketplace distribution is reported but does not fail core production health.
 }
@@ -489,6 +561,9 @@ console.log(
       payanagent_cpi_offer_id: payanAgentCpiOfferId,
       payanagent_cpi_offer_listed: payanAgentCpiOfferListed,
       payanagent_cpi_challenge_ready: payanAgentCpiChallengeReady,
+      payanagent_wallet_risk_offer_id: payanAgentWalletRiskOfferId,
+      payanagent_wallet_risk_offer_listed: payanAgentWalletRiskOfferListed,
+      payanagent_wallet_risk_challenge_ready: payanAgentWalletRiskChallengeReady,
       payanagent_sales: payanAgentSales,
       payanagent_distinct_buyers: payanAgentDistinctBuyers,
       payanagent_revenue_usdc: payanAgentRevenueUsdc,

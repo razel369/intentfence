@@ -26,7 +26,7 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.9 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, usCpiRoute, usCpiPreviewRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
@@ -34,6 +34,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
     source("app/api/x402-assessments/route.ts"),
     source("app/api/x402-assessments/preview/route.ts"),
     source("app/api/wallet-risk/route.ts"),
+    source("app/api/wallet-risk/preview/route.ts"),
     source("app/api/us-cpi/route.ts"),
     source("app/api/us-cpi/preview/route.ts"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
@@ -62,6 +63,11 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.match(assessmentPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
   assert.match(walletRiskRoute, /"GET \/api\/wallet-risk": walletRiskRouteConfig/);
+  assert.match(walletRiskPreviewRoute, /isAuthorizedPayanAgentDelivery/);
+  assert.match(
+    walletRiskPreviewRoute,
+    /live-base-wallet-risk\+marketplace-delivery/,
+  );
   assert.match(usCpiRoute, /"GET \/api\/us-cpi": usCpiRouteConfig/);
   assert.match(usCpiPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
@@ -79,6 +85,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(openapi.paths["/api/x402-assessments"].post["x-x402-price"], "$0.005");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
+  assert.equal(openapi.paths["/api/wallet-risk/preview"], undefined);
   assert.equal(openapi.paths["/api/us-cpi"].get["x-x402-price"], "$0.001");
   assert.equal(openapi.paths["/api/us-cpi/preview"], undefined);
   assert.match(openapi.paths["/api/wallet-risk"].get.summary, /sanctions.*phishing.*counterparty risk/iu);
@@ -111,6 +118,16 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   );
   assert.equal(parsePaymentRequired(discoveryProbeChallenge).success, true);
   assert.doesNotMatch(JSON.stringify(openapi), /"\$ref":"https?:\/\//u);
+});
+
+test("lists a protected one-cent Base wallet screen on PayanAgent", async () => {
+  const syncScript = await source("scripts/sync-payanagent-offers.mjs");
+
+  assert.match(syncScript, /title: "Check a Base wallet before paying"/u);
+  assert.match(syncScript, /protectedEndpoint\("\/api\/wallet-risk\/preview"\)/u);
+  assert.match(syncScript, /priceCents: 1/u);
+  assert.match(syncScript, /counterparty screening, not identity verification/u);
+  assert.match(syncScript, /live-base-wallet-risk\+marketplace-delivery/u);
 });
 
 test("encodes a reviewable VS Code remote MCP installation", () => {
