@@ -13,17 +13,26 @@ import {
   createPaidIntentFenceHandler,
   createPaidPreflightHandler,
 } from "../lib/paid-preflight.mjs";
+import { createIntentFenceAutoPaymentFetch } from "../lib/auto-payment.mjs";
 import { validateX402AssessmentInput } from "../lib/x402-assessment.mjs";
 import { validateWalletRiskInput } from "../lib/wallet-risk.mjs";
 import { validateUsCpiInput } from "../lib/us-cpi.mjs";
 
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
+let autoPaymentState;
+
+function automaticFetch() {
+  if (autoPaymentState === undefined) {
+    autoPaymentState = createIntentFenceAutoPaymentFetch() ?? null;
+  }
+  return autoPaymentState?.fetch;
+}
 
 const server = new McpServer(
   {
     name: "intentfence",
     title: "IntentFence Policy Gate",
-    version: "0.9.0",
+    version: "0.10.0",
     websiteUrl: SITE_URL,
     description:
       "A declared-input policy gate for autonomous AI actions, including spend, scope, data-retention, and human-approval constraints.",
@@ -192,6 +201,7 @@ server.registerTool(
   createPaidPreflightHandler({
     validateInput: validatePreflightInput,
     source: "npm-mcp",
+    automaticFetch,
   }),
 );
 
@@ -235,6 +245,7 @@ server.registerTool(
     source: "npm-mcp-x402-assessment",
     endpoint: "/api/x402-assessments",
     failureMessage: "The IntentFence x402 quote assessment could not be processed.",
+    automaticFetch,
   }),
 );
 
@@ -264,6 +275,7 @@ server.registerTool(
     method: "GET",
     query: (input) => ({ address: input.address }),
     failureMessage: "The IntentFence wallet-risk assessment could not be processed.",
+    automaticFetch,
   }),
 );
 
@@ -290,6 +302,7 @@ server.registerTool(
     method: "GET",
     query: (input) => input.month ? { month: input.month } : {},
     failureMessage: "The official U.S. CPI request could not be processed.",
+    automaticFetch,
   }),
 );
 

@@ -40,6 +40,7 @@ export function createPaidIntentFenceHandler({
   failureMessage,
   method = "POST",
   query,
+  automaticFetch,
 }) {
   return async (arguments_, extra) => {
     try {
@@ -59,7 +60,8 @@ export function createPaidIntentFenceHandler({
         headers["PAYMENT-SIGNATURE"] = encode(payment);
       }
 
-      const response = await fetch(paidEndpoint, {
+      const requestFetch = payment ? fetch : (automaticFetch?.() ?? fetch);
+      const response = await requestFetch(paidEndpoint, {
         method,
         headers,
         ...(method === "POST" ? { body: JSON.stringify(input) } : {}),
@@ -107,11 +109,12 @@ export function createPaidIntentFenceHandler({
   };
 }
 
-export function createPaidPreflightHandler({ validateInput, source }) {
+export function createPaidPreflightHandler({ validateInput, source, automaticFetch }) {
   return createPaidIntentFenceHandler({
     validateInput,
     source,
     endpoint: "/api/preflight/verified",
     failureMessage: "The verified IntentFence preflight could not be processed.",
+    automaticFetch,
   });
 }

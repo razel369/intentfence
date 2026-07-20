@@ -44,7 +44,7 @@ test("dependency-free Gemini extension lists tools and returns an x402 challenge
     env: { ...process.env, INTENTFENCE_BASE_URL: `http://127.0.0.1:${address.port}` },
     stderr: "pipe",
   });
-  const client = new Client({ name: "gemini-extension-test", version: "0.9.0" });
+  const client = new Client({ name: "gemini-extension-test", version: "0.10.0" });
 
   try {
     await client.connect(transport);

@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Signed official U.S. CPI data, live Base wallet-risk intelligence, caller-observed x402 quote assessment, and payment-policy receipts for autonomous AI agents.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {

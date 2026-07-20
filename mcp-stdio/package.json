@@ -1,6 +1,6 @@
 {
   "name": "@razel369/intentfence-mcp",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "IntentFence MCP server for caller-observed x402 quote assessments and signed payment preflights.",
   "type": "module",
   "mcpName": "io.github.razel369/intentfence",
@@ -45,6 +45,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
+    "@x402/evm": "2.19.0",
+    "@x402/fetch": "2.19.0",
+    "viem": "2.55.4",
     "zod": "4.4.3"
   }
 }

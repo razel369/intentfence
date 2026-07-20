@@ -88,7 +88,7 @@ export async function GET() {
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.9.0",
+      version: "0.10.0",
       status,
       checks: {
         database,

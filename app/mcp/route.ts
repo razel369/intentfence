@@ -388,7 +388,7 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.9.0" },
+      serverInfo: { name: "IntentFence", version: "0.10.0" },
       instructions: "Before signing an x402 payment, use intentfence_wallet_risk to check the recipient address, then forward the exact PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_us_cpi returns signed official U.S. inflation data. intentfence_preflight is a free preview; the other tools are paid.",
     }, protocolVersion);
   }

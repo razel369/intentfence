@@ -25,7 +25,7 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.9 protocol entry points in the site", async () => {
+test("publishes the IntentFence 0.10 protocol entry points in the site", async () => {
   const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
@@ -77,7 +77,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
   assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
-  assert.equal(manifest.version, "0.9.0");
+  assert.equal(manifest.version, "0.10.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
@@ -91,7 +91,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
     manifest.interfaces.mcp.stdio.sha256,
     "2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89",
   );
-  assert.equal(agentCard.version, "0.9.0");
+  assert.equal(agentCard.version, "0.10.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
