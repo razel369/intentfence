@@ -139,7 +139,7 @@ function isBlockedHostname(hostname: string) {
   return /^\[.*\]$/u.test(normalized) || /^[0-9.]+$/u.test(normalized);
 }
 
-function validatedTargetUrl(value: unknown) {
+export function validateX402TargetUrl(value: unknown) {
   const raw = requiredString(value, "target_url", MAX_URL_LENGTH);
   let url: URL;
   try {
@@ -331,7 +331,7 @@ export function validateX402AssessmentInput(value: unknown): X402AssessmentInput
     throw new X402AssessmentValidationError("policy must be a JSON object.");
   }
 
-  const target = validatedTargetUrl(value.target_url);
+  const target = validateX402TargetUrl(value.target_url);
   const method = value.method === undefined ? "GET" : value.method;
   if (method !== "GET" && method !== "HEAD" && method !== "POST") {
     throw new X402AssessmentValidationError("method must be GET, HEAD, or POST.");

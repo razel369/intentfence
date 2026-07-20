@@ -26,13 +26,14 @@ async function source(path) {
 }
 
 test("publishes the IntentFence 0.9 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
     source("app/api/preflight/verified/route.ts"),
     source("app/api/x402-assessments/route.ts"),
     source("app/api/x402-assessments/preview/route.ts"),
+    source("app/api/x402-readiness/preview/route.ts"),
     source("app/api/wallet-risk/route.ts"),
     source("app/api/wallet-risk/preview/route.ts"),
     source("app/api/us-cpi/route.ts"),
@@ -63,6 +64,8 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
   assert.match(assessmentPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
+  assert.match(readinessPreviewRoute, /isAuthorizedPayanAgentDelivery/);
+  assert.match(readinessPreviewRoute, /live-x402-readiness\+marketplace-delivery/);
   assert.match(walletRiskRoute, /"GET \/api\/wallet-risk": walletRiskRouteConfig/);
   assert.match(walletRiskPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(
@@ -99,6 +102,7 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_wallet_risk"), true);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_us_cpi"), true);
   assert.equal(openapi.paths["/api/x402-assessments/preview"], undefined);
+  assert.equal(openapi.paths["/api/x402-readiness/preview"], undefined);
   assert.equal(
     openapi.paths["/api/x402-assessments"].post["x-payment-info"].price.amount,
     "0.005",
@@ -136,6 +140,10 @@ test("lists a protected one-cent Base wallet screen on PayanAgent", async () => 
   assert.match(syncScript, /live-base-wallet-risk\+marketplace-delivery/u);
   assert.match(syncScript, /Base wallet risk and sanctions check for AI agents/u);
   assert.match(syncScript, /x402 payment safety and security check for AI agents/u);
+  assert.match(syncScript, /title: "Verify x402 endpoint readiness before paying"/u);
+  assert.match(syncScript, /protectedEndpoint\("\/api\/x402-readiness\/preview"\)/u);
+  assert.match(syncScript, /Live x402 readiness and payment-safety verification for AI agents/u);
+  assert.match(syncScript, /live-x402-readiness\+marketplace-delivery/u);
   assert.match(syncScript, /IntentFence agent profile/u);
 });
 

@@ -60,12 +60,44 @@ const walletRiskOutputSchema = JSON.stringify({
   },
 });
 
+const x402ReadinessOutputSchema = JSON.stringify({
+  type: "object",
+  required: [
+    "intentfence",
+    "request_id",
+    "status",
+    "checked_at",
+    "target",
+    "observed",
+    "checks",
+    "assessment",
+    "receipt",
+    "verification_tier",
+  ],
+  properties: {
+    intentfence: { type: "string", const: "0.8" },
+    request_id: { type: "string", format: "uuid" },
+    status: { type: "string", enum: ["ready", "ready_with_review", "not_ready"] },
+    checked_at: { type: "string", format: "date-time" },
+    target: { type: "object" },
+    observed: { type: "object" },
+    checks: { type: "array", items: { type: "object" } },
+    assessment: { anyOf: [{ type: "object" }, { type: "null" }] },
+    receipt: { type: "object" },
+    verification_tier: {
+      type: "string",
+      const: "live-x402-readiness+marketplace-delivery",
+    },
+  },
+});
+
 const desiredAgentProfile = {
   description:
-    "IntentFence is an AI-agent payment safety API for x402 and Base USDC. Searchable tools include Base wallet risk and sanctions screening before paying, x402 PAYMENT-REQUIRED quote security checks, policy preflight, and official U.S. CPI data. Results are machine-readable, evidence-backed, and fail closed when required live evidence is unavailable.",
+    "IntentFence is an AI-agent payment safety API for x402 and Base USDC. Searchable tools include live x402 endpoint readiness from a URL, Base wallet risk and sanctions screening before paying, PAYMENT-REQUIRED quote security checks, policy preflight, and official U.S. CPI data. Results are machine-readable, evidence-backed, and fail closed when required live evidence is unavailable.",
   tags: [
     "ai-agents",
     "x402",
+    "endpoint-readiness",
     "payment-safety",
     "wallet-risk",
     "sanctions",
@@ -104,6 +136,73 @@ const offers = [
     estimatedDurationSeconds: 3,
     previewDescription:
       "Official BLS headline and core CPI with year-over-year inflation rates in stable JSON.",
+  },
+  {
+    title: "Verify x402 endpoint readiness before paying",
+    description:
+      "Live x402 readiness and payment-safety verification for AI agents. Submit a public HTTPS resource URL plus a USDC price ceiling; IntentFence makes one bounded request without credentials, redirects, or payment, confirms HTTP 402 and PAYMENT-REQUIRED, and validates x402 v2 structure, exact scheme, Base mainnet, canonical USDC, EIP-712 domain, price, timeout, transfer method, extensions, resource binding, and an optional payee allowlist. Returns ready, ready_with_review, or not_ready with check-level evidence. PayanAgent settles 0.01 USDC to the seller and supplies its receipt.",
+    category: "Trust",
+    tags: [
+      "x402",
+      "endpoint-readiness",
+      "payment-required",
+      "payment-safety",
+      "base-usdc",
+      "preflight",
+      "url-check",
+      "ai-agents",
+    ],
+    priceCents: 1,
+    offerType: "api",
+    endpoint: protectedEndpoint("/api/x402-readiness/preview"),
+    httpMethod: "POST",
+    inputSchema: JSON.stringify({
+      type: "object",
+      additionalProperties: false,
+      required: ["subject", "target_url", "policy"],
+      properties: {
+        subject: {
+          type: "string",
+          minLength: 1,
+          maxLength: 200,
+          description: "Agent or principal identifier.",
+        },
+        target_url: {
+          type: "string",
+          format: "uri",
+          maxLength: 2048,
+          description: "Public HTTPS x402 resource URL on the standard HTTPS port.",
+        },
+        method: { type: "string", enum: ["GET", "HEAD", "POST"], default: "GET" },
+        body: {
+          description: "Optional bounded JSON body for a POST probe.",
+        },
+        policy: {
+          type: "object",
+          additionalProperties: false,
+          required: ["max_price_usdc"],
+          properties: {
+            max_price_usdc: {
+              type: "string",
+              pattern: "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              description: "Maximum acceptable x402 price in USDC, for example 0.10.",
+            },
+            allowed_payees: {
+              type: "array",
+              minItems: 1,
+              maxItems: 20,
+              uniqueItems: true,
+              items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" },
+              description: "Optional trusted-recipient allowlist.",
+            },
+          },
+        },
+      },
+    }),
+    outputSchema: x402ReadinessOutputSchema,
+    estimatedDurationSeconds: 10,
+    previewDescription:
+      "Checks a public x402 URL live without paying and validates its 402 challenge against your policy.",
   },
   {
     idHint: quoteOfferId,
