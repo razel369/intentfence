@@ -4,12 +4,31 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const dockerMode = process.argv.includes("--docker");
+const packageArgumentIndex = process.argv.indexOf("--package");
+const packageSpec =
+  packageArgumentIndex >= 0 ? process.argv[packageArgumentIndex + 1] : undefined;
+if (packageArgumentIndex >= 0 && !packageSpec) {
+  throw new Error("--package requires an npm package spec or tarball URL");
+}
+const packageMode = Boolean(packageSpec);
 const transport = new StdioClientTransport({
-  command: dockerMode ? "docker" : process.execPath,
+  command: dockerMode
+    ? "docker"
+    : packageMode
+      ? process.platform === "win32"
+        ? "npx.cmd"
+        : "npx"
+      : process.execPath,
   args: dockerMode
     ? ["run", "--rm", "-i", "intentfence-mcp:glama-check"]
-    : ["--experimental-strip-types", "scripts/glama-mcp-server.mjs"],
+    : packageMode
+      ? ["--yes", "--package", packageSpec, "intentfence-mcp"]
+      : ["--experimental-strip-types", "scripts/glama-mcp-server.mjs"],
   cwd: dockerMode ? undefined : process.cwd(),
+  env:
+    packageMode && process.env.INTENTFENCE_SMOKE_NPM_CACHE
+      ? { npm_config_cache: process.env.INTENTFENCE_SMOKE_NPM_CACHE }
+      : undefined,
   stderr: "pipe",
 });
 
@@ -19,7 +38,10 @@ const client = new Client(
 );
 
 try {
-  await client.connect(transport);
+  await client.connect(
+    transport,
+    packageMode ? { timeout: 180_000 } : undefined,
+  );
 
   const listed = await client.listTools();
   assert.equal(listed.tools.length, 5);
@@ -69,7 +91,7 @@ try {
   assert.equal(result.structuredContent?.status, "safe_to_proceed");
   assert.equal(result.structuredContent?.checks?.length, 5);
   console.log(
-    `IntentFence ${dockerMode ? "Docker" : "stdio"} MCP smoke passed: initialize, tools/list, caller-observed quote schema, and tools/call.`,
+    `IntentFence ${dockerMode ? "Docker" : packageMode ? "release tarball" : "stdio"} MCP smoke passed: initialize, tools/list, caller-observed quote schema, and tools/call.`,
   );
 } finally {
   await client.close();

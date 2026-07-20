@@ -18,6 +18,17 @@
       "transport": "streamable-http",
       "protocolVersion": "2025-11-25",
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
+      "stdio": {
+        "command": "npx",
+        "args": [
+          "--yes",
+          "--package",
+          "https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz",
+          "intentfence-mcp"
+        ],
+        "release": "https://github.com/razel369/intentfence/releases/tag/mcp-v0.9.0",
+        "sha256": "2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89"
+      },
       "tools": [
         "intentfence_preflight",
         "intentfence_verified_preflight",

@@ -15,16 +15,17 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 For the verified one-click VS Code link and manual remote-server configuration,
 see the root README's **Install in VS Code** section.
 
-The npm package is not public yet. For a local stdio server, install this source
-checkout instead of relying on an unavailable package name:
+For a local stdio server, run the immutable public 0.9.0 release directly. It
+does not require an npm account or source checkout:
 
 ```bash
-git clone https://github.com/razel369/intentfence.git
-npm --prefix intentfence/mcp-stdio ci
-node intentfence/mcp-stdio/bin/intentfence-mcp.mjs
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz intentfence-mcp
 ```
 
-The server exposes four tools:
+The release artifact SHA-256 is
+`2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89`.
+
+The server exposes five tools:
 
 - `intentfence_preflight` is a free, unsigned declared-input preview.
 - `intentfence_verified_preflight` returns a standard x402 challenge for 0.005
@@ -41,6 +42,9 @@ The server exposes four tools:
   and GoPlus malicious-address intelligence for 0.002 USDC. It returns a
   five-minute ES256 receipt. A low-risk result is not proof of identity,
   ownership, authorization, or future behavior.
+- `intentfence_us_cpi` retrieves official headline and core U.S. CPI for the
+  latest complete month or a requested `YYYY-MM` period for 0.001 USDC and
+  returns a signed provenance receipt.
 
 The server never receives a seed phrase or private key and does not execute the
 downstream payment. IntentFence never fetches or pays the target; it validates

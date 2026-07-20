@@ -76,6 +76,20 @@ The hosted MCP endpoint is available without an API key:
 https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ```
 
+### Install the local stdio MCP package
+
+Agents and MCP clients that require a local process can run the immutable public
+0.9.0 release directly. This does not require an npm account, repository clone,
+or IntentFence API key:
+
+```bash
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz intentfence-mcp
+```
+
+The release artifact is built and tested by GitHub Actions. Its SHA-256 digest
+is `2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89`.
+Use the hosted endpoint above when the client supports Streamable HTTP.
+
 ### Install in VS Code
 
 [Open the live install panel](https://agentpass-protocol.rmalka06.chatgpt.site/#vscode-install),

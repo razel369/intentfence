@@ -15,6 +15,10 @@ const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const x402ScoutWalletRiskId = "4f5739b7-799f-412b-8cc7-6c8d4ae6edd9";
 const x402ScoutUsCpiId = "d11b67ab-debd-493a-b7c9-d41adfabb498";
 const baseUsdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
+const mcpReleaseTag = "mcp-v0.9.0";
+const mcpReleaseAssetName = "razel369-intentfence-mcp-0.9.0.tgz";
+const mcpReleaseDigest =
+  "sha256:2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89";
 const input = {
   subject: "did:web:intentfence-monitor",
   action: { type: "payment.healthcheck", resource: "synthetic" },
@@ -355,6 +359,29 @@ assert.ok(
   ),
   "current MCP Registry entry does not advertise the working hosted endpoint",
 );
+
+const mcpReleaseResponse = await fetchWithRetry(
+  `https://api.github.com/repos/razel369/intentfence/releases/tags/${mcpReleaseTag}`,
+  {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "IntentFence-production-monitor",
+    },
+  },
+  30_000,
+);
+assert.equal(mcpReleaseResponse.status, 200, "public MCP release is unavailable");
+const mcpRelease = await json(mcpReleaseResponse);
+assert.equal(mcpRelease.tag_name, mcpReleaseTag);
+assert.equal(mcpRelease.draft, false);
+assert.equal(mcpRelease.prerelease, false);
+const mcpReleaseAsset = mcpRelease.assets?.find(
+  (asset) => asset.name === mcpReleaseAssetName,
+);
+assert.ok(mcpReleaseAsset, "public MCP release tarball is missing");
+assert.equal(mcpReleaseAsset.state, "uploaded");
+assert.equal(mcpReleaseAsset.digest, mcpReleaseDigest);
+assert.ok(mcpReleaseAsset.size > 0, "public MCP release tarball is empty");
 
 const paidResources = [
   { url: `${baseUrl}/api/preflight/verified`, method: "POST" },
@@ -727,6 +754,11 @@ console.log(
       settled_calls: metrics.settled_calls,
       revenue_usdc: metrics.revenue_usdc,
       official_mcp_registry: true,
+      mcp_release_available: true,
+      mcp_release_tag: mcpRelease.tag_name,
+      mcp_release_asset: mcpReleaseAsset.name,
+      mcp_release_digest: mcpReleaseAsset.digest,
+      mcp_release_downloads: mcpReleaseAsset.download_count,
       x402scan_registered: true,
       x402scout_registered: true,
       x402scout_service_id: x402ScoutWalletRisk.id,

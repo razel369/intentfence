@@ -81,6 +81,16 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
+  assert.deepEqual(manifest.interfaces.mcp.stdio.args, [
+    "--yes",
+    "--package",
+    "https://github.com/razel369/intentfence/releases/download/mcp-v0.9.0/razel369-intentfence-mcp-0.9.0.tgz",
+    "intentfence-mcp",
+  ]);
+  assert.equal(
+    manifest.interfaces.mcp.stdio.sha256,
+    "2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89",
+  );
   assert.equal(agentCard.version, "0.9.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
@@ -269,6 +279,11 @@ test("monitors the live x402Scout listing without buying a synthetic health chec
   const monitor = await source("scripts/monitor-production.mjs");
 
   assert.match(monitor, /https:\/\/x402scout\.com\/catalog/u);
+  assert.match(monitor, /mcp-v0\.9\.0/u);
+  assert.match(
+    monitor,
+    /sha256:2fdceed20e22ad042b330f5d95fe3d441e2e33a32a70688443989dac166b8e89/u,
+  );
   assert.match(monitor, /4f5739b7-799f-412b-8cc7-6c8d4ae6edd9/u);
   assert.match(monitor, /d11b67ab-debd-493a-b7c9-d41adfabb498/u);
   assert.match(monitor, /x402ScoutWalletRisk\.price_usd, 0\.002/u);
@@ -282,7 +297,13 @@ test("monitors the live x402Scout listing without buying a synthetic health chec
 });
 
 test("can release an immutable account-free MCP install artifact", async () => {
-  const workflow = await source(".github/workflows/release-mcp-tarball.yml");
+  const [workflow, smoke, rootReadme, packageReadme, llms] = await Promise.all([
+    source(".github/workflows/release-mcp-tarball.yml"),
+    source("scripts/smoke-stdio-mcp.mjs"),
+    source("README.md"),
+    source("mcp-stdio/README.md"),
+    source("public/llms.txt"),
+  ]);
 
   assert.match(workflow, /contents: write/u);
   assert.match(workflow, /working-directory: mcp-stdio/u);
@@ -292,4 +313,12 @@ test("can release an immutable account-free MCP install artifact", async () => {
   assert.match(workflow, /mcp-v\$\{VERSION\}/u);
   assert.match(workflow, /refusing to replace an immutable install artifact/u);
   assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN/u);
+  assert.match(smoke, /--package/u);
+  assert.match(smoke, /intentfence-mcp/u);
+  for (const documentation of [rootReadme, packageReadme, llms]) {
+    assert.match(
+      documentation,
+      /releases\/download\/mcp-v0\.9\.0\/razel369-intentfence-mcp-0\.9\.0\.tgz/u,
+    );
+  }
 });
