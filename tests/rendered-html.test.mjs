@@ -145,7 +145,9 @@ test("lists a protected one-cent Base wallet screen on PayanAgent", async () => 
   assert.match(syncScript, /idHint: readinessOfferId/u);
   assert.match(syncScript, /kh79sp39hh7ayghkvfy6avb6158axpsg/u);
   assert.match(syncScript, /Verify public x402 endpoint readiness before paying/u);
-  assert.match(syncScript, /Live x402 endpoint checker for AI agents/u);
+  assert.match(syncScript, /Send only target_url/u);
+  assert.match(syncScript, /required: \["target_url"\]/u);
+  assert.match(syncScript, /Optional max_price_usdc and allowed_payees add buyer policy/u);
   assert.match(syncScript, /live-x402-readiness\+marketplace-delivery/u);
   assert.match(syncScript, /IntentFence agent profile/u);
 });

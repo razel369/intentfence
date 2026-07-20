@@ -560,9 +560,7 @@ try {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          subject: "agent:intentfence-monitor",
           target_url: "https://merchant.example.com/paid",
-          policy: { max_price_usdc: "0.10" },
         }),
       },
     );

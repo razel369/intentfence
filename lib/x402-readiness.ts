@@ -8,6 +8,8 @@ import type { X402AssessmentDecision } from "./x402-assessment.ts";
 
 const MAX_SUBJECT_LENGTH = 200;
 const MAX_BODY_BYTES = 4_096;
+const DEFAULT_SUBJECT = "agent:anonymous-marketplace-buyer";
+const DEFAULT_MAX_PRICE_USDC = "1.00";
 const FETCH_TIMEOUT_MS = 8_000;
 const DNS_TIMEOUT_MS = 4_000;
 const DNS_JSON_URL = "https://cloudflare-dns.com/dns-query";
@@ -101,8 +103,41 @@ export function validateX402ReadinessInput(value: unknown): X402ReadinessInput {
   if (!isRecord(value)) {
     throw new X402ReadinessValidationError("The request body must be a JSON object.");
   }
-  if (!isRecord(value.policy)) {
-    throw new X402ReadinessValidationError("policy must be a JSON object.");
+  const allowedKeys = new Set([
+    "subject",
+    "target_url",
+    "method",
+    "body",
+    "max_price_usdc",
+    "allowed_payees",
+    "policy",
+  ]);
+  const unknownKeys = Object.keys(value).filter((key) => !allowedKeys.has(key));
+  if (unknownKeys.length > 0) {
+    throw new X402ReadinessValidationError(
+      `Unknown request fields: ${unknownKeys.join(", ")}.`,
+    );
+  }
+  if (value.policy !== undefined && !isRecord(value.policy)) {
+    throw new X402ReadinessValidationError("policy must be a JSON object when supplied.");
+  }
+  if (
+    value.policy !== undefined &&
+    (value.max_price_usdc !== undefined || value.allowed_payees !== undefined)
+  ) {
+    throw new X402ReadinessValidationError(
+      "Send max_price_usdc and allowed_payees either at the top level or inside legacy policy, not both.",
+    );
+  }
+  if (isRecord(value.policy)) {
+    const unknownPolicyKeys = Object.keys(value.policy).filter(
+      (key) => key !== "max_price_usdc" && key !== "allowed_payees",
+    );
+    if (unknownPolicyKeys.length > 0) {
+      throw new X402ReadinessValidationError(
+        `Unknown policy fields: ${unknownPolicyKeys.join(", ")}.`,
+      );
+    }
   }
 
   let target: URL;
@@ -127,7 +162,17 @@ export function validateX402ReadinessInput(value: unknown): X402ReadinessInput {
   }
   serializedBody(value.body);
 
-  const subject = requiredString(value.subject, "subject", MAX_SUBJECT_LENGTH);
+  const subject = value.subject === undefined
+    ? DEFAULT_SUBJECT
+    : requiredString(value.subject, "subject", MAX_SUBJECT_LENGTH);
+  const policy = isRecord(value.policy)
+    ? value.policy
+    : {
+        max_price_usdc: value.max_price_usdc ?? DEFAULT_MAX_PRICE_USDC,
+        ...(value.allowed_payees === undefined
+          ? {}
+          : { allowed_payees: value.allowed_payees }),
+      };
   try {
     const probeChallenge = btoa(JSON.stringify({
       x402Version: 2,
@@ -147,7 +192,7 @@ export function validateX402ReadinessInput(value: unknown): X402ReadinessInput {
       target_url: target.toString(),
       method,
       payment_required: probeChallenge,
-      policy: value.policy,
+      policy,
     });
     return {
       subject,
@@ -424,9 +469,15 @@ export async function checkX402EndpointReadiness(
 export const x402ReadinessInputSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["subject", "target_url", "policy"],
+  required: ["target_url"],
   properties: {
-    subject: { type: "string", minLength: 1, maxLength: MAX_SUBJECT_LENGTH },
+    subject: {
+      type: "string",
+      minLength: 1,
+      maxLength: MAX_SUBJECT_LENGTH,
+      default: DEFAULT_SUBJECT,
+      description: "Optional buyer identifier. Omit for anonymous marketplace delivery.",
+    },
     target_url: {
       type: "string",
       format: "uri",
@@ -437,10 +488,26 @@ export const x402ReadinessInputSchema = {
     body: {
       description: `Optional JSON request body for POST probes, limited to ${MAX_BODY_BYTES} encoded bytes.`,
     },
+    max_price_usdc: {
+      type: "string",
+      pattern: "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+      default: DEFAULT_MAX_PRICE_USDC,
+      description: "Optional maximum acceptable x402 price in USDC.",
+    },
+    allowed_payees: {
+      type: "array",
+      minItems: 1,
+      maxItems: 20,
+      uniqueItems: true,
+      items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" },
+      description: "Optional explicit payee allowlist. Omission yields ready_with_review for an otherwise valid quote.",
+    },
     policy: {
       type: "object",
       additionalProperties: false,
       required: ["max_price_usdc"],
+      deprecated: true,
+      description: "Legacy nested policy input. New buyers should use the optional top-level fields.",
       properties: {
         max_price_usdc: {
           type: "string",

@@ -8,6 +8,7 @@ const {
   checkX402EndpointReadiness,
   isPublicIpAddress,
   validateX402ReadinessInput,
+  x402ReadinessInputSchema,
   X402ReadinessValidationError,
 } = await import("../lib/x402-readiness.ts");
 
@@ -65,6 +66,35 @@ test("accepts a URL-first policy and rejects fetch-dangerous input", () => {
   );
   assert.throws(
     () => input({ method: "POST", body: { data: "x".repeat(5_000) } }),
+    X402ReadinessValidationError,
+  );
+});
+
+test("accepts target_url as the only buyer field while preserving explicit policy inputs", () => {
+  const minimal = input({ subject: undefined, policy: undefined });
+  assert.equal(minimal.subject, "agent:anonymous-marketplace-buyer");
+  assert.equal(minimal.policy.max_price_usdc, "1.00");
+  assert.deepEqual(x402ReadinessInputSchema.required, ["target_url"]);
+
+  const flat = input({
+    subject: undefined,
+    policy: undefined,
+    max_price_usdc: "0.02",
+    allowed_payees: [payee],
+  });
+  assert.equal(flat.policy.max_price_usdc, "0.02");
+  assert.deepEqual(flat.policy.allowed_payees, [payee]);
+
+  assert.throws(
+    () => input({ max_price_usdc: "0.02" }),
+    X402ReadinessValidationError,
+  );
+  assert.throws(
+    () => input({ policy: { max_price_usdc: "0.02", unexpected: true } }),
+    X402ReadinessValidationError,
+  );
+  assert.throws(
+    () => input({ unexpected: true }),
     X402ReadinessValidationError,
   );
 });

@@ -147,7 +147,7 @@ const offers = [
     idHint: readinessOfferId,
     title: "Verify x402 endpoint readiness before paying",
     description:
-      "Verify public x402 endpoint readiness before paying. Live x402 endpoint checker for AI agents: HTTPS URL in; HTTP 402, PAYMENT-REQUIRED, Base USDC price, payee, scheme, timeout, and resource-binding evidence out. No target payment, credentials, or redirects. Returns ready, review, or not ready for 0.01 USDC.",
+      "Verify public x402 endpoint readiness before paying. Send only target_url. IntentFence checks the live HTTP 402 and PAYMENT-REQUIRED response, Base USDC price, payee, scheme, timeout, and resource binding without sending credentials, following redirects, or paying the target. Optional max_price_usdc and allowed_payees add buyer policy. Returns ready, review, or not ready for 0.01 USDC.",
     category: "Trust",
     tags: [
       "x402",
@@ -166,13 +166,14 @@ const offers = [
     inputSchema: JSON.stringify({
       type: "object",
       additionalProperties: false,
-      required: ["subject", "target_url", "policy"],
+      required: ["target_url"],
       properties: {
         subject: {
           type: "string",
           minLength: 1,
           maxLength: 200,
-          description: "Agent or principal identifier.",
+          default: "agent:anonymous-marketplace-buyer",
+          description: "Optional buyer identifier.",
         },
         target_url: {
           type: "string",
@@ -184,10 +185,26 @@ const offers = [
         body: {
           description: "Optional bounded JSON body for a POST probe.",
         },
+        max_price_usdc: {
+          type: "string",
+          pattern: "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+          default: "1.00",
+          description: "Optional maximum acceptable x402 price in USDC.",
+        },
+        allowed_payees: {
+          type: "array",
+          minItems: 1,
+          maxItems: 20,
+          uniqueItems: true,
+          items: { type: "string", pattern: "^0x[0-9a-fA-F]{40}$" },
+          description: "Optional trusted-recipient allowlist.",
+        },
         policy: {
           type: "object",
           additionalProperties: false,
           required: ["max_price_usdc"],
+          deprecated: true,
+          description: "Legacy nested policy input.",
           properties: {
             max_price_usdc: {
               type: "string",
@@ -209,7 +226,7 @@ const offers = [
     outputSchema: x402ReadinessOutputSchema,
     estimatedDurationSeconds: 10,
     previewDescription:
-      "Checks a public x402 URL live without paying and validates its 402 challenge against your policy.",
+      "One required field: target_url. Checks the live 402 challenge without paying the target.",
   },
   {
     idHint: quoteOfferId,
