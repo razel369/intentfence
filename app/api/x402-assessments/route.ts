@@ -14,6 +14,7 @@ import {
 } from "../../../lib/x402-assessment";
 import { finalizeIntentFenceSettlement } from "../../../lib/x402-settlement";
 import { isSuccessfulX402Settlement } from "../../../lib/x402-settlement-status";
+import { normalizeX402PaymentRequest } from "../../../lib/x402-http-compat";
 import {
   releaseX402PaymentAuthorization,
   reserveX402PaymentAuthorization,
@@ -243,6 +244,7 @@ export function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+  request = normalizeX402PaymentRequest(request);
   // Validate the bounded, caller-supplied quote before asking for payment. The
   // paid handler validates the original request again after x402 verification.
   try {

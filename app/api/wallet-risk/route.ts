@@ -21,6 +21,7 @@ import {
 } from "../../../lib/x402-reservation";
 import { finalizeIntentFenceSettlement } from "../../../lib/x402-settlement";
 import { isSuccessfulX402Settlement } from "../../../lib/x402-settlement-status";
+import { normalizeX402PaymentRequest } from "../../../lib/x402-http-compat";
 import {
   intentFenceX402Server,
   INTENTFENCE_ASSET,
@@ -226,6 +227,7 @@ export function OPTIONS() {
 }
 
 export async function GET(request: NextRequest) {
+  request = normalizeX402PaymentRequest(request);
   if (!request.headers.has("PAYMENT-SIGNATURE") && !request.headers.has("X-PAYMENT")) {
     try {
       const address = addressFromRequest(request);

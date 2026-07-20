@@ -6,6 +6,7 @@ import { createSignedReceipt, ReceiptSigningError } from "../../../../lib/receip
 import { getReceiptSigningPrivateJwk } from "../../../../lib/runtime-secrets";
 import { recordFunnelEvent } from "../../../../lib/telemetry";
 import { finalizeIntentFenceSettlement } from "../../../../lib/x402-settlement";
+import { normalizeX402PaymentRequest } from "../../../../lib/x402-http-compat";
 import {
   intentFenceX402Server,
   INTENTFENCE_ASSET,
@@ -118,6 +119,7 @@ export function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+  request = normalizeX402PaymentRequest(request);
   if (
     !request.headers.has("PAYMENT-SIGNATURE") &&
     !request.headers.has("X-PAYMENT")
