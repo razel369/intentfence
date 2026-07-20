@@ -1,4 +1,4 @@
-name: Target one matching PayanAgent request
+name: Pursue matching PayanAgent demand
 
 on:
   workflow_dispatch:
@@ -22,3 +22,8 @@ jobs:
         env:
           PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
         run: node scripts/payanagent-targeted-demand.mjs
+      - name: Scan supported demand, bid once, or fulfill assigned work
+        env:
+          PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
+          PAYANAGENT_DELIVERY_SECRET: ${{ secrets.PAYANAGENT_DELIVERY_SECRET }}
+        run: node scripts/payanagent-demand-scanner.mjs
