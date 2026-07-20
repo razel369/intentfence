@@ -22,8 +22,8 @@ does not require an npm account or source checkout:
 npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz intentfence-mcp
 ```
 
-The GitHub release page publishes the immutable artifact SHA-256 alongside the
-download.
+The immutable release artifact SHA-256 is
+`3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e`.
 
 ## Opt-in automatic payment
 

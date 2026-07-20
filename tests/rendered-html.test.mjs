@@ -84,12 +84,12 @@ test("publishes the IntentFence 0.10 protocol entry points in the site", async (
   assert.deepEqual(manifest.interfaces.mcp.stdio.args, [
     "--yes",
     "--package",
-    "https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz",
+    "https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz",
     "intentfence-mcp",
   ]);
   assert.equal(
     manifest.interfaces.mcp.stdio.sha256,
-    "726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312",
+    "3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e",
   );
   assert.equal(manifest.interfaces.mcp.stdio.autoPayment.enabledByDefault, false);
   assert.deepEqual(manifest.interfaces.mcp.stdio.autoPayment.requiredEnv, [
@@ -292,10 +292,10 @@ test("monitors the live x402Scout listing without buying a synthetic health chec
   const monitor = await source("scripts/monitor-production.mjs");
 
   assert.match(monitor, /https:\/\/x402scout\.com\/catalog/u);
-  assert.match(monitor, /mcp-v0\.10\.0/u);
+  assert.match(monitor, /mcp-v0\.10\.1/u);
   assert.match(
     monitor,
-    /sha256:726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312/u,
+    /sha256:3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e/u,
   );
   assert.match(monitor, /4f5739b7-799f-412b-8cc7-6c8d4ae6edd9/u);
   assert.match(monitor, /d11b67ab-debd-493a-b7c9-d41adfabb498/u);
@@ -331,7 +331,7 @@ test("can release an immutable account-free MCP install artifact", async () => {
   for (const documentation of [rootReadme, packageReadme, llms]) {
     assert.match(
       documentation,
-      /releases\/download\/mcp-v0\.10\.0\/razel369-intentfence-mcp-0\.10\.0\.tgz/u,
+      /releases\/download\/mcp-v0\.10\.1\/razel369-intentfence-mcp-0\.10\.1\.tgz/u,
     );
   }
 });

@@ -15,10 +15,10 @@ const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const x402ScoutWalletRiskId = "4f5739b7-799f-412b-8cc7-6c8d4ae6edd9";
 const x402ScoutUsCpiId = "d11b67ab-debd-493a-b7c9-d41adfabb498";
 const baseUsdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
-const mcpReleaseTag = "mcp-v0.10.0";
-const mcpReleaseAssetName = "razel369-intentfence-mcp-0.10.0.tgz";
+const mcpReleaseTag = "mcp-v0.10.1";
+const mcpReleaseAssetName = "razel369-intentfence-mcp-0.10.1.tgz";
 const mcpReleaseDigest =
-  "sha256:726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312";
+  "sha256:3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e";
 const input = {
   subject: "did:web:intentfence-monitor",
   action: { type: "payment.healthcheck", resource: "synthetic" },

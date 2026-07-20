@@ -79,15 +79,15 @@ https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 ### Install the local stdio MCP package
 
 Agents and MCP clients that require a local process can run the immutable public
-0.10.0 release directly. This does not require an npm account, repository clone,
+0.10.1 release directly. This does not require an npm account, repository clone,
 or IntentFence API key:
 
 ```bash
-npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.0/razel369-intentfence-mcp-0.10.0.tgz intentfence-mcp
+npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.10.1/razel369-intentfence-mcp-0.10.1.tgz intentfence-mcp
 ```
 
 The release artifact is built and tested by GitHub Actions. Its SHA-256 digest
-is `726f3aeb3fd1f94efa7e196957a475fb6db7fa44449d9545f3b8c70cf55a0312`.
+is `3fe1467eaece7ed090a9e4eae67260ce3bf5957c39375bf0b9681ce1521b8a0e`.
 Use the hosted endpoint above when the client supports Streamable HTTP.
 
 #### Opt-in one-call payment for local agents
