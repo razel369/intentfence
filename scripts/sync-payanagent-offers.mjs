@@ -140,7 +140,7 @@ const offers = [
   {
     title: "Verify x402 endpoint readiness before paying",
     description:
-      "Verify x402 endpoint readiness before paying. Live x402 endpoint checker for AI agents: public HTTPS URL in; HTTP 402, PAYMENT-REQUIRED, Base USDC price, payee, scheme, timeout, and resource-binding evidence out. No target payment, credentials, or redirects. Returns ready, review, or not ready for 0.01 USDC.",
+      "Verify public x402 endpoint readiness before paying. Live x402 endpoint checker for AI agents: HTTPS URL in; HTTP 402, PAYMENT-REQUIRED, Base USDC price, payee, scheme, timeout, and resource-binding evidence out. No target payment, credentials, or redirects. Returns ready, review, or not ready for 0.01 USDC.",
     category: "Trust",
     tags: [
       "x402",
