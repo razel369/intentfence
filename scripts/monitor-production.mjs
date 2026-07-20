@@ -13,6 +13,7 @@ const payanAgentReadinessOfferIdConfigured = "kh7bq10drx7cwf2djcc1aqgpvn8axce3";
 const payanAgentWalletRiskOfferIdConfigured = "kh7f6f2h7ve965s1tdtx6w3zfd8axmp6";
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const x402ScoutWalletRiskId = "4f5739b7-799f-412b-8cc7-6c8d4ae6edd9";
+const x402ScoutUsCpiId = "d11b67ab-debd-493a-b7c9-d41adfabb498";
 const baseUsdcAddress = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913";
 const input = {
   subject: "did:web:intentfence-monitor",
@@ -409,6 +410,21 @@ assert.equal(x402ScoutWalletRisk.asset_address?.toLowerCase(), baseUsdcAddress);
 assert.equal(x402ScoutWalletRisk.status, "active");
 assert.equal(x402ScoutWalletRisk.facilitator_compatible, true);
 
+const x402ScoutUsCpi = x402ScoutCatalog.endpoints?.find(
+  (endpoint) => endpoint.id === x402ScoutUsCpiId,
+);
+assert.ok(
+  x402ScoutUsCpi,
+  "IntentFence U.S. CPI service is missing from x402Scout",
+);
+assert.equal(x402ScoutUsCpi.url, `${baseUrl}/api/us-cpi`);
+assert.equal(x402ScoutUsCpi.category, "data");
+assert.equal(x402ScoutUsCpi.price_usd, 0.001);
+assert.equal(x402ScoutUsCpi.network, "base-mainnet");
+assert.equal(x402ScoutUsCpi.asset_address?.toLowerCase(), baseUsdcAddress);
+assert.equal(x402ScoutUsCpi.status, "active");
+assert.equal(x402ScoutUsCpi.facilitator_compatible, true);
+
 const agent402Origin = new URL(baseUrl).origin;
 const agent402IndexResponse = await fetchWithRetry(
   "https://agent402.tools/api/index",
@@ -718,6 +734,12 @@ console.log(
       x402scout_price_usd: x402ScoutWalletRisk.price_usd,
       x402scout_facilitator_compatible:
         x402ScoutWalletRisk.facilitator_compatible,
+      x402scout_us_cpi_registered: true,
+      x402scout_us_cpi_service_id: x402ScoutUsCpi.id,
+      x402scout_us_cpi_health: x402ScoutUsCpi.health_status,
+      x402scout_us_cpi_price_usd: x402ScoutUsCpi.price_usd,
+      x402scout_us_cpi_facilitator_compatible:
+        x402ScoutUsCpi.facilitator_compatible,
       agent402_indexed: true,
       agent402_routable: agent402Seller.routable,
       agent402_health: agent402Seller.health,
