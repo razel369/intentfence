@@ -1,0 +1,63 @@
+name: Release installable IntentFence MCP tarball
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type release to publish the current mcp-stdio version
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: ${{ inputs.confirm == 'release' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-stdio
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Install package dependencies
+        run: npm ci
+
+      - name: Verify the stdio MCP package
+        run: npm test
+
+      - name: Pack the public install artifact
+        id: pack
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          filename="$(npm pack --json | jq -r '.[0].filename')"
+          test -n "$version"
+          test -f "$filename"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "filename=$filename" >> "$GITHUB_OUTPUT"
+
+      - name: Create immutable GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.pack.outputs.version }}
+          FILENAME: ${{ steps.pack.outputs.filename }}
+        shell: bash
+        run: |
+          tag="mcp-v${VERSION}"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists; refusing to replace an immutable install artifact."
+            exit 1
+          fi
+          gh release create "$tag" "$FILENAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "IntentFence MCP v${VERSION}" \
+            --notes "Public stdio MCP package for account-free agent installation. Built and tested from commit ${GITHUB_SHA}."

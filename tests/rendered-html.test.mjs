@@ -280,3 +280,16 @@ test("monitors the live x402Scout listing without buying a synthetic health chec
   assert.match(monitor, /x402ScoutUsCpi\.facilitator_compatible, true/u);
   assert.doesNotMatch(monitor, /x402scout\.com\/health\//u);
 });
+
+test("can release an immutable account-free MCP install artifact", async () => {
+  const workflow = await source(".github/workflows/release-mcp-tarball.yml");
+
+  assert.match(workflow, /contents: write/u);
+  assert.match(workflow, /working-directory: mcp-stdio/u);
+  assert.match(workflow, /run: npm test/u);
+  assert.match(workflow, /npm pack --json/u);
+  assert.match(workflow, /gh release create/u);
+  assert.match(workflow, /mcp-v\$\{VERSION\}/u);
+  assert.match(workflow, /refusing to replace an immutable install artifact/u);
+  assert.doesNotMatch(workflow, /NPM_TOKEN|NODE_AUTH_TOKEN/u);
+});
