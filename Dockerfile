@@ -6,10 +6,9 @@ ENV NODE_ENV=production
 COPY mcp-stdio/package.json mcp-stdio/package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
-COPY lib/preflight.ts ./lib/preflight.ts
-COPY mcp-stdio/lib/paid-preflight.mjs ./mcp-stdio/lib/paid-preflight.mjs
+COPY mcp-stdio/lib ./mcp-stdio/lib
 COPY scripts/glama-mcp-server.mjs ./scripts/glama-mcp-server.mjs
 
 USER node
 
-CMD ["node", "--experimental-strip-types", "scripts/glama-mcp-server.mjs"]
+CMD ["node", "scripts/glama-mcp-server.mjs"]

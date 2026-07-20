@@ -335,3 +335,16 @@ test("can release an immutable account-free MCP install artifact", async () => {
     );
   }
 });
+
+test("ships a self-contained Glama Docker introspection server", async () => {
+  const [dockerfile, server] = await Promise.all([
+    source("Dockerfile"),
+    source("scripts/glama-mcp-server.mjs"),
+  ]);
+
+  assert.match(dockerfile, /COPY mcp-stdio\/lib \.\/mcp-stdio\/lib/u);
+  assert.match(dockerfile, /CMD \["node", "scripts\/glama-mcp-server\.mjs"\]/u);
+  assert.doesNotMatch(dockerfile, /lib\/preflight\.ts/u);
+  assert.match(server, /mcp-stdio\/lib\/preflight\.mjs/u);
+  assert.match(server, /mcp-stdio\/lib\/x402-assessment\.mjs/u);
+});

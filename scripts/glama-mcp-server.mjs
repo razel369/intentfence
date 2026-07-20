@@ -6,12 +6,12 @@ import {
   evaluatePreflight,
   PreflightValidationError,
   validatePreflightInput,
-} from "../lib/preflight.ts";
+} from "../mcp-stdio/lib/preflight.mjs";
 import {
   createPaidIntentFenceHandler,
   createPaidPreflightHandler,
 } from "../mcp-stdio/lib/paid-preflight.mjs";
-import { validateX402AssessmentInput } from "../lib/x402-assessment.ts";
+import { validateX402AssessmentInput } from "../mcp-stdio/lib/x402-assessment.mjs";
 import { validateWalletRiskInput } from "../mcp-stdio/lib/wallet-risk.mjs";
 import { validateUsCpiInput } from "../mcp-stdio/lib/us-cpi.mjs";
 
