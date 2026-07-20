@@ -2,7 +2,7 @@
   "spec": "agent402-service-manifest/1",
   "version": 1,
   "name": "IntentFence",
-  "description": "Retrieve signed official U.S. CPI data, check a Base recipient, assess an x402 quote, or obtain a signed policy preflight.",
+  "description": "Retrieve signed official U.S. CPI data, screen a Base recipient, assess an exact x402 quote, or run a signed payment-safety and spend-control policy preflight before an AI agent acts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "resources": [
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
@@ -39,6 +39,9 @@
     "agent-policy",
     "security",
     "spend-control",
+    "payment-safety",
+    "policy-preflight",
+    "approval-control",
     "merchant-risk",
     "wallet-intelligence",
     "malicious-address",

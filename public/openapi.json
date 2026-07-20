@@ -64,9 +64,9 @@
     "/api/preflight/verified": {
       "post": {
         "operationId": "runX402Preflight",
-        "summary": "Pay 0.005 USDC and receive a signed policy decision",
-        "description": "x402 v2 exact payment on Base mainnet (eip155:8453). First call without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. A successful response includes an ES256 JWS receipt; settlement is returned separately in PAYMENT-RESPONSE.",
-        "tags": ["agent-policy", "security", "x402", "agent-commerce"],
+        "summary": "Run an AI-agent payment safety and policy preflight",
+        "description": "Paid x402 policy and spend-control preflight for AI agents before a consequential action or payment. Evaluates the caller-declared action, quoted cost against its ceiling, data-retention limit, approval requirement, and approval proof; returns safe_to_proceed, needs_review, or denied with an ES256 JWS audit receipt. The IntentFence service fee is 0.005 USDC using x402 v2 exact payment on Base mainnet (eip155:8453): call once without payment to receive PAYMENT-REQUIRED, then retry with PAYMENT-SIGNATURE. Settlement proof is returned in PAYMENT-RESPONSE.",
+        "tags": ["agent-policy", "payment-safety", "spend-control", "preflight", "security", "x402", "agent-commerce"],
         "security": [],
         "x-payment-info": {
           "price": { "mode": "fixed", "currency": "USD", "amount": "0.005" },

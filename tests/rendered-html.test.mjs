@@ -85,6 +85,9 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(x402Manifest.spec, "agent402-service-manifest/1");
   assert.equal(x402Manifest.payment.x402.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
   assert.equal(openapi.paths["/api/preflight/verified"].post["x-x402-price"], "$0.005");
+  assert.match(openapi.paths["/api/preflight/verified"].post.summary, /payment safety and policy preflight/u);
+  assert.ok(openapi.paths["/api/preflight/verified"].post.tags.includes("payment-safety"));
+  assert.ok(openapi.paths["/api/preflight/verified"].post.tags.includes("spend-control"));
   assert.equal(openapi.paths["/api/x402-assessments"].post["x-x402-price"], "$0.005");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
