@@ -17,12 +17,50 @@ export const INTENTFENCE_PAYMENT_TIMEOUT_SECONDS = 300;
 export const INTENTFENCE_FACILITATOR = "PayAI";
 export const INTENTFENCE_FACILITATOR_URL = "https://facilitator.payai.network";
 
-// Use the transport-neutral client directly. The optional PayAI config wrapper
-// reads process.env at request time, which is not available in a Cloudflare
-// Worker isolate and prevents the resource server from loading /supported.
-const facilitatorClient = new HTTPFacilitatorClient({
+const httpFacilitatorClient = new HTTPFacilitatorClient({
   url: INTENTFENCE_FACILITATOR_URL,
 });
+
+type SupportedResponse = Awaited<
+  ReturnType<HTTPFacilitatorClient["getSupported"]>
+>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Load PayAI capabilities through the same Worker-compatible request shape as
+ * the public health check. The SDK client's getSupported parser works in Node,
+ * but its bundled path currently fails during Cloudflare Worker initialization.
+ * Verify and settle still use the official SDK client unchanged.
+ */
+export async function fetchIntentFenceSupportedKinds(
+  fetchImpl: typeof fetch = fetch,
+): Promise<SupportedResponse> {
+  const response = await fetchImpl(`${INTENTFENCE_FACILITATOR_URL}/supported`, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(4_000),
+  });
+  if (!response.ok) {
+    throw new Error(`Facilitator supported request failed with HTTP ${response.status}.`);
+  }
+  const payload = await response.json() as unknown;
+  if (!isRecord(payload) || !Array.isArray(payload.kinds)) {
+    throw new Error("Facilitator returned invalid supported payment kinds.");
+  }
+  return {
+    kinds: payload.kinds,
+    extensions: Array.isArray(payload.extensions) ? payload.extensions : [],
+    signers: isRecord(payload.signers) ? payload.signers : {},
+  } as SupportedResponse;
+}
+
+const facilitatorClient = {
+  verify: httpFacilitatorClient.verify.bind(httpFacilitatorClient),
+  settle: httpFacilitatorClient.settle.bind(httpFacilitatorClient),
+  getSupported: fetchIntentFenceSupportedKinds,
+};
 
 export const intentFenceX402Server = new x402ResourceServer(facilitatorClient)
   .register(INTENTFENCE_NETWORK, new ExactEvmScheme())
