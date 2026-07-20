@@ -15,11 +15,17 @@ const sellerId =
 const settlementWallet = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 const primaryOfferId = process.env.PAYANAGENT_PRIMARY_OFFER_ID?.trim();
 const quoteOfferId = process.env.PAYANAGENT_QUOTE_OFFER_ID?.trim();
+const readinessOfferId =
+  process.env.PAYANAGENT_READINESS_OFFER_ID?.trim() ??
+  "kh7bq10drx7cwf2djcc1aqgpvn8axce3";
 const walletRiskOfferId = process.env.PAYANAGENT_WALLET_RISK_OFFER_ID?.trim();
-const obsoleteOfferIds = (process.env.PAYANAGENT_OBSOLETE_OFFER_IDS ?? "")
-  .split(",")
-  .map((value) => value.trim())
-  .filter(Boolean);
+const obsoleteOfferIds = [...new Set([
+  ...(process.env.PAYANAGENT_OBSOLETE_OFFER_IDS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean),
+  "kh79sp39hh7ayghkvfy6avb6158axpsg",
+])];
 const openapi = JSON.parse(
   await readFile(new URL("../public/openapi.json", import.meta.url), "utf8"),
 );
@@ -138,6 +144,7 @@ const offers = [
       "Official BLS headline and core CPI with year-over-year inflation rates in stable JSON.",
   },
   {
+    idHint: readinessOfferId,
     title: "Verify x402 endpoint readiness before paying",
     description:
       "Verify public x402 endpoint readiness before paying. Live x402 endpoint checker for AI agents: HTTPS URL in; HTTP 402, PAYMENT-REQUIRED, Base USDC price, payee, scheme, timeout, and resource-binding evidence out. No target payment, credentials, or redirects. Returns ready, review, or not ready for 0.01 USDC.",
