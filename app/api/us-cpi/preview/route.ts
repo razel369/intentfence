@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { JsonRequestError, readJsonWithLimit } from "../../../../lib/request";
+import { isAuthorizedPayanAgentDelivery } from "../../../../lib/marketplace-delivery";
 import { recordFunnelEvent } from "../../../../lib/telemetry";
 import {
   getUsCpi,
@@ -37,6 +38,15 @@ export function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!(await isAuthorizedPayanAgentDelivery(request))) {
+      return problem(
+        request,
+        404,
+        "not-found",
+        "Not found",
+        "The requested resource is unavailable.",
+      );
+    }
     const input = validateUsCpiInput(await readJsonWithLimit(request, 2_048));
     const decision = await getUsCpi(input);
     await recordFunnelEvent({

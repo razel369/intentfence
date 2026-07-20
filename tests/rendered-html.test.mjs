@@ -59,9 +59,11 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(socialImage.readUInt32BE(20), 630);
   assert.match(paidRoute, /"POST \/api\/preflight\/verified": intentFencePaidRouteConfig/);
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
+  assert.match(assessmentPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
   assert.match(walletRiskRoute, /"GET \/api\/wallet-risk": walletRiskRouteConfig/);
   assert.match(usCpiRoute, /"GET \/api\/us-cpi": usCpiRouteConfig/);
+  assert.match(usCpiPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.equal(manifest.version, "0.9.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
@@ -78,15 +80,12 @@ test("publishes the IntentFence 0.9 protocol entry points in the site", async ()
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-x402-price"], "$0.002");
   assert.equal(openapi.paths["/api/wallet-risk"].get["x-payment-info"].price.amount, "0.002");
   assert.equal(openapi.paths["/api/us-cpi"].get["x-x402-price"], "$0.001");
-  assert.equal(openapi.paths["/api/us-cpi/preview"].post["x-marketplace"].name, "PayanAgent");
+  assert.equal(openapi.paths["/api/us-cpi/preview"], undefined);
   assert.match(openapi.paths["/api/wallet-risk"].get.summary, /sanctions.*phishing.*counterparty risk/iu);
   assert.match(openapi.paths["/api/wallet-risk"].get.description, /AML\/KYT wallet screening/iu);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_wallet_risk"), true);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_us_cpi"), true);
-  assert.equal(
-    openapi.paths["/api/x402-assessments/preview"].post["x-marketplace"].name,
-    "PayanAgent",
-  );
+  assert.equal(openapi.paths["/api/x402-assessments/preview"], undefined);
   assert.equal(
     openapi.paths["/api/x402-assessments"].post["x-payment-info"].price.amount,
     "0.005",

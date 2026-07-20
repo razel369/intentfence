@@ -1,6 +1,7 @@
 type IntentFenceRuntimeEnv = {
   INTENTFENCE_SIGNING_PRIVATE_JWK?: unknown;
   INTENTFENCE_ADMIN_TOKEN?: unknown;
+  PAYANAGENT_DELIVERY_SECRET?: unknown;
 };
 
 async function runtimeSecret(name: keyof IntentFenceRuntimeEnv) {
@@ -18,4 +19,8 @@ export async function getReceiptSigningPrivateJwk() {
 
 export async function getIntentFenceAdminToken() {
   return await runtimeSecret("INTENTFENCE_ADMIN_TOKEN");
+}
+
+export async function getPayanAgentDeliverySecret() {
+  return await runtimeSecret("PAYANAGENT_DELIVERY_SECRET");
 }

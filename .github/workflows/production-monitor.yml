@@ -21,6 +21,8 @@ jobs:
       - name: Verify production discovery, payment challenge, MCP, and metrics
         id: verify
         continue-on-error: true
+        env:
+          PAYANAGENT_DELIVERY_SECRET: ${{ secrets.PAYANAGENT_DELIVERY_SECRET }}
         run: node scripts/monitor-production.mjs
       - name: Open one incident issue on failure
         if: steps.verify.outcome == 'failure'

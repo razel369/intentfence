@@ -5,6 +5,7 @@ const baseUrl = (
   "https://agentpass-protocol.rmalka06.chatgpt.site"
 ).replace(/\/$/u, "");
 const monitorHeaders = { "X-IntentFence-Source": "monitor" };
+const payanAgentDeliverySecret = process.env.PAYANAGENT_DELIVERY_SECRET?.trim();
 const payanAgentAgentId = "j57d8w639k1c1d33k0hf5g7d5h8atk9g";
 const payanAgentOfferId = "kh7bwc280yqjr5607mejn1e1ks8atesm";
 const payanAgentQuoteOfferIdConfigured = "kh7d72cgr8csya3n8pwgky0r258at4qa";
@@ -146,16 +147,57 @@ assert.equal(usCpiPaymentRequired.accepts[0].amount, "1000");
 assert.equal(usCpiPaymentRequired.accepts[0].network, "eip155:8453");
 assert.equal(usCpiPaymentRequired.resource.url, usCpiDiscoveryUrl);
 
-const usCpiPreviewResponse = await fetchWithTimeout(`${baseUrl}/api/us-cpi/preview`, {
+const usCpiUnpaidDeliveryResponse = await fetchWithTimeout(`${baseUrl}/api/us-cpi/preview`, {
   method: "POST",
   headers: { ...monitorHeaders, "Content-Type": "application/json" },
   body: "{}",
 });
-assert.equal(usCpiPreviewResponse.status, 200, "U.S. CPI marketplace delivery is unavailable");
-const usCpiPreview = await json(usCpiPreviewResponse);
-assert.equal(usCpiPreview.status, "verified");
-assert.equal(usCpiPreview.source.publisher, "U.S. Bureau of Labor Statistics");
-assert.equal(usCpiPreview.receipt.signed, false);
+assert.equal(
+  usCpiUnpaidDeliveryResponse.status,
+  404,
+  "U.S. CPI marketplace delivery must fail closed without its private token",
+);
+const assessmentUnpaidDeliveryResponse = await fetchWithTimeout(
+  `${baseUrl}/api/x402-assessments/preview`,
+  {
+    method: "POST",
+    headers: { ...monitorHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify(assessmentInput),
+  },
+);
+assert.equal(
+  assessmentUnpaidDeliveryResponse.status,
+  404,
+  "quote-assessment marketplace delivery must fail closed without its private token",
+);
+
+let payanAgentDeliveryVerified = false;
+if (payanAgentDeliverySecret) {
+  const token = encodeURIComponent(payanAgentDeliverySecret);
+  const [usCpiPreviewResponse, assessmentPreviewResponse] = await Promise.all([
+    fetchWithTimeout(`${baseUrl}/api/us-cpi/preview?payan_token=${token}`, {
+      method: "POST",
+      headers: { ...monitorHeaders, "Content-Type": "application/json" },
+      body: "{}",
+    }),
+    fetchWithTimeout(`${baseUrl}/api/x402-assessments/preview?payan_token=${token}`, {
+      method: "POST",
+      headers: { ...monitorHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify(assessmentInput),
+    }),
+  ]);
+  assert.equal(usCpiPreviewResponse.status, 200, "U.S. CPI marketplace delivery is unavailable");
+  const usCpiPreview = await json(usCpiPreviewResponse);
+  assert.equal(usCpiPreview.status, "verified");
+  assert.equal(usCpiPreview.source.publisher, "U.S. Bureau of Labor Statistics");
+  assert.equal(usCpiPreview.receipt.signed, false);
+  assert.equal(assessmentPreviewResponse.status, 200, "quote-assessment marketplace delivery is unavailable");
+  const assessmentPreview = await json(assessmentPreviewResponse);
+  assert.ok(
+    ["safe_to_proceed", "needs_review", "denied"].includes(assessmentPreview.status),
+  );
+  payanAgentDeliveryVerified = true;
+}
 
 const mcpResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {
   method: "POST",
@@ -303,8 +345,7 @@ try {
   // A pending or unavailable directory listing does not fail core production health.
 }
 
-let payanAgentOfferListed = false;
-let payanAgentChallengeReady = false;
+let payanAgentFreePreviewOfferDeactivated = false;
 let payanAgentQuoteOfferId = null;
 let payanAgentQuoteOfferListed = false;
 let payanAgentQuoteChallengeReady = false;
@@ -326,9 +367,9 @@ try {
   if (offerResponse.ok) {
     const offerPayload = await json(offerResponse);
     const offer = offerPayload.offer ?? offerPayload;
-    payanAgentOfferListed =
+    payanAgentFreePreviewOfferDeactivated =
       offer._id === payanAgentOfferId &&
-      offer.isActive !== false &&
+      offer.isActive === false &&
       offer.sellerId === payanAgentAgentId &&
       offer.title === "AI action policy preflight";
   }
@@ -340,27 +381,6 @@ try {
     );
     payanAgentRevenueUsdc =
       Number(agent.reputation?.volumeMicroUsd ?? 0) / 1_000_000;
-  }
-  if (payanAgentOfferListed) {
-    const challengeResponse = await fetchWithTimeout(
-      `https://payanagent.com/x402/${payanAgentOfferId}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      },
-    );
-    const challengeHeader = challengeResponse.headers.get("payment-required");
-    if (challengeResponse.status === 402 && challengeHeader) {
-      const challenge = JSON.parse(
-        Buffer.from(challengeHeader, "base64").toString("utf8"),
-      );
-      payanAgentChallengeReady =
-        challenge.accepts?.[0]?.amount === "10000" &&
-        challenge.accepts?.[0]?.network === "eip155:8453" &&
-        challenge.accepts?.[0]?.payTo?.toLowerCase() ===
-          settlementWallet.toLowerCase();
-    }
   }
   const quoteDetailResponse = await fetchWithTimeout(
     `https://payanagent.com/api/v1/offers/${payanAgentQuoteOfferIdConfigured}`,
@@ -458,10 +478,11 @@ console.log(
       revenue_usdc: metrics.revenue_usdc,
       official_mcp_registry: true,
       x402scan_registered: true,
+      payanagent_delivery_protected: true,
+      payanagent_delivery_verified: payanAgentDeliveryVerified,
       coinbase_bazaar_listed: bazaarListed,
       jaypay_directory_listed: jaypayDirectoryListed,
-      payanagent_offer_listed: payanAgentOfferListed,
-      payanagent_challenge_ready: payanAgentChallengeReady,
+      payanagent_free_preview_offer_deactivated: payanAgentFreePreviewOfferDeactivated,
       payanagent_quote_offer_id: payanAgentQuoteOfferId,
       payanagent_quote_offer_listed: payanAgentQuoteOfferListed,
       payanagent_quote_challenge_ready: payanAgentQuoteChallengeReady,

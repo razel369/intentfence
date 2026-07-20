@@ -17,6 +17,7 @@ jobs:
       - name: Create or update IntentFence marketplace offers
         env:
           PAYANAGENT_API_KEY: ${{ secrets.PAYANAGENT_API_KEY }}
+          PAYANAGENT_DELIVERY_SECRET: ${{ secrets.PAYANAGENT_DELIVERY_SECRET }}
           PAYANAGENT_AGENT_ID: ${{ vars.PAYANAGENT_AGENT_ID }}
           PAYANAGENT_PRIMARY_OFFER_ID: ${{ vars.PAYANAGENT_OFFER_ID }}
           PAYANAGENT_QUOTE_OFFER_ID: ${{ vars.PAYANAGENT_QUOTE_OFFER_ID }}
