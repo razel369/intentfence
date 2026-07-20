@@ -159,6 +159,15 @@ payee allowlist, keep wallet credentials local, and use IntentFence only after
 the 0.005 USDC assessment fee is authorized. It includes a capped Coinbase
 Agentic Wallet buyer path for agents that already use an authenticated wallet.
 
+Agents that have only a public x402 URL can install the narrower live-readiness
+skill. It probes the route without credentials or target payment, blocks
+redirects and private-network targets, validates the returned challenge, and
+requires explicit authorization before the 0.002 USDC IntentFence fee:
+
+```bash
+npx skills add razel369/intentfence --skill inspect-x402-endpoints
+```
+
 The official x402 client buyer example verifies the live fee challenge before
 creating a signer and is payment-disabled by default:
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Inspect x402 Endpoints"
+  short_description: "Probe x402 routes safely before payment"
+  default_prompt: "Use $inspect-x402-endpoints to verify this x402 URL before I pay it."

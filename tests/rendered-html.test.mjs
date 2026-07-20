@@ -212,6 +212,24 @@ test("ships a cross-agent x402 guard with a capped buyer path", async () => {
   assert.match(readme, /--skill guard-x402-payments/u);
 });
 
+test("ships a discoverable live x402 readiness skill with a strict payment cap", async () => {
+  const [skill, metadata, llms, readme] = await Promise.all([
+    source("skills/inspect-x402-endpoints/SKILL.md"),
+    source("skills/inspect-x402-endpoints/agents/openai.yaml"),
+    source("public/llms.txt"),
+    source("README.md"),
+  ]);
+
+  assert.match(skill, /^---\nname: inspect-x402-endpoints\n/u);
+  assert.match(skill, /never follows redirects/u);
+  assert.match(skill, /explicit authorization/u);
+  assert.match(skill, /--max-amount 2000 --json/u);
+  assert.match(skill, /live-x402-endpoint-readiness/u);
+  assert.match(metadata, /\$inspect-x402-endpoints/u);
+  assert.match(llms, /--skill inspect-x402-endpoints/u);
+  assert.match(readme, /--skill inspect-x402-endpoints/u);
+});
+
 test("publishes a directly executable and strictly capped agent checkout", async () => {
   const [paymentRoute, growth, manifest, x402Manifest, llms, readme] = await Promise.all([
     source("app/api/payments/route.ts"),

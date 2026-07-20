@@ -39,6 +39,8 @@ const walletRiskFlow = `GET /api/wallet-risk?address=0x...
 
 const agentSkillInstall = `npx skills add razel369/intentfence \\
   --skill guard-x402-payments`;
+const readinessSkillInstall = `npx skills add razel369/intentfence \\
+  --skill inspect-x402-endpoints`;
 
 const plans = [
   {
@@ -219,11 +221,12 @@ export default function GrowthSections() {
         <div className="mcp-install-card" id="agent-skill-install">
           <div className="mcp-install-copy">
             <span>CROSS-AGENT INSTALL</span>
-            <h3>Teach your agent to check x402 before it signs.</h3>
+            <h3>Teach your agent to inspect x402 before it pays.</h3>
             <p>
-              One open Agent Skill works across Codex, Claude Code, Cursor,
+              Two open Agent Skills work across Codex, Claude Code, Cursor,
               Gemini CLI, GitHub Copilot, and other skills-compatible agents.
-              It keeps keys local and pauses before any unapproved fee.
+              Inspect a live URL first, then guard the exact quote before signing.
+              Both keep keys local and pause before any unapproved fee.
             </p>
             <div className="mcp-install-actions">
               <a
@@ -236,11 +239,11 @@ export default function GrowthSections() {
               </a>
               <a
                 className="mcp-install-docs"
-                href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments"
+                href="https://github.com/razel369/intentfence/tree/main/skills/inspect-x402-endpoints"
                 target="_blank"
                 rel="noreferrer"
               >
-                Review every instruction <span aria-hidden="true">&#8599;</span>
+                Review the live-readiness skill <span aria-hidden="true">&#8599;</span>
               </a>
             </div>
           </div>
@@ -249,7 +252,7 @@ export default function GrowthSections() {
               <span>Install in supported agents</span>
               <span>NO API KEY</span>
             </div>
-            <pre><code>{agentSkillInstall}</code></pre>
+            <pre><code>{readinessSkillInstall}{"\n\n"}{agentSkillInstall}</code></pre>
           </div>
         </div>
 

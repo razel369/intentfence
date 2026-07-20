@@ -19,6 +19,8 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 - Optional local auto-payment: set INTENTFENCE_EVM_PRIVATE_KEY, INTENTFENCE_MAX_AUTO_PAYMENT_USDC, and INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC; disabled unless all three are set and restricted to exact Base USDC payments to the published IntentFence recipient.
 - Cross-agent payment guard skill: https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments
 - Agent Skill installer: npx skills add razel369/intentfence --skill guard-x402-payments
+- Live x402 endpoint inspection skill: https://github.com/razel369/intentfence/tree/main/skills/inspect-x402-endpoints
+- Readiness skill installer: npx skills add razel369/intentfence --skill inspect-x402-endpoints
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
