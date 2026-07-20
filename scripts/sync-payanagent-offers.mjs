@@ -140,7 +140,7 @@ const offers = [
   {
     title: "Verify x402 endpoint readiness before paying",
     description:
-      "Live x402 readiness and payment-safety verification for AI agents. Submit a public HTTPS resource URL plus a USDC price ceiling; IntentFence makes one bounded request without credentials, redirects, or payment, confirms HTTP 402 and PAYMENT-REQUIRED, and validates x402 v2 structure, exact scheme, Base mainnet, canonical USDC, EIP-712 domain, price, timeout, transfer method, extensions, resource binding, and an optional payee allowlist. Returns ready, ready_with_review, or not_ready with check-level evidence. PayanAgent settles 0.01 USDC to the seller and supplies its receipt.",
+      "x402 endpoint readiness verification before paying. Check, validate, inspect, audit, or preflight one live x402 payment endpoint by public HTTPS URL. IntentFence makes one bounded request without credentials, redirects, or payment; confirms HTTP 402 and PAYMENT-REQUIRED; and validates x402 v2, Base mainnet, canonical USDC, price ceiling, EIP-712 domain, payee, timeout, transfer method, extensions, and resource binding. Built for AI agents deciding whether an x402 API or merchant is ready and safe to pay. Returns ready, ready_with_review, or not_ready with machine-readable evidence. PayanAgent settles 0.01 USDC to the seller and supplies its receipt.",
     category: "Trust",
     tags: [
       "x402",
