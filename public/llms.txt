@@ -1,6 +1,10 @@
 # IntentFence
 
-> IntentFence checks live x402 endpoint readiness without paying targets, screens Base recipient wallets, validates observed payment challenges, and issues signed receipts for AI agents.
+> IntentFence is a fail-closed authorization layer for consequential AI-agent actions. It binds an exact action and policy to a five-minute ES256 receipt, and also scans MCP tool metadata for common security gaps.
+
+Immediately before a consequential MCP, HTTP, A2A, or payment action, call `intentfence_authorize_action` or `POST /api/actions/authorize`. Execute only when the receipt verifies, the status is `safe_to_proceed`, and the locally re-computed action digest is unchanged. IntentFence never executes the downstream action and should never receive wallet keys, API credentials, or raw secrets.
+
+For initial discovery, call `intentfence_agent_risk_scan` or `POST /api/agent-risk/scan` with MCP tool metadata. The scan is heuristic, metadata-only, and not a security certification.
 
 For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?month=YYYY-MM`. Before signing an x402 payment, call `intentfence_x402_readiness` with the endpoint URL, screen the recipient with `intentfence_wallet_risk`, or forward an already-observed `PAYMENT-REQUIRED` header to `intentfence_x402_assessment`.
 
@@ -23,6 +27,8 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 - Live x402 endpoint inspection skill: https://github.com/razel369/intentfence/tree/main/skills/inspect-x402-endpoints
 - Readiness skill installer: npx skills add razel369/intentfence --skill inspect-x402-endpoints
 - Free REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight
+- Action authorization: https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize
+- MCP agent risk scan: https://agentpass-protocol.rmalka06.chatgpt.site/api/agent-risk/scan
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
 - Live x402 endpoint readiness: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness
@@ -57,4 +63,8 @@ Teams can request a scoped paid integration pilot for one production agent-payme
 - needs_review: a constraint or proof needs human or policy review.
 - denied: a required identity or scope is missing, or a hard limit was exceeded.
 
-The free endpoint returns an unsigned policy preview. Wallet risk signs live evidence with assurance `live-base-wallet-risk` and verification tier `live-base-wallet-risk+x402-settled`. The verified preflight returns an ES256 JWS receipt over declared inputs. The quote assessment signs SHA-256 bindings for the exact caller-observed challenge and target URL with assurance `caller-observed-x402-quote-assessment`. IntentFence does not prove merchant identity. x402 settlement proves payment of the IntentFence service fee, not the downstream merchant payment. Consequential actions still require independent authorization controls.
+The free endpoint returns an unsigned policy preview. Wallet risk signs live evidence with assurance `live-base-wallet-risk` and verification tier `live-base-wallet-risk+x402-settled`. The verified preflight returns an ES256 JWS receipt over declared inputs. The quote assessment signs SHA-256 bindings for the exact caller-observed challenge and target URL with assurance `caller-observed-x402-quote-assessment`. IntentFence does not prove merchant identity. x402 settlement proves payment of the IntentFence service fee, not the downstream merchant payment.
+
+## Action-bound enforcement
+
+The action authorization API evaluates explicit action-type and resource allowlists, optional spend and retention ceilings, and optional approval proof bound to the exact action SHA-256 digest. Signed authorizations expire after five minutes. The TypeScript `enforceAction` and Python `run_authorized` SDK helpers verify the receipt and digest before invoking the caller-owned action callback. Any network, verification, expiry, digest, policy, or decision failure blocks execution.

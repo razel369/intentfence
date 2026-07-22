@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Mapping, TypeVar, TypedDict, cast
 from urllib.error import HTTPError
@@ -201,6 +202,12 @@ class IntentFenceClient:
     def verify_receipt(self, jws: str) -> dict[str, Any]:
         return self._post("/api/receipts/verify", {"jws": jws})
 
+    def authorize_action(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._post("/api/actions/authorize", payload)
+
+    def scan_agent_risk(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._post("/api/agent-risk/scan", payload)
+
     def assess_x402(
         self,
         payload: X402AssessmentInput,
@@ -262,6 +269,49 @@ class IntentFenceClient:
                 f"IntentFence blocked the tool call: {decision.get('status')}.",
                 body=decision,
             )
+        return tool_call()
+
+    def run_authorized(
+        self,
+        payload: dict[str, Any],
+        tool_call: Callable[[], T],
+    ) -> T:
+        """Verify an action-bound receipt and fail closed before execution."""
+        decision = self.authorize_action(payload)
+        receipt = decision.get("receipt")
+        if decision.get("status") != "safe_to_proceed" or not isinstance(receipt, dict):
+            raise IntentFenceError(
+                f"IntentFence blocked the tool call: {decision.get('status')}.",
+                body=decision,
+            )
+        action = payload.get("action")
+        canonical = json.dumps(
+            action,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        action_digest = hashlib.sha256(canonical).hexdigest()
+        signature = receipt.get("signature")
+        jws = signature.get("jws") if isinstance(signature, dict) else None
+        if (
+            action_digest != decision.get("action_digest")
+            or action_digest != receipt.get("action_digest")
+            or not isinstance(jws, str)
+        ):
+            raise IntentFenceError("IntentFence action binding failed; tool call blocked.", body=decision)
+        verified = self.verify_receipt(jws)
+        claims = verified.get("claims")
+        evidence = claims.get("evidence") if isinstance(claims, dict) else None
+        if (
+            verified.get("valid") is not True
+            or not isinstance(claims, dict)
+            or not isinstance(evidence, dict)
+            or claims.get("decision") != "safe_to_proceed"
+            or claims.get("assurance") != "action-bound-policy-authorization"
+            or evidence.get("action_digest") != action_digest
+        ):
+            raise IntentFenceError("IntentFence receipt verification failed; tool call blocked.", body=decision)
         return tool_call()
 
 

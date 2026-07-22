@@ -6,9 +6,9 @@ const socialImage =
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentpass-protocol.rmalka06.chatgpt.site"),
-  title: "IntentFence — Verify x402 quotes before agents pay",
+  title: "IntentFence — Stop unsafe AI-agent actions before execution",
   description:
-    "Caller-observed x402 quote assessment for AI agents: verify the Base USDC asset, price, payee, and resource binding before payment.",
+    "Fail-closed, action-bound authorization for AI agents with five-minute ES256 receipts, MCP risk scanning, and x402 payment safety.",
   keywords: [
     "AI agent payment preflight",
     "AI agent payment firewall",
@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "IntentFence — Verify an x402 quote before your agent pays.",
+    title: "IntentFence — Authorize the exact action before your agent executes.",
     description:
-      "Check an observed x402 quote against a caller-approved payment policy and sign the result — without contacting the target.",
+      "Bind an exact agent action to explicit policy and verify the short-lived signed receipt before the tool call executes.",
     url: "/",
     siteName: "IntentFence",
     type: "website",
@@ -38,14 +38,14 @@ export const metadata: Metadata = {
         url: socialImage,
         width: 1200,
         height: 630,
-        alt: "IntentFence verifies an x402 quote before an AI agent signs",
+        alt: "IntentFence authorizes an exact AI-agent action before execution",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentFence — Verify x402 quotes before agents pay.",
-    description: "Signed assessment of an exact caller-observed x402 quote, payee, asset, price, and resource binding.",
+    title: "IntentFence — Stop unsafe AI-agent actions before execution.",
+    description: "Fail-closed action authorization with exact action digests and short-lived signed receipts.",
     images: [socialImage],
   },
 };
@@ -58,7 +58,7 @@ const structuredData = {
   operatingSystem: "Web",
   url: "https://agentpass-protocol.rmalka06.chatgpt.site/",
   description:
-    "Caller-observed x402 quote assessments and signed payment-policy receipts for autonomous AI agents, available through REST and paid MCP.",
+    "Action-bound authorization, MCP metadata risk scanning, and signed policy receipts for autonomous AI agents through REST and MCP.",
   offers: [
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
     { "@type": "Offer", name: "Verified x402", price: "0.005", priceCurrency: "USDC" },

@@ -35,6 +35,21 @@ import {
   decodeX402Header,
   encodeX402Header,
 } from "../../lib/x402-payment";
+import {
+  actionAuthorizationInputSchema,
+  ActionAuthorizationValidationError,
+  evaluateActionAuthorization,
+  validateActionAuthorizationInput,
+} from "../../lib/action-authorization";
+import {
+  agentRiskScanInputSchema,
+  AgentRiskScanValidationError,
+  scanAgentToolMetadata,
+  validateAgentRiskScanInput,
+} from "../../lib/agent-risk-scan";
+import { enforceRequestRateLimit } from "../../lib/rate-limit";
+import { createSignedActionAuthorizationReceipt } from "../../lib/receipts";
+import { getReceiptSigningPrivateJwk } from "../../lib/runtime-secrets";
 
 const SITE_ORIGIN = "https://agentpass-protocol.rmalka06.chatgpt.site";
 const MCP_PAYMENT_META_KEY = "x402/payment";
@@ -408,8 +423,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.11.0" },
-      instructions: "Before signing an x402 payment, use intentfence_x402_readiness to inspect a live endpoint without paying it, use intentfence_wallet_risk to check the recipient address, or forward an already-observed PAYMENT-REQUIRED header to intentfence_x402_assessment. intentfence_us_cpi returns signed official U.S. inflation data. intentfence_preflight is a free preview; the other tools are paid.",
+      serverInfo: { name: "IntentFence", version: "0.12.0" },
+      instructions: "Use intentfence_authorize_action immediately before a consequential tool call and execute only when its short-lived, action-bound receipt verifies. Use intentfence_agent_risk_scan to inspect MCP metadata. The authorization service never executes the downstream action. x402 readiness, wallet risk, quote assessment, verified preflight, and official data remain paid tools.",
     }, protocolVersion);
   }
 
@@ -419,10 +434,24 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 6 },
+      metadata: { protocol: "mcp", tools: 8 },
     });
     return jsonRpc(request, body.id, {
       tools: [
+        {
+          name: "intentfence_authorize_action",
+          title: "IntentFence Action Authorization",
+          description: "Authorize an exact agent action against an explicit allowlist, spend ceiling, retention ceiling, and optional action-bound approval. Returns a five-minute ES256 receipt and never executes the downstream action. Callers must verify the receipt and fail closed if the action changes.",
+          inputSchema: actionAuthorizationInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        },
+        {
+          name: "intentfence_agent_risk_scan",
+          title: "IntentFence MCP Agent Risk Scan",
+          description: "Free metadata-only scan of caller-supplied MCP tool definitions for missing schemas, unsafe annotations, approval binding, and cost boundaries. Does not execute tools or certify security.",
+          inputSchema: agentRiskScanInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        },
         {
           name: "intentfence_preflight",
           title: "IntentFence Preview",
@@ -474,6 +503,8 @@ export async function POST(request: Request) {
     const toolName = toolParams.name;
     if (
       toolName !== "intentfence_preflight" &&
+      toolName !== "intentfence_authorize_action" &&
+      toolName !== "intentfence_agent_risk_scan" &&
       toolName !== "intentfence_verified_preflight" &&
       toolName !== "intentfence_x402_assessment" &&
       toolName !== "intentfence_x402_readiness" &&
@@ -486,6 +517,58 @@ export async function POST(request: Request) {
       });
     }
     try {
+      if (toolName === "intentfence_authorize_action") {
+        const rateLimit = await enforceRequestRateLimit(request, "mcp_action_authorization", 30);
+        if (!rateLimit.allowed) {
+          return jsonRpc(request, body.id, {
+            content: [{ type: "text", text: "Action authorization rate limit exceeded. Fail closed and retry after the current window." }],
+            isError: true,
+          });
+        }
+        const input = validateActionAuthorizationInput(toolParams.arguments ?? {});
+        const decision = await evaluateActionAuthorization(input);
+        const signingKey = await getReceiptSigningPrivateJwk();
+        if (!signingKey) throw new Error("Signing unavailable");
+        const receipt = await createSignedActionAuthorizationReceipt(decision, signingKey);
+        const result = { ...decision, receipt };
+        await recordFunnelEvent({
+          eventName: decision.status === "safe_to_proceed" ? "action_authorized" : "action_denied",
+          request,
+          requestId: decision.request_id,
+          subject: input.subject,
+          metadata: { status: decision.status, protocol: "mcp", action_type: input.action.type },
+        });
+        return jsonRpc(request, body.id, {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+          structuredContent: result,
+          isError: false,
+        });
+      }
+
+      if (toolName === "intentfence_agent_risk_scan") {
+        const rateLimit = await enforceRequestRateLimit(request, "mcp_agent_risk_scan", 20);
+        if (!rateLimit.allowed) {
+          return jsonRpc(request, body.id, {
+            content: [{ type: "text", text: "Agent risk scan rate limit exceeded. Retry after the current window." }],
+            isError: true,
+          });
+        }
+        const input = validateAgentRiskScanInput(toolParams.arguments ?? {});
+        const result = scanAgentToolMetadata(input);
+        await recordFunnelEvent({
+          eventName: "risk_scan_completed",
+          request,
+          requestId: result.scan_id,
+          subject: input.server_name,
+          metadata: { score: result.score, grade: result.grade, risk: result.risk, tool_count: result.tool_count },
+        });
+        return jsonRpc(request, body.id, {
+          content: [{ type: "text", text: JSON.stringify(result) }],
+          structuredContent: result,
+          isError: false,
+        });
+      }
+
       if (toolName === "intentfence_us_cpi") {
         const input = validateUsCpiInput(toolParams.arguments ?? {});
         const payment = x402PaymentFromParams(toolParams);
@@ -590,7 +673,9 @@ export async function POST(request: Request) {
           error instanceof X402AssessmentValidationError ||
           error instanceof X402ReadinessValidationError ||
           error instanceof WalletRiskValidationError ||
-          error instanceof UsCpiValidationError
+          error instanceof UsCpiValidationError ||
+          error instanceof ActionAuthorizationValidationError ||
+          error instanceof AgentRiskScanValidationError
         ? error.message
         : "The IntentFence request could not be processed.";
       return jsonRpc(request, body.id, {

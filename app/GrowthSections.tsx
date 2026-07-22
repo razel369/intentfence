@@ -11,12 +11,13 @@ import {
 } from "../lib/agentic-wallet-checkout";
 import { COINBASE_AGENTKIT_VERSION } from "../lib/coinbase-agentkit-checkout";
 
-const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight \\
+const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize \\
   -H "Content-Type: application/json" \\
   -d '{
-    "subject":"did:web:my-agent",
-    "action":{"type":"purchase","resource":"order-42"},
-    "constraints":{"cost_ceiling":100,"quoted_cost":79,"data_retention_hours":24}
+    "subject":"agent:buyer-07",
+    "action":{"type":"purchase","resource":"merchant://orders/42","protocol":"mcp"},
+    "context":{"currency":"USD","quoted_cost":79},
+    "policy":{"allowed_action_types":["purchase"],"allowed_resources":["merchant://orders/*"],"max_cost":{"amount":100,"currency":"USD"}}
   }'`;
 
 const paidFlow = `POST /api/preflight/verified
@@ -108,9 +109,9 @@ const plans = [
     note: "setup + $750/month after production activation",
     features: [
       "30-day implementation pilot",
-      "One payment-provider adapter",
-      "Spend and exception policy",
-      "Approval and audit workflow",
+      "One consequential production tool",
+      "Action, resource, spend and retention policy",
+      "Action-bound approval and audit workflow",
       "Written scope and success criteria before billing",
     ],
   },
@@ -121,6 +122,8 @@ export default function GrowthSections() {
   const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const [checkoutCopied, setCheckoutCopied] = useState(false);
+  const [scanState, setScanState] = useState<"idle" | "running" | "complete" | "error">("idle");
+  const [scanResult, setScanResult] = useState("Ready to scan a consequential MCP tool definition.");
 
   function selectPlan(nextPlan: string) {
     setPlan(nextPlan);
@@ -131,6 +134,28 @@ export default function GrowthSections() {
     await navigator.clipboard?.writeText(AGENTIC_WALLET_CHECKOUT_COMMAND);
     setCheckoutCopied(true);
     window.setTimeout(() => setCheckoutCopied(false), 1800);
+  }
+
+  async function runRiskScan() {
+    setScanState("running");
+    setScanResult("Scanning metadata…");
+    try {
+      const response = await fetch("/api/agent-risk/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          server_name: "demo-wallet-agent",
+          tools: [{ name: "transfer_payment", description: "Transfer funds to a recipient." }],
+        }),
+      });
+      const result = await response.json() as { score?: number; grade?: string; findings?: Array<{ code: string }>; message?: string };
+      if (!response.ok || result.score === undefined) throw new Error(result.message || "Scan failed.");
+      setScanState("complete");
+      setScanResult(`Score ${result.score}/100 · Grade ${result.grade} · ${result.findings?.length ?? 0} findings`);
+    } catch {
+      setScanState("error");
+      setScanResult("Scanner unavailable. No security conclusion was produced.");
+    }
   }
 
   async function submitLead(event: FormEvent<HTMLFormElement>) {
@@ -167,9 +192,9 @@ export default function GrowthSections() {
       <section className="agent-gateway" id="agents" aria-labelledby="agents-title">
         <div className="gateway-intro">
           <div className="section-kicker">Machine entry points - live now</div>
-          <h2 id="agents-title">Verify the quote before your agent signs the payment.</h2>
+          <h2 id="agents-title">Authorize the exact action before your agent calls the tool.</h2>
           <p>
-            IntentFence lets an agent compare the exact x402 quote it observed with its own price ceiling, pre-approved payees, transfer rules, and target URL before signing.
+            IntentFence binds the action, resource, payload hash, cost, retention, and approval policy to a five-minute signed receipt. The SDK verifies it locally and blocks execution on any mismatch or outage.
           </p>
           <div className="discovery-links">
             <a href="/.well-known/agent-card.json">A2A Agent Card</a>
@@ -182,6 +207,28 @@ export default function GrowthSections() {
             <a href="/integrations/coinbase-agentkit.json">Coinbase AgentKit adapter</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
+          </div>
+        </div>
+
+        <div className="mcp-install-card" id="risk-scan">
+          <div className="mcp-install-copy">
+            <span>FREE MCP RISK SCAN</span>
+            <h3>Find the dangerous gaps before integration.</h3>
+            <p>
+              Run a metadata-only scan for missing schemas, unsafe annotations,
+              approval binding, and cost boundaries. The scanner never contacts
+              or executes the supplied tools and is not a security certification.
+            </p>
+            <div className="mcp-install-actions">
+              <button className="button mcp-install-button" onClick={runRiskScan} disabled={scanState === "running"}>
+                {scanState === "running" ? "Scanning…" : "Run demo risk scan"}
+              </button>
+              <a className="mcp-install-docs" href="/openapi.json">Use your own MCP metadata</a>
+            </div>
+          </div>
+          <div className="mcp-install-config">
+            <div className="code-topline"><span>Live result</span><span>{scanState.toUpperCase()}</span></div>
+            <pre><code>{scanResult}</code></pre>
           </div>
         </div>
 
@@ -385,10 +432,10 @@ export default function GrowthSections() {
 
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
-          <div className="section-kicker">Wallet and x402 quote safety - autonomous service-fee settlement</div>
-          <h2 id="pricing-title">Check the recipient. Observe the quote. Pay for signed evidence.</h2>
+          <div className="section-kicker">Action authorization plus autonomous service-fee settlement</div>
+          <h2 id="pricing-title">Start free. Put production actions behind a private policy boundary.</h2>
           <p>
-            Agents pay 0.001 USDC for signed official U.S. CPI data, 0.002 USDC for live Base wallet risk, or 0.005 USDC for an exact quote assessment or signed preflight, with no account or API key.
+            Public action authorization and MCP metadata scanning are free and rate-limited. Paid x402 evidence remains available without an account; private policy deployment and integration are the commercial product.
           </p>
         </div>
         <div className="pricing-grid">
@@ -417,8 +464,8 @@ export default function GrowthSections() {
       <section className="founding-section" id="founding-access">
         <div>
           <div className="section-kicker">Paid integration pilot</div>
-          <h2>Put one production AI-agent payment behind a hard boundary.</h2>
-          <p>$3,000 covers the scoped implementation. After production activation, monitoring and policy support are $750 per month. We define the merchant, amount, purpose, approval path, and exception rules before billing starts.</p>
+          <h2>Put one consequential production tool behind a hard boundary.</h2>
+          <p>$3,000 covers the scoped implementation. After production activation, monitoring and policy support are $750 per month. We define the action, resources, spend, data retention, approval path, and exception rules before billing starts.</p>
         </div>
         <form onSubmit={submitLead}>
           <label>

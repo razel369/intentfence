@@ -15,6 +15,29 @@ const intentFence = new IntentFenceClient({
   // For paid calls, inject a fetch implementation wrapped by your x402 wallet client.
   fetch,
 });
+
+const result = await intentFence.enforceAction(
+  {
+    subject: "agent:buyer-07",
+    action: {
+      type: "purchase",
+      resource: "merchant://orders/42",
+      protocol: "mcp",
+      payload_sha256: orderPayloadSha256,
+    },
+    context: { quoted_cost: 79, currency: "USD", data_retention_hours: 24 },
+    policy: {
+      allowed_action_types: ["purchase"],
+      allowed_resources: ["merchant://orders/*"],
+      max_cost: { amount: 100, currency: "USD" },
+      max_data_retention_hours: 48,
+    },
+  },
+  () => purchaseOrder("42"),
+);
+
+// Authorization is signed and valid for five minutes. The callback runs only
+// after the SDK verifies the receipt and re-hashes the exact action locally.
 const guard = intentFence.guard({ paid: false, blockOnReview: true });
 
 const assessment = await intentFence.assessX402({

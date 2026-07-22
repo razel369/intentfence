@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const leads = sqliteTable("leads", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -69,5 +69,19 @@ export const usageEvents = sqliteTable(
     index("usage_events_event_created_at_idx").on(table.eventName, table.createdAt),
     index("usage_events_stage_created_at_idx").on(table.funnelStage, table.createdAt),
     index("usage_events_request_id_idx").on(table.requestId),
+  ],
+);
+
+export const requestRateLimits = sqliteTable(
+  "request_rate_limits",
+  {
+    scope: text("scope").notNull(),
+    keyHash: text("key_hash").notNull(),
+    windowStart: integer("window_start").notNull(),
+    requestCount: integer("request_count").notNull().default(1),
+  },
+  (table) => [
+    primaryKey({ columns: [table.scope, table.keyHash, table.windowStart] }),
+    index("request_rate_limits_window_start_idx").on(table.windowStart),
   ],
 );

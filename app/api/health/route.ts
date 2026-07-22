@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { paymentReservations, usageEvents } from "../../../db/schema";
+import { paymentReservations, requestRateLimits, usageEvents } from "../../../db/schema";
 import { MIN_ADMIN_TOKEN_LENGTH } from "../../../lib/admin-auth";
 import {
   getIntentFenceAdminToken,
@@ -22,6 +22,7 @@ export async function GET() {
   let database = false;
   let schema = false;
   let paymentReservationSchema = false;
+  let rateLimitSchema = false;
   let signing = false;
   let leadAdministration = false;
   let facilitatorReachable = false;
@@ -38,6 +39,11 @@ export async function GET() {
       .from(paymentReservations)
       .limit(1);
     paymentReservationSchema = true;
+    await db
+      .select({ scope: requestRateLimits.scope })
+      .from(requestRateLimits)
+      .limit(1);
+    rateLimitSchema = true;
   } catch (error) {
     console.error("IntentFence health database check failed", {
       error: error instanceof Error ? error.message : "unknown_error",
@@ -83,18 +89,19 @@ export async function GET() {
   const x402Ready =
     x402Configured && facilitatorReachable && facilitatorSupportsRoute;
   const status =
-    database && schema && paymentReservationSchema && signing && leadAdministration && x402Ready
+    database && schema && paymentReservationSchema && rateLimitSchema && signing && leadAdministration && x402Ready
       ? "ok"
       : "degraded";
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.11.0",
+      version: "0.12.0",
       status,
       checks: {
         database,
         revenue_schema: schema,
         payment_reservation_schema: paymentReservationSchema,
+        rate_limit_schema: rateLimitSchema,
         receipt_signing: signing,
         lead_administration: leadAdministration,
         x402_configuration: {
@@ -119,6 +126,8 @@ export async function GET() {
         live_x402_endpoint_readiness: true,
         live_base_wallet_risk: true,
         signed_official_us_cpi: true,
+        action_bound_authorization: true,
+        mcp_agent_risk_scan: true,
       },
     },
     {

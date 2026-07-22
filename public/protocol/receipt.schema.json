@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json",
-  "title": "IntentFence 0.5/0.6/0.7/0.8 Signed Receipt Claims",
+  "title": "IntentFence Signed Receipt Claims",
   "type": "object",
   "additionalProperties": true,
   "required": [
@@ -16,8 +16,7 @@
     "decision",
     "subject",
     "action",
-    "checks",
-    "payment"
+    "checks"
   ],
   "properties": {
     "iss": { "const": "https://agentpass-protocol.rmalka06.chatgpt.site" },
@@ -25,9 +24,9 @@
     "iat": { "type": "integer" },
     "exp": { "type": "integer" },
     "jti": { "type": "string", "minLength": 1, "maxLength": 200 },
-    "intentfence_version": { "enum": ["0.5", "0.6", "0.7", "0.8"] },
+    "intentfence_version": { "enum": ["0.5", "0.6", "0.7", "0.8", "0.9", "1.0"] },
     "assurance": {
-      "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-base-wallet-risk", "official-source-data"]
+      "enum": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-x402-endpoint-readiness", "live-base-wallet-risk", "official-source-data", "action-bound-policy-authorization"]
     },
     "request_id": { "type": "string", "format": "uuid" },
     "decision": {
@@ -51,6 +50,12 @@
     }
   },
   "allOf": [
+    {
+      "if": {
+        "properties": { "assurance": { "not": { "const": "action-bound-policy-authorization" } } }
+      },
+      "then": { "required": ["payment"] }
+    },
     {
       "if": {
         "properties": {
@@ -133,6 +138,45 @@
               "headline_index",
               "core_index"
             ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "assurance": { "const": "live-x402-endpoint-readiness" }
+        }
+      },
+      "then": {
+        "required": ["evidence"],
+        "properties": {
+          "intentfence_version": { "const": "0.9" },
+          "evidence": {
+            "type": "object",
+            "required": ["checked_at", "target_origin", "target_pathname", "target_method", "http_status", "payment_required_present", "redirect_blocked", "payment_requirements_sha256"]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "assurance": { "const": "action-bound-policy-authorization" }
+        }
+      },
+      "then": {
+        "required": ["evidence"],
+        "properties": {
+          "intentfence_version": { "const": "1.0" },
+          "evidence": {
+            "type": "object",
+            "required": ["authorized_at", "action_digest", "policy_digest", "enforcement_mode"],
+            "properties": {
+              "action_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "policy_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "enforcement_mode": { "const": "caller-side-fail-closed" }
+            }
           }
         }
       }

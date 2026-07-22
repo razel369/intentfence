@@ -33,6 +33,99 @@ export type IntentFenceDecision = {
         };
     };
 };
+export type ActionAuthorizationInput = {
+    subject: string;
+    action: {
+        type: string;
+        resource: string;
+        protocol: "mcp" | "http" | "a2a" | "payment" | "other";
+        method?: string;
+        /** SHA-256 of a consequential payload. Send the digest, never credentials or secrets. */
+        payload_sha256?: string;
+    };
+    context?: {
+        currency?: string;
+        quoted_cost?: number;
+        data_retention_hours?: number;
+    };
+    policy: {
+        allowed_action_types: string[];
+        allowed_resources: string[];
+        max_cost?: {
+            amount: number;
+            currency: string;
+        };
+        max_data_retention_hours?: number;
+        require_human_approval_for?: string[];
+    };
+    approval?: {
+        approved_by: string;
+        approved_at: string;
+        expires_at: string;
+        action_digest: string;
+        proof_id: string;
+    };
+};
+export type ActionAuthorizationDecision = {
+    intentfence: "1.0";
+    request_id: string;
+    status: "safe_to_proceed" | "needs_review" | "denied";
+    authorized_at: string;
+    expires_at: string;
+    action_digest: string;
+    policy_digest: string;
+    subject: string;
+    action: ActionAuthorizationInput["action"];
+    checks: Array<{
+        name: string;
+        status: "pass" | "review" | "deny";
+        detail: string;
+    }>;
+    enforcement: {
+        mode: "caller-side-fail-closed";
+        executed: false;
+        instruction: string;
+    };
+    receipt: {
+        id: string;
+        signed: true;
+        assurance: "action-bound-policy-authorization";
+        expires_at: string;
+        action_digest: string;
+        policy_digest: string;
+        signature: {
+            jws: string;
+            kid: string;
+            alg: "ES256";
+            verify_url: string;
+            jwks_url: string;
+        };
+        note: string;
+    };
+};
+export type AgentRiskScanInput = {
+    server_name: string;
+    tools: Array<{
+        name: string;
+        description?: string;
+        inputSchema?: Record<string, unknown>;
+        annotations?: Record<string, unknown>;
+    }>;
+};
+export type AgentRiskScanResult = {
+    intentfence: "scanner-1.0";
+    scan_id: string;
+    score: number;
+    grade: "A" | "B" | "C" | "D" | "F";
+    risk: "low" | "medium" | "high";
+    findings: Array<{
+        severity: "high" | "medium" | "low";
+        code: string;
+        tool: string | null;
+        detail: string;
+        remediation: string;
+    }>;
+};
 export type X402AssessmentInput = {
     subject: string;
     target_url: string;
@@ -197,8 +290,8 @@ export declare class IntentFenceHttpError extends Error {
     constructor(message: string, status: number, response: Response);
 }
 export declare class IntentFenceBlockedError extends Error {
-    readonly decision: IntentFenceDecision;
-    constructor(decision: IntentFenceDecision);
+    readonly decision: IntentFenceDecision | ActionAuthorizationDecision;
+    constructor(decision: IntentFenceDecision | ActionAuthorizationDecision);
 }
 export type IntentFenceClientOptions = {
     baseUrl?: string;
@@ -211,6 +304,8 @@ export declare class IntentFenceClient {
     preflight(input: IntentFenceInput, options?: {
         paid?: boolean;
     }): Promise<IntentFenceDecision>;
+    authorizeAction(input: ActionAuthorizationInput): Promise<ActionAuthorizationDecision>;
+    scanAgentRisk(input: AgentRiskScanInput): Promise<AgentRiskScanResult>;
     assessX402(input: X402AssessmentInput, options?: {
         paymentSignature?: string;
     }): Promise<X402AssessmentDecision>;
@@ -229,4 +324,10 @@ export declare class IntentFenceClient {
         paid?: boolean;
         blockOnReview?: boolean;
     }): <T>(input: IntentFenceInput, toolCall: () => Promise<T>) => Promise<T>;
+    /**
+     * Fail-closed enforcement for consequential actions. IntentFence authorizes
+     * and signs; the supplied callback is the only code that executes the action.
+     */
+    enforceAction<T>(input: ActionAuthorizationInput, toolCall: () => Promise<T>): Promise<T>;
 }
+export declare function digestCanonical(value: unknown): Promise<string>;

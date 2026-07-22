@@ -1,14 +1,13 @@
 # IntentFence
 
-IntentFence is a payment-policy firewall for autonomous AI agents. Before an
-agent signs an x402 payment, it can inspect the live endpoint without paying it, check the recipient with live Base activity
-and malicious-address intelligence, then forward the exact `PAYMENT-REQUIRED`
-challenge it just observed. IntentFence validates the Base USDC quote against
-the agent's ceiling and pre-approved payee allowlist, binds the challenge with
-SHA-256, and returns a signed assessment. It checks quote integrity and policy
-fit; it does not prove merchant identity, ownership, or delivery. It also
-supports declared merchant/purpose, cost, data-retention, and approval policy
-preflights.
+IntentFence is a fail-closed authorization firewall for autonomous AI agents.
+Immediately before a consequential MCP, HTTP, A2A, or payment action, it binds
+the exact action and payload hash to explicit action/resource allowlists, spend
+and retention ceilings, and optional action-specific approval. It returns a
+five-minute ES256 receipt; the TypeScript and Python SDKs verify the receipt and
+local action digest before executing the caller-owned callback. IntentFence
+never executes downstream tools and should never receive credentials or wallet
+keys. It also provides MCP metadata scanning and x402 payment-safety checks.
 
 - `safe_to_proceed`
 - `needs_review`
@@ -26,6 +25,8 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 
 | Surface | Endpoint |
 | --- | --- |
+| Action-bound authorization | `POST /api/actions/authorize` |
+| Free MCP metadata risk scan | `POST /api/agent-risk/scan` |
 | Free REST preview | `POST /api/preflight` |
 | Paid x402 decision | `POST /api/preflight/verified` |
 | Paid caller-observed x402 quote assessment | `POST /api/x402-assessments` |
@@ -39,6 +40,21 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | x402 service manifest | `GET /.well-known/x402` |
 | Public aggregate metrics | `GET /api/metrics` |
 | OpenAPI | `GET /openapi.json` |
+
+## Fail-closed action authorization
+
+The hosted MCP tools `intentfence_authorize_action` and
+`intentfence_agent_risk_scan` are available without an API key and are
+rate-limited. Authorization signs the exact caller-supplied action and policy
+digests for five minutes but does not validate the truth of a self-declared
+identity or approval source. Production callers must verify the receipt,
+re-hash the local action, and block on denial, review, expiry, mismatch, network
+failure, or verification failure. Use the TypeScript `enforceAction` or Python
+`run_authorized` helper to make that boundary executable.
+
+The scanner evaluates caller-supplied MCP metadata only. It highlights missing
+schemas, annotations, action-bound approval, and financial limits, but does not
+execute tools, inspect source code, or certify security or compliance.
 
 Official U.S. CPI costs 0.001 USDC; live readiness and wallet risk cost 0.002 USDC; signed preflight and exact-quote assessment cost
 0.005 USDC on Base through x402. A successful call

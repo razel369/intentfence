@@ -35,6 +35,28 @@ export class IntentFenceClient {
         }
         return await response.json();
     }
+    async authorizeAction(input) {
+        const response = await this.request(`${this.baseUrl}/api/actions/authorize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+        });
+        if (!response.ok) {
+            throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}; fail closed.`, response.status, response);
+        }
+        return await response.json();
+    }
+    async scanAgentRisk(input) {
+        const response = await this.request(`${this.baseUrl}/api/agent-risk/scan`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(input),
+        });
+        if (!response.ok) {
+            throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
+        }
+        return await response.json();
+    }
     async assessX402(input, options = {}) {
         const response = await this.request(`${this.baseUrl}/api/x402-assessments`, {
             method: "POST",
@@ -101,4 +123,43 @@ export class IntentFenceClient {
             return await toolCall();
         };
     }
+    /**
+     * Fail-closed enforcement for consequential actions. IntentFence authorizes
+     * and signs; the supplied callback is the only code that executes the action.
+     */
+    async enforceAction(input, toolCall) {
+        const decision = await this.authorizeAction(input);
+        if (decision.status !== "safe_to_proceed" || !decision.receipt.signed) {
+            throw new IntentFenceBlockedError(decision);
+        }
+        const localDigest = await digestCanonical(input.action);
+        if (localDigest !== decision.action_digest || localDigest !== decision.receipt.action_digest) {
+            throw new IntentFenceBlockedError({ ...decision, status: "denied" });
+        }
+        const verified = await this.verifyReceipt(decision.receipt.signature.jws);
+        const claims = verified.claims;
+        if (!isRecord(claims) || !isRecord(claims.evidence) ||
+            claims.decision !== "safe_to_proceed" ||
+            claims.evidence.action_digest !== localDigest ||
+            claims.assurance !== "action-bound-policy-authorization") {
+            throw new IntentFenceBlockedError({ ...decision, status: "denied" });
+        }
+        return await toolCall();
+    }
+}
+function isRecord(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function canonicalize(value) {
+    if (Array.isArray(value))
+        return value.map(canonicalize);
+    if (isRecord(value)) {
+        return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+    }
+    return value;
+}
+export async function digestCanonical(value) {
+    const bytes = new TextEncoder().encode(JSON.stringify(canonicalize(value)));
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

@@ -4,41 +4,47 @@ import { useEffect, useRef, useState } from "react";
 import GrowthSections from "./GrowthSections";
 
 const checks = [
-  { label: "Identity", value: "did:web:crew-07", detail: "Subject declared" },
-  { label: "Scope", value: "travel.booking", detail: "Action declared" },
-  { label: "Cost", value: "$428.20 / $500", detail: "Within ceiling" },
-  { label: "Data", value: "24h retention", detail: "Within retention bound" },
-  { label: "Approval", value: "Human required", detail: "Approval marker supplied" },
+  { label: "Identity", value: "agent:buyer-07", detail: "Subject bound" },
+  { label: "Action", value: "purchase", detail: "Type allowlisted" },
+  { label: "Resource", value: "orders/42", detail: "Resource allowlisted" },
+  { label: "Cost", value: "$79 / $100", detail: "Within ceiling" },
+  { label: "Receipt", value: "ES256 · 5 min", detail: "Exact action signed" },
 ];
 
 const demoInput = {
-  subject: "did:web:crew-07",
-  action: { type: "travel.booking", resource: "TLV-LHR" },
-  constraints: {
-    currency: "USD",
-    cost_ceiling: 500,
-    quoted_cost: 428.2,
-    data_retention_hours: 24,
-    human_approval: "required",
+  subject: "agent:buyer-07",
+  action: {
+    type: "purchase",
+    resource: "merchant://orders/42",
+    protocol: "mcp",
+    method: "POST",
+    payload_sha256: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   },
-  proofs: ["human_approval"],
+  context: { currency: "USD", quoted_cost: 79, data_retention_hours: 24 },
+  policy: {
+    allowed_action_types: ["purchase"],
+    allowed_resources: ["merchant://orders/*"],
+    max_cost: { amount: 100, currency: "USD" },
+    max_data_retention_hours: 48,
+  },
 };
 
 const manifest = `{
-  "intentfence": "0.5",
-  "subject": "did:web:crew-07",
+  "intentfence": "1.0",
+  "subject": "agent:buyer-07",
   "action": {
-    "type": "travel.booking",
-    "resource": "TLV-LHR"
+    "type": "purchase",
+    "resource": "merchant://orders/42",
+    "protocol": "mcp",
+    "payload_sha256": "<sha256>"
   },
-  "constraints": {
-    "currency": "USD",
-    "cost_ceiling": 500,
-    "quoted_cost": 428.2,
-    "data_retention_hours": 24,
-    "human_approval": "required"
+  "context": { "currency": "USD", "quoted_cost": 79 },
+  "policy": {
+    "allowed_action_types": ["purchase"],
+    "allowed_resources": ["merchant://orders/*"],
+    "max_cost": { "amount": 100, "currency": "USD" }
   },
-  "proofs": ["human_approval"]
+  "enforcement": "verify receipt, then execute locally"
 }`;
 
 export default function Home() {
@@ -46,7 +52,7 @@ export default function Home() {
   const [runState, setRunState] = useState<"idle" | "running" | "complete" | "error">(
     "idle",
   );
-  const [decisionLabel, setDecisionLabel] = useState("READY FOR PREFLIGHT");
+  const [decisionLabel, setDecisionLabel] = useState("READY TO AUTHORIZE");
   const [requestId, setRequestId] = useState("not started");
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -74,14 +80,14 @@ export default function Home() {
     }, 300);
 
     try {
-      const response = await fetch("/api/preflight", {
+      const response = await fetch("/api/actions/authorize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(demoInput),
       });
       const result = (await response.json()) as { request_id?: string; status?: string; message?: string };
       if (!response.ok || !result.status) {
-        throw new Error(result.message || "The preflight API returned an error.");
+        throw new Error(result.message || "The authorization API returned an error.");
       }
       if (timerRef.current !== null) window.clearInterval(timerRef.current);
       timerRef.current = null;
@@ -136,15 +142,15 @@ export default function Home() {
         <div className="hero-copy">
           <div className="eyebrow">
             <span className="eyebrow-mark" aria-hidden="true" />
-            Payment firewall for autonomous AI agents
+            Action firewall for autonomous AI agents
           </div>
-          <h1>Verify an x402 quote matches your payment policy before signing.</h1>
+          <h1>Stop unsafe AI-agent actions before the tool call executes.</h1>
           <p className="hero-intro">
-            Forward the exact x402 challenge your agent just received. IntentFence checks Base USDC, amount, your pre-approved payee list, timeout, transfer metadata, and exact URL binding, then signs the result. It does not verify merchant identity.
+            IntentFence binds the exact action to your allowlist, resource scope, spend ceiling, retention rules, and approval policy. It returns a five-minute signed receipt; your SDK verifies it and fails closed before execution.
           </p>
           <div className="hero-actions">
             <a className="button button-primary" href="#agents">
-              Run the x402 quickstart
+              Run the live authorization
             </a>
             <a className="text-link" href="#manifest">
               Read the open protocol <span aria-hidden="true">↗</span>
@@ -164,8 +170,8 @@ export default function Home() {
               <span>plus A2A 1.0</span>
             </div>
             <div>
-              <strong>x402 + USDC</strong>
-              <span>agents pay directly</span>
+              <strong>Exact action hash</strong>
+              <span>five-minute receipt</span>
             </div>
           </div>
         </div>
@@ -175,7 +181,7 @@ export default function Home() {
           <div className="handshake-card">
             <div className="handshake-topline">
               <span className="live-label">
-                <span aria-hidden="true" /> LIVE GENERAL POLICY PREFLIGHT
+                <span aria-hidden="true" /> LIVE ACTION AUTHORIZATION
               </span>
               <span className="request-id">REQ / {requestId.slice(0, 18)}</span>
             </div>
@@ -183,11 +189,11 @@ export default function Home() {
             <div className="request-heading">
               <div>
                 <span>Incoming agent</span>
-                <h2 id="handshake-title">CREW-07</h2>
+                <h2 id="handshake-title">BUYER-07</h2>
               </div>
               <div>
                 <span>Requested action</span>
-                <strong>Book flight TLV → LHR</strong>
+                <strong>Purchase order 42</strong>
               </div>
             </div>
 
@@ -232,7 +238,7 @@ export default function Home() {
                   ? "Run live check again"
                   : runState === "error"
                     ? "Retry live check"
-                    : "Start live preflight"}
+                    : "Authorize exact action"}
             </button>
           </div>
         </section>
@@ -243,24 +249,24 @@ export default function Home() {
         <div className="protocol-step">
           <span>01</span>
           <div>
-            <h2>Observe</h2>
-            <p>Your agent makes its intended unpaid request and receives the target&apos;s <code>PAYMENT-REQUIRED</code> challenge.</p>
+            <h2>Describe</h2>
+            <p>Your agent hashes the consequential payload and declares the exact tool action, resource, cost, and retention context.</p>
           </div>
         </div>
         <div className="protocol-arrow" aria-hidden="true">→</div>
         <div className="protocol-step">
           <span>02</span>
           <div>
-            <h2>Verify</h2>
-            <p>It forwards that exact challenge; IntentFence checks network, USDC asset, amount, payee, and resource binding without contacting the target.</p>
+            <h2>Authorize</h2>
+            <p>IntentFence checks explicit allowlists and ceilings, then signs the exact action and policy digests for five minutes.</p>
           </div>
         </div>
         <div className="protocol-arrow" aria-hidden="true">→</div>
         <div className="protocol-step">
           <span>03</span>
           <div>
-            <h2>Pay or stop</h2>
-            <p>A signed assessment tells the agent whether to continue, review, or deny the downstream payment.</p>
+            <h2>Execute or stop</h2>
+            <p>The SDK verifies the receipt and re-hashes the action locally. Any mismatch, expiry, review, denial, or outage blocks the tool call.</p>
           </div>
         </div>
       </section>
@@ -298,15 +304,17 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open protocol / v0.11</div>
+          <div className="section-kicker">Open protocol / v0.12</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
-            Forward the caller-observed x402 challenge before signing a payment
-            to a payee already approved by policy, then wrap the downstream tool
-            call with the SDK guard. The action runs only after an allowed decision.
+            Call authorization immediately before a consequential tool. The SDK
+            executes only after verifying the short-lived receipt and confirming
+            that the local action digest still matches.
           </p>
           <div className="endpoint-list" aria-label="Suggested protocol endpoints">
             <div><span>DISCOVER</span><code>GET /.well-known/intentfence.json</code></div>
+            <div><span>SCAN MCP</span><code>POST /api/agent-risk/scan</code></div>
+            <div><span>AUTHORIZE</span><code>POST /api/actions/authorize</code></div>
             <div><span>NEGOTIATE</span><code>POST /api/preflight</code></div>
             <div><span>GET CPI</span><code>GET /api/us-cpi?month=YYYY-MM</code></div>
             <div><span>CHECK WALLET</span><code>GET /api/wallet-risk?address=...</code></div>
@@ -335,14 +343,14 @@ export default function Home() {
 
       <section className="closing">
         <span>THE ACTION LAYER IS ARRIVING</span>
-        <h2>Give every agent a machine-readable answer before it pays: recipient risk, exact quote, signed evidence.</h2>
+        <h2>Give every agent a verifiable boundary before it spends, deploys, sends, or changes anything.</h2>
         <a className="button button-light" href="#pricing">Choose a plan</a>
       </section>
 
       <footer>
         <a className="wordmark wordmark-footer" href="#top">IntentFence<span className="wordmark-dot">.</span></a>
-        <p>Live Base wallet risk, caller-observed x402 quote assessments, and signed payment receipts for autonomous AI.</p>
-            <span>Protocol 0.9 · ES256 receipts · x402 on Base</span>
+        <p>Action-bound authorization, MCP risk scanning, x402 checks, and signed receipts for autonomous AI.</p>
+            <span>Protocol 1.0 · ES256 receipts · fail closed</span>
       </footer>
     </main>
   );

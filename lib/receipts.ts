@@ -1,3 +1,5 @@
+import type { ActionAuthorizationDecision } from "./action-authorization";
+
 const SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 const RECEIPT_AUDIENCE = "intentfence-verifier";
 const RECEIPT_TTL_SECONDS = 86_400;
@@ -124,12 +126,34 @@ export type ReadinessReceiptClaims = Omit<
   };
 };
 
+export type ActionAuthorizationReceiptClaims = {
+  iss: typeof SITE_URL;
+  aud: typeof RECEIPT_AUDIENCE;
+  iat: number;
+  exp: number;
+  jti: string;
+  intentfence_version: "1.0";
+  assurance: "action-bound-policy-authorization";
+  request_id: string;
+  decision: "safe_to_proceed" | "needs_review" | "denied";
+  subject: string;
+  action: ActionAuthorizationDecision["action"];
+  checks: ActionAuthorizationDecision["checks"];
+  evidence: {
+    authorized_at: string;
+    action_digest: string;
+    policy_digest: string;
+    enforcement_mode: "caller-side-fail-closed";
+  };
+};
+
 export type VerifiableReceiptClaims =
   | ReceiptClaims
   | AssessmentReceiptClaims
   | WalletRiskReceiptClaims
   | OfficialDataReceiptClaims
-  | ReadinessReceiptClaims;
+  | ReadinessReceiptClaims
+  | ActionAuthorizationReceiptClaims;
 
 export type SignedReceipt = ReceiptDecision["receipt"] & {
   signed: true;
@@ -180,6 +204,26 @@ export type SignedReadinessReceipt = Omit<
   "assurance" | "note"
 > & {
   assurance: "live-x402-endpoint-readiness";
+  note: string;
+};
+
+export type SignedActionAuthorizationReceipt = Omit<
+  ActionAuthorizationDecision["receipt"],
+  "signed" | "note"
+> & {
+  signed: true;
+  assurance: "action-bound-policy-authorization";
+  expires_at: string;
+  action_digest: string;
+  policy_digest: string;
+  signature: {
+    format: "JWS Compact";
+    alg: "ES256";
+    kid: typeof INTENTFENCE_SIGNING_KID;
+    jws: string;
+    verify_url: string;
+    jwks_url: string;
+  };
   note: string;
 };
 
@@ -634,6 +678,51 @@ export async function createSignedReadinessReceipt(
   };
 }
 
+export async function createSignedActionAuthorizationReceipt(
+  decision: ActionAuthorizationDecision,
+  privateJwk: string,
+): Promise<SignedActionAuthorizationReceipt> {
+  const issuedAtSeconds = Math.floor(new Date(decision.authorized_at).getTime() / 1000);
+  const claims: ActionAuthorizationReceiptClaims = {
+    iss: SITE_URL,
+    aud: RECEIPT_AUDIENCE,
+    iat: issuedAtSeconds,
+    exp: issuedAtSeconds + ASSESSMENT_RECEIPT_TTL_SECONDS,
+    jti: decision.receipt.id,
+    intentfence_version: "1.0",
+    assurance: "action-bound-policy-authorization",
+    request_id: decision.request_id,
+    decision: decision.status,
+    subject: decision.subject,
+    action: decision.action,
+    checks: decision.checks,
+    evidence: {
+      authorized_at: decision.authorized_at,
+      action_digest: decision.action_digest,
+      policy_digest: decision.policy_digest,
+      enforcement_mode: "caller-side-fail-closed",
+    },
+  };
+  const jws = await signReceiptClaims(claims, privateJwk);
+  return {
+    ...decision.receipt,
+    signed: true,
+    assurance: "action-bound-policy-authorization",
+    expires_at: new Date(claims.exp * 1000).toISOString(),
+    action_digest: decision.action_digest,
+    policy_digest: decision.policy_digest,
+    signature: {
+      format: "JWS Compact",
+      alg: "ES256",
+      kid: INTENTFENCE_SIGNING_KID,
+      jws,
+      verify_url: `${SITE_URL}/api/receipts/verify`,
+      jwks_url: `${SITE_URL}/.well-known/jwks.json`,
+    },
+    note: "IntentFence signed the exact action and policy digests for five minutes. The caller must verify this receipt and fail closed before executing the locally bound action. The receipt does not prove the caller-supplied identity or approval source.",
+  };
+}
+
 export async function verifyReceipt(
   jws: string,
   now = Date.now(),
@@ -682,11 +771,18 @@ export async function verifyReceipt(
       claims.intentfence_version === "0.9" &&
       claims.assurance === "live-x402-endpoint-readiness" &&
       isRecord(claims.evidence);
+    const actionAuthorizationReceipt =
+      isRecord(claims) &&
+      claims.intentfence_version === "1.0" &&
+      claims.assurance === "action-bound-policy-authorization" &&
+      isRecord(claims.evidence) &&
+      typeof claims.evidence.action_digest === "string" &&
+      typeof claims.evidence.policy_digest === "string";
     if (
       !isRecord(claims) ||
       claims.iss !== SITE_URL ||
       claims.aud !== RECEIPT_AUDIENCE ||
-      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt && !officialDataReceipt && !readinessReceipt) ||
+      (!policyReceipt && !assessmentReceipt && !walletRiskReceipt && !officialDataReceipt && !readinessReceipt && !actionAuthorizationReceipt) ||
       typeof claims.iat !== "number" ||
       typeof claims.exp !== "number" ||
       typeof claims.jti !== "string" ||
@@ -697,7 +793,7 @@ export async function verifyReceipt(
     const nowSeconds = Math.floor(now / 1000);
     if (claims.iat > nowSeconds + 300) return { valid: false as const, reason: "issued_in_future" };
     if (claims.exp <= nowSeconds) return { valid: false as const, reason: "expired" };
-    const maxLifetime = assessmentReceipt || walletRiskReceipt || readinessReceipt
+    const maxLifetime = assessmentReceipt || walletRiskReceipt || readinessReceipt || actionAuthorizationReceipt
       ? ASSESSMENT_RECEIPT_TTL_SECONDS
       : RECEIPT_TTL_SECONDS;
     if (claims.exp - claims.iat > maxLifetime) {

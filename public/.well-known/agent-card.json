@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
-  "description": "Checks live x402 endpoint readiness without paying targets, assesses observed quotes, and preflights declared agent spend policy.",
-  "version": "0.11.0",
+  "description": "Authorizes exact autonomous-agent actions against explicit policy, returns short-lived signed receipts, and scans MCP tool metadata for high-risk gaps.",
+  "version": "0.12.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
@@ -16,6 +16,24 @@
   "defaultInputModes": ["application/json", "text/plain"],
   "defaultOutputModes": ["application/json", "text/plain"],
   "skills": [
+    {
+      "id": "intentfence-action-authorization",
+      "name": "Fail-closed agent action authorization",
+      "description": "Bind an exact MCP, HTTP, A2A, or payment action to an allowlist, cost ceiling, retention ceiling, and optional action-specific human approval. Returns a five-minute ES256 receipt and never executes the action.",
+      "tags": ["agent-security", "authorization", "policy-enforcement", "MCP", "signed-receipt"],
+      "examples": ["Authorize this exact purchase tool call only if the resource is allowlisted and the quoted cost is at most 100 USD."],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
+    {
+      "id": "intentfence-agent-risk-scan",
+      "name": "MCP metadata risk scan",
+      "description": "Scan caller-supplied MCP tool definitions for missing schemas, conflicting annotations, absent approval binding, and missing cost boundaries without executing tools.",
+      "tags": ["MCP", "agent-security", "risk-scan", "tool-metadata"],
+      "examples": ["Scan these MCP tools and identify consequential actions that lack approval binding."],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
     {
       "id": "intentfence-preflight",
       "name": "Agent payment preflight",

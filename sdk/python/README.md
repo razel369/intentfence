@@ -11,6 +11,28 @@ python -m pip install ./intentfence/sdk/python
 from intentfence import IntentFenceClient
 
 client = IntentFenceClient()
+result = client.run_authorized(
+    {
+        "subject": "agent:buyer-07",
+        "action": {
+            "type": "purchase",
+            "resource": "merchant://orders/42",
+            "protocol": "mcp",
+            "payload_sha256": order_payload_sha256,
+        },
+        "context": {"quoted_cost": 79, "currency": "USD", "data_retention_hours": 24},
+        "policy": {
+            "allowed_action_types": ["purchase"],
+            "allowed_resources": ["merchant://orders/*"],
+            "max_cost": {"amount": 100, "currency": "USD"},
+            "max_data_retention_hours": 48,
+        },
+    },
+    lambda: purchase_order("42"),
+)
+
+# The callback runs only after the SDK verifies the five-minute ES256 receipt
+# and re-hashes the exact action locally.
 result = client.run_guarded(
     {
         "subject": "did:web:my-agent",

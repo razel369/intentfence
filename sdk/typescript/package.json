@@ -1,7 +1,7 @@
 {
   "name": "intentfence",
-  "version": "0.10.0",
-  "description": "IntentFence x402 quote-assessment, spend-policy, and signed-receipt client for AI agent runtimes.",
+  "version": "0.12.0",
+  "description": "Fail-closed action authorization, MCP risk scanning, x402 policy, and signed receipts for AI agent runtimes.",
   "keywords": [
     "ai-agents",
     "mcp",

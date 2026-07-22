@@ -23,6 +23,76 @@ export type IntentFenceDecision = {
   };
 };
 
+export type ActionAuthorizationInput = {
+  subject: string;
+  action: {
+    type: string;
+    resource: string;
+    protocol: "mcp" | "http" | "a2a" | "payment" | "other";
+    method?: string;
+    /** SHA-256 of a consequential payload. Send the digest, never credentials or secrets. */
+    payload_sha256?: string;
+  };
+  context?: { currency?: string; quoted_cost?: number; data_retention_hours?: number };
+  policy: {
+    allowed_action_types: string[];
+    allowed_resources: string[];
+    max_cost?: { amount: number; currency: string };
+    max_data_retention_hours?: number;
+    require_human_approval_for?: string[];
+  };
+  approval?: {
+    approved_by: string;
+    approved_at: string;
+    expires_at: string;
+    action_digest: string;
+    proof_id: string;
+  };
+};
+
+export type ActionAuthorizationDecision = {
+  intentfence: "1.0";
+  request_id: string;
+  status: "safe_to_proceed" | "needs_review" | "denied";
+  authorized_at: string;
+  expires_at: string;
+  action_digest: string;
+  policy_digest: string;
+  subject: string;
+  action: ActionAuthorizationInput["action"];
+  checks: Array<{ name: string; status: "pass" | "review" | "deny"; detail: string }>;
+  enforcement: { mode: "caller-side-fail-closed"; executed: false; instruction: string };
+  receipt: {
+    id: string;
+    signed: true;
+    assurance: "action-bound-policy-authorization";
+    expires_at: string;
+    action_digest: string;
+    policy_digest: string;
+    signature: { jws: string; kid: string; alg: "ES256"; verify_url: string; jwks_url: string };
+    note: string;
+  };
+};
+
+export type AgentRiskScanInput = {
+  server_name: string;
+  tools: Array<{
+    name: string;
+    description?: string;
+    inputSchema?: Record<string, unknown>;
+    annotations?: Record<string, unknown>;
+  }>;
+};
+
+export type AgentRiskScanResult = {
+  intentfence: "scanner-1.0";
+  scan_id: string;
+  score: number;
+  grade: "A" | "B" | "C" | "D" | "F";
+  risk: "low" | "medium" | "high";
+  findings: Array<{ severity: "high" | "medium" | "low"; code: string; tool: string | null; detail: string; remediation: string }>;
+};
+
 export type X402AssessmentInput = {
   subject: string;
   target_url: string;
@@ -165,7 +235,7 @@ export class IntentFenceHttpError extends Error {
 }
 
 export class IntentFenceBlockedError extends Error {
-  constructor(public readonly decision: IntentFenceDecision) {
+  constructor(public readonly decision: IntentFenceDecision | ActionAuthorizationDecision) {
     super(`IntentFence blocked the tool call with status ${decision.status}.`);
     this.name = "IntentFenceBlockedError";
   }
@@ -196,6 +266,30 @@ export class IntentFenceClient {
       throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
     }
     return await response.json() as IntentFenceDecision;
+  }
+
+  async authorizeAction(input: ActionAuthorizationInput) {
+    const response = await this.request(`${this.baseUrl}/api/actions/authorize`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}; fail closed.`, response.status, response);
+    }
+    return await response.json() as ActionAuthorizationDecision;
+  }
+
+  async scanAgentRisk(input: AgentRiskScanInput) {
+    const response = await this.request(`${this.baseUrl}/api/agent-risk/scan`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
+    }
+    return await response.json() as AgentRiskScanResult;
   }
 
   async assessX402(
@@ -288,4 +382,46 @@ export class IntentFenceClient {
       return await toolCall();
     };
   }
+
+  /**
+   * Fail-closed enforcement for consequential actions. IntentFence authorizes
+   * and signs; the supplied callback is the only code that executes the action.
+   */
+  async enforceAction<T>(input: ActionAuthorizationInput, toolCall: () => Promise<T>) {
+    const decision = await this.authorizeAction(input);
+    if (decision.status !== "safe_to_proceed" || !decision.receipt.signed) {
+      throw new IntentFenceBlockedError(decision);
+    }
+    const localDigest = await digestCanonical(input.action);
+    if (localDigest !== decision.action_digest || localDigest !== decision.receipt.action_digest) {
+      throw new IntentFenceBlockedError({ ...decision, status: "denied" });
+    }
+    const verified = await this.verifyReceipt(decision.receipt.signature.jws);
+    const claims = verified.claims;
+    if (!isRecord(claims) || !isRecord(claims.evidence) ||
+        claims.decision !== "safe_to_proceed" ||
+        claims.evidence.action_digest !== localDigest ||
+        claims.assurance !== "action-bound-policy-authorization") {
+      throw new IntentFenceBlockedError({ ...decision, status: "denied" });
+    }
+    return await toolCall();
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (isRecord(value)) {
+    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalize(value[key])]));
+  }
+  return value;
+}
+
+export async function digestCanonical(value: unknown) {
+  const bytes = new TextEncoder().encode(JSON.stringify(canonicalize(value)));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }

@@ -1,11 +1,13 @@
 {
   "name": "IntentFence",
-  "version": "0.11.0",
-  "description": "Live x402 endpoint readiness, signed official U.S. CPI data, Base wallet-risk intelligence, quote assessment, and payment-policy receipts for autonomous AI agents.",
+  "version": "0.12.0",
+  "description": "Fail-closed, action-bound authorization for autonomous AI agents, plus MCP metadata risk scanning, x402 checks, and signed audit receipts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
     "rest": {
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
+      "authorizeAction": "https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize",
+      "agentRiskScan": "https://agentpass-protocol.rmalka06.chatgpt.site/api/agent-risk/scan",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "x402Readiness": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
@@ -48,6 +50,8 @@
         }
       },
       "tools": [
+        "intentfence_authorize_action",
+        "intentfence_agent_risk_scan",
         "intentfence_preflight",
         "intentfence_verified_preflight",
         "intentfence_x402_assessment",
@@ -65,7 +69,7 @@
   "receipts": {
     "format": "JWS Compact",
     "algorithm": "ES256",
-    "assurance": ["declared-input-policy", "caller-observed-x402-quote-assessment", "live-x402-endpoint-readiness", "live-base-wallet-risk", "official-source-data"],
+    "assurance": ["action-bound-policy-authorization", "declared-input-policy", "caller-observed-x402-quote-assessment", "live-x402-endpoint-readiness", "live-base-wallet-risk", "official-source-data"],
     "jwks": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/jwks.json",
     "schema": "https://agentpass-protocol.rmalka06.chatgpt.site/protocol/receipt.schema.json"
   },
@@ -98,5 +102,5 @@
     "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json"
   },
   "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
-  "terms": "The free preflight is unsigned. Live readiness makes one bounded credential-free request, blocks redirects and private-network targets, and never pays the target. Wallet risk uses live Base and third-party intelligence; a low-risk result does not prove identity, ownership, authorization, or future behavior. x402 proves settlement of the IntentFence service fee. Keep independent authorization controls for consequential actions."
+  "terms": "Action authorization signs the exact caller-supplied action and policy for five minutes but never executes it; callers must verify and enforce the receipt locally. The free scanner evaluates supplied MCP metadata only and is not a security certification. Live readiness blocks redirects and private-network targets. Wallet risk does not prove identity, ownership, authorization, or future behavior. x402 proves settlement of the IntentFence service fee."
 }

@@ -7,12 +7,14 @@ globalThis.crypto ??= webcrypto;
 
 const {
   INTENTFENCE_SIGNING_KID,
+  createSignedActionAuthorizationReceipt,
   createSignedOfficialDataReceipt,
   createSignedReadinessReceipt,
   signReceiptClaims,
   validateReceiptSigningKey,
   verifyReceipt,
 } = await import("../lib/receipts.ts");
+const { evaluateActionAuthorization, validateActionAuthorizationInput } = await import("../lib/action-authorization.ts");
 
 async function keyPair() {
   const keys = await webcrypto.subtle.generateKey(
@@ -177,6 +179,22 @@ test("signs and verifies a five-minute live x402 readiness receipt", async () =>
   assert.equal(result.claims.assurance, "live-x402-endpoint-readiness");
   assert.equal(result.claims.decision, "safe_to_proceed");
   assert.equal(result.claims.evidence.payment_requirements_sha256, "a".repeat(64));
+});
+
+test("signs and verifies a five-minute action-bound authorization receipt", async () => {
+  const now = Date.now();
+  const keys = await keyPair();
+  const decision = await evaluateActionAuthorization(validateActionAuthorizationInput({
+    subject: "agent:test",
+    action: { type: "deploy", resource: "cloud://service/api", protocol: "mcp", payload_sha256: "c".repeat(64) },
+    policy: { allowed_action_types: ["deploy"], allowed_resources: ["cloud://service/*"] },
+  }), new Date(now));
+  const receipt = await createSignedActionAuthorizationReceipt(decision, keys.privateJwk);
+  const result = await verifyReceipt(receipt.signature.jws, now, keys.publicJwk);
+  assert.equal(result.valid, true);
+  assert.equal(result.claims.assurance, "action-bound-policy-authorization");
+  assert.equal(result.claims.evidence.action_digest, decision.action_digest);
+  assert.equal(result.claims.decision, "safe_to_proceed");
 });
 
 test("published JWKS contains the production signing key", async () => {

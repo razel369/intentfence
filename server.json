@@ -1,13 +1,13 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.razel369/intentfence",
-  "title": "IntentFence Payment Firewall",
-  "description": "Live x402 readiness, signed CPI, Base wallet risk, quote checks, and payment preflights.",
+  "title": "IntentFence Agent Action Firewall",
+  "description": "Fail-closed action authorization, MCP metadata risk scanning, x402 checks, and signed audit receipts.",
   "repository": {
     "url": "https://github.com/razel369/intentfence",
     "source": "github"
   },
-  "version": "0.11.0",
+  "version": "0.12.0",
   "remotes": [
     {
       "type": "streamable-http",

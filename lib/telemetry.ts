@@ -7,11 +7,15 @@ export const funnelEventStages = {
   discovery_served: "discovery",
   activation_started: "activation",
   preview_completed: "activation",
+  risk_scan_completed: "activation",
+  action_authorized: "activation",
+  action_denied: "activation",
   lead_submitted: "lead",
   lead_rejected: "lead",
   lead_spam_filtered: "lead",
   payment_required: "payment",
   payment_settled: "revenue",
+  payment_verification_settled: "revenue",
   receipt_issued: "revenue",
 } as const satisfies Record<string, FunnelStage>;
 

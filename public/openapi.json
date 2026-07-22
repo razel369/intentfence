@@ -2,14 +2,14 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.11.0",
-    "description": "Inspect live x402 endpoints without paying them, retrieve signed official U.S. CPI data, and guard autonomous agent payments with Base wallet screening, policy checks, and quote assessments. Paid endpoints return ES256-signed receipts.",
+    "version": "0.12.0",
+    "description": "Fail-closed, action-bound authorization for autonomous AI agents, MCP metadata risk scanning, and x402 payment safety with ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
       "identifier": "Apache-2.0"
     },
     "contact": { "url": "https://github.com/razel369/intentfence" },
-    "x-guidance": "Before signing an x402 payment, inspect a live endpoint with /api/x402-readiness, screen its recipient with /api/wallet-risk, or forward an already-observed PAYMENT-REQUIRED header to /api/x402-assessments. Use the free preflight for a declared-input preview."
+    "x-guidance": "Immediately before a consequential MCP, HTTP, A2A, or payment action, call /api/actions/authorize and execute only if the five-minute receipt verifies and its action digest still matches. Use /api/agent-risk/scan for a free metadata-only MCP tool scan."
   },
   "servers": [
     { "url": "https://agentpass-protocol.rmalka06.chatgpt.site" }
@@ -19,6 +19,134 @@
     "llmsTxtUrl": "https://agentpass-protocol.rmalka06.chatgpt.site/llms.txt"
   },
   "paths": {
+    "/api/actions/authorize": {
+      "post": {
+        "operationId": "authorizeAgentAction",
+        "summary": "Authorize an exact AI-agent action and return a short-lived signed receipt",
+        "description": "Evaluates an exact action against explicit action-type and resource allowlists, optional spend and retention ceilings, and optional human approval bound to the action digest. IntentFence never executes the downstream action. The caller must verify and enforce the receipt locally and fail closed on every error or mismatch.",
+        "tags": ["agent-authorization", "policy-enforcement", "MCP", "security"],
+        "security": [],
+        "x-price": "free public preview; commercial private-policy gateway available",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["subject", "action", "policy"],
+                "properties": {
+                  "subject": { "type": "string", "maxLength": 200 },
+                  "action": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["type", "resource", "protocol"],
+                    "properties": {
+                      "type": { "type": "string", "maxLength": 120 },
+                      "resource": { "type": "string", "maxLength": 1000 },
+                      "protocol": { "enum": ["mcp", "http", "a2a", "payment", "other"] },
+                      "method": { "type": "string", "maxLength": 20 },
+                      "payload_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+                    }
+                  },
+                  "context": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "currency": { "type": "string", "maxLength": 12 },
+                      "quoted_cost": { "type": "number", "minimum": 0 },
+                      "data_retention_hours": { "type": "number", "minimum": 0 }
+                    }
+                  },
+                  "policy": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["allowed_action_types", "allowed_resources"],
+                    "properties": {
+                      "allowed_action_types": { "type": "array", "minItems": 1, "maxItems": 50, "uniqueItems": true, "items": { "type": "string" } },
+                      "allowed_resources": { "type": "array", "minItems": 1, "maxItems": 50, "uniqueItems": true, "items": { "type": "string" } },
+                      "max_cost": { "type": "object", "additionalProperties": false, "required": ["amount", "currency"], "properties": { "amount": { "type": "number", "minimum": 0 }, "currency": { "type": "string" } } },
+                      "max_data_retention_hours": { "type": "number", "minimum": 0 },
+                      "require_human_approval_for": { "type": "array", "maxItems": 50, "items": { "type": "string" } }
+                    }
+                  },
+                  "approval": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["approved_by", "approved_at", "expires_at", "action_digest", "proof_id"],
+                    "properties": {
+                      "approved_by": { "type": "string" },
+                      "approved_at": { "type": "string", "format": "date-time" },
+                      "expires_at": { "type": "string", "format": "date-time" },
+                      "action_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+                      "proof_id": { "type": "string" }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "subject": "agent:buyer-07",
+                "action": { "type": "purchase", "resource": "merchant://orders/42", "protocol": "mcp", "method": "POST", "payload_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+                "context": { "quoted_cost": 79, "currency": "USD", "data_retention_hours": 24 },
+                "policy": { "allowed_action_types": ["purchase"], "allowed_resources": ["merchant://orders/*"], "max_cost": { "amount": 100, "currency": "USD" }, "max_data_retention_hours": 48 }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Decision with a five-minute action-bound ES256 receipt" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "429": { "description": "Per-client rate limit exceeded" },
+          "503": { "description": "Authorization or signing unavailable; caller must fail closed" }
+        }
+      }
+    },
+    "/api/agent-risk/scan": {
+      "post": {
+        "operationId": "scanMcpAgentRisk",
+        "summary": "Scan caller-supplied MCP tool metadata for security gaps",
+        "description": "Free heuristic scan of up to 100 MCP tool definitions. It does not contact or execute tools, inspect source code, or certify security or compliance.",
+        "tags": ["MCP", "agent-security", "risk-scan"],
+        "security": [],
+        "x-price": "free",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["server_name", "tools"],
+                "properties": {
+                  "server_name": { "type": "string", "maxLength": 200 },
+                  "tools": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": { "type": "string", "maxLength": 120 },
+                        "description": { "type": "string", "maxLength": 2000 },
+                        "inputSchema": { "type": "object" },
+                        "annotations": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Risk score, grade, findings, limitations, and remediation" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "429": { "description": "Per-client rate limit exceeded" },
+          "503": { "description": "Risk scan unavailable" }
+        }
+      }
+    },
     "/api/preflight": {
       "post": {
         "operationId": "runFreePreflight",

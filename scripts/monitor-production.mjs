@@ -72,10 +72,11 @@ const healthResponse = await fetchWithTimeout(`${baseUrl}/api/health`, {
 assert.equal(healthResponse.status, 200, "health endpoint is not ready");
 const health = await json(healthResponse);
 assert.equal(health.status, "ok");
-assert.equal(health.version, "0.11.0");
+assert.equal(health.version, "0.12.0");
 assert.equal(health.checks.database, true);
 assert.equal(health.checks.revenue_schema, true);
 assert.equal(health.checks.payment_reservation_schema, true);
+assert.equal(health.checks.rate_limit_schema, true);
 assert.equal(health.checks.receipt_signing, true);
 assert.equal(health.checks.x402_configuration.ready, true);
 assert.equal(health.checks.x402_configuration.facilitator_reachable, true);
