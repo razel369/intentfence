@@ -127,19 +127,24 @@ export async function POST(request: NextRequest) {
     await recordFunnelEvent({
       eventName: "payment_required",
       request,
-      metadata: { amount_atomic: INTENTFENCE_PRICE_ATOMIC, protocol: "rest-x402" },
+      metadata: {
+        amount_atomic: INTENTFENCE_PRICE_ATOMIC,
+        protocol: "rest-x402",
+        product: "verified-preflight",
+      },
     });
     return unpaidResponse(request);
   }
 
   if (!(await getReceiptSigningPrivateJwk())) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         error: "signing_temporarily_unavailable",
         message: "Receipt signing is temporarily unavailable; do not submit a payment yet.",
       },
       { status: 503, headers: { ...corsHeaders, "Retry-After": "60" } },
     );
+    return finalizeIntentFenceSettlement(request, response, "verified-preflight");
   }
 
   let response: NextResponse;
@@ -149,7 +154,20 @@ export async function POST(request: NextRequest) {
     console.error("IntentFence x402 initialization retry", {
       error: error instanceof Error ? error.message : "unknown_error",
     });
-    response = await protectedPost(request);
+    try {
+      response = await protectedPost(request);
+    } catch (retryError) {
+      console.error("IntentFence x402 initialization failed", {
+        error: retryError instanceof Error ? retryError.message : "unknown_error",
+      });
+      response = NextResponse.json(
+        {
+          error: "payment_processing_unavailable",
+          message: "The paid preflight could not be initialized; no payment was settled.",
+        },
+        { status: 503, headers: { ...corsHeaders, "Retry-After": "30" } },
+      );
+    }
   }
   return finalizeIntentFenceSettlement(request, response, "verified-preflight");
 }

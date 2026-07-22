@@ -119,7 +119,7 @@ const initialize = await fetch(`${baseUrl}/api/mcp`, {
 });
 assert.equal(initialize.status, 200);
 const initializeBody = await json(initialize);
-assert.equal(initializeBody.result.serverInfo.version, "0.12.0");
+assert.equal(initializeBody.result.serverInfo.version, "0.13.0");
 assert.equal(initializeBody.result.protocolVersion, "2025-06-18");
 assert.equal(initialize.headers.get("mcp-protocol-version"), "2025-06-18");
 

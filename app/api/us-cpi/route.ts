@@ -232,6 +232,13 @@ export async function GET(request: NextRequest) {
   request = normalizeX402PaymentRequest(request);
   const hasPayment =
     request.headers.has("PAYMENT-SIGNATURE") || request.headers.has("X-PAYMENT");
+  const finishPaymentAttempt = (response: NextResponse) =>
+    finalizeIntentFenceSettlement(
+      request,
+      response,
+      "us-cpi",
+      INTENTFENCE_US_CPI_PRICE_ATOMIC,
+    );
   if (!hasPayment) {
     try {
       const input = inputFromRequest(request);
@@ -254,24 +261,24 @@ export async function GET(request: NextRequest) {
   try {
     inputFromRequest(request);
   } catch (error) {
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       400,
       "invalid-cpi-period",
       "Invalid CPI period",
       error instanceof UsCpiValidationError ? error.message : "month must use YYYY-MM.",
-    );
+    ));
   }
 
   if (!(await getReceiptSigningPrivateJwk())) {
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       503,
       "signing-unavailable",
       "Receipt signing unavailable",
       "Receipt signing is temporarily unavailable; do not submit a payment yet.",
       { "Retry-After": "60" },
-    );
+    ));
   }
 
   let response: NextResponse;
@@ -286,14 +293,14 @@ export async function GET(request: NextRequest) {
     console.error("IntentFence official U.S. CPI payment processing failed", {
       error: error instanceof Error ? error.message : "unknown_error",
     });
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       503,
       "payment-processing-unavailable",
       "Payment processing unavailable",
       "The official CPI request could not be initialized; no payment was settled.",
       { "Retry-After": "30" },
-    );
+    ));
   }
 
   const reservationHash = reservationByRequest.get(request);
@@ -315,10 +322,5 @@ export async function GET(request: NextRequest) {
     await releaseReservationQuietly(reservationHash, "settlement_not_confirmed");
   }
 
-  return finalizeIntentFenceSettlement(
-    request,
-    response,
-    "us-cpi",
-    INTENTFENCE_US_CPI_PRICE_ATOMIC,
-  );
+  return finishPaymentAttempt(response);
 }

@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Fail-closed, action-bound authorization for autonomous AI agents, plus MCP metadata risk scanning, x402 checks, and signed audit receipts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {

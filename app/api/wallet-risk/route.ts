@@ -228,13 +228,21 @@ export function OPTIONS() {
 
 export async function GET(request: NextRequest) {
   request = normalizeX402PaymentRequest(request);
-  if (!request.headers.has("PAYMENT-SIGNATURE") && !request.headers.has("X-PAYMENT")) {
+  const hasPayment =
+    request.headers.has("PAYMENT-SIGNATURE") || request.headers.has("X-PAYMENT");
+  const finishPaymentAttempt = (response: NextResponse) =>
+    finalizeIntentFenceSettlement(
+      request,
+      response,
+      "wallet-risk",
+      INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+    );
+  if (!hasPayment) {
     try {
-      const address = addressFromRequest(request);
+      addressFromRequest(request);
       await recordFunnelEvent({
         eventName: "payment_required",
         request,
-        subject: address,
         metadata: {
           amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
           protocol: "rest-x402",
@@ -251,7 +259,7 @@ export async function GET(request: NextRequest) {
   try {
     addressFromRequest(request);
   } catch (error) {
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       400,
       "invalid-wallet-address",
@@ -259,18 +267,18 @@ export async function GET(request: NextRequest) {
       error instanceof WalletRiskValidationError
         ? error.message
         : "address must be a 20-byte EVM address.",
-    );
+    ));
   }
 
   if (!(await getReceiptSigningPrivateJwk())) {
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       503,
       "signing-unavailable",
       "Receipt signing unavailable",
       "Receipt signing is temporarily unavailable; do not submit a payment yet.",
       { "Retry-After": "60" },
-    );
+    ));
   }
 
   let response: NextResponse;
@@ -285,14 +293,14 @@ export async function GET(request: NextRequest) {
     console.error("IntentFence wallet-risk payment processing failed", {
       error: error instanceof Error ? error.message : "unknown_error",
     });
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       503,
       "payment-processing-unavailable",
       "Payment processing unavailable",
       "The wallet-risk assessment could not be initialized; no payment was settled.",
       { "Retry-After": "30" },
-    );
+    ));
   }
 
   const reservationHash = reservationByRequest.get(request);
@@ -301,10 +309,5 @@ export async function GET(request: NextRequest) {
     await releaseReservationQuietly(reservationHash, "settlement_not_confirmed");
   }
 
-  return finalizeIntentFenceSettlement(
-    request,
-    response,
-    "wallet-risk",
-    INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
-  );
+  return finishPaymentAttempt(response);
 }

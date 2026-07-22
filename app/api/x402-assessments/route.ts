@@ -245,6 +245,12 @@ export function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   request = normalizeX402PaymentRequest(request);
+  const hasPayment =
+    request.headers.has("PAYMENT-SIGNATURE") || request.headers.has("X-PAYMENT");
+  const finishPaymentAttempt = (response: NextResponse) =>
+    hasPayment
+      ? finalizeIntentFenceSettlement(request, response, "x402-assessment")
+      : response;
   // Validate the bounded, caller-supplied quote before asking for payment. The
   // paid handler validates the original request again after x402 verification.
   try {
@@ -253,33 +259,33 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof JsonRequestError) {
-      return problem(
+      return finishPaymentAttempt(problem(
         request,
         error.status,
         error.code.replaceAll("_", "-"),
         "Invalid request body",
         error.message,
-      );
+      ));
     }
     if (error instanceof X402AssessmentValidationError) {
-      return problem(
+      return finishPaymentAttempt(problem(
         request,
         400,
         "invalid-x402-assessment",
         "Invalid x402 assessment",
         error.message,
-      );
+      ));
     }
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       400,
       "invalid-x402-assessment",
       "Invalid x402 assessment",
       "The x402 assessment request could not be validated.",
-    );
+    ));
   }
 
-  if (!request.headers.has("PAYMENT-SIGNATURE") && !request.headers.has("X-PAYMENT")) {
+  if (!hasPayment) {
     await recordFunnelEvent({
       eventName: "payment_required",
       request,
@@ -293,14 +299,14 @@ export async function POST(request: NextRequest) {
   }
 
   if (!(await getReceiptSigningPrivateJwk())) {
-    return problem(
+    return finishPaymentAttempt(problem(
       request,
       503,
       "signing-unavailable",
       "Receipt signing unavailable",
       "Receipt signing is temporarily unavailable; do not submit a payment yet.",
       { "Retry-After": "60" },
-    );
+    ));
   }
 
   let response: NextResponse;
@@ -311,14 +317,14 @@ export async function POST(request: NextRequest) {
     if (activeReservation) {
       reservationByRequest.delete(request);
       await releaseReservationQuietly(activeReservation, "protected_handler_threw");
-      return problem(
+      return finishPaymentAttempt(problem(
         request,
         503,
         "payment-processing-unavailable",
         "Payment processing unavailable",
         "The assessment could not be completed; no payment was settled.",
         { "Retry-After": "30" },
-      );
+      ));
     }
     console.error("IntentFence x402 assessment initialization retry", {
       error: error instanceof Error ? error.message : "unknown_error",
@@ -329,14 +335,14 @@ export async function POST(request: NextRequest) {
       console.error("IntentFence x402 assessment initialization failed", {
         error: retryError instanceof Error ? retryError.message : "unknown_error",
       });
-      return problem(
+      return finishPaymentAttempt(problem(
         request,
         503,
         "payment-processing-unavailable",
         "Payment processing unavailable",
         "The assessment could not be initialized; no payment was settled.",
         { "Retry-After": "30" },
-      );
+      ));
     }
   }
 
@@ -346,5 +352,5 @@ export async function POST(request: NextRequest) {
     await releaseReservationQuietly(reservationHash, "settlement_not_confirmed");
   }
 
-  return finalizeIntentFenceSettlement(request, response, "x402-assessment");
+  return finishPaymentAttempt(response);
 }

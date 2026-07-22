@@ -25,7 +25,7 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.12 protocol entry points in the site", async () => {
+test("publishes the IntentFence 0.13 protocol entry points in the site", async () => {
   const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, readinessRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
@@ -50,7 +50,7 @@ test("publishes the IntentFence 0.12 protocol entry points in the site", async (
   ]);
 
   assert.match(layout, /IntentFence/);
-  assert.match(page, /Open protocol \/ v0\.12/);
+  assert.match(page, /Open protocol \/ v0\.13/);
   assert.match(page, /POST \/api\/actions\/authorize/);
   assert.match(growth, /\/api\/agent-risk\/scan/);
   assert.match(page, /POST \/api\/receipts\/verify/);
@@ -82,7 +82,7 @@ test("publishes the IntentFence 0.12 protocol entry points in the site", async (
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
   assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
-  assert.equal(manifest.version, "0.12.0");
+  assert.equal(manifest.version, "0.13.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
@@ -106,7 +106,7 @@ test("publishes the IntentFence 0.12 protocol entry points in the site", async (
     manifest.interfaces.mcp.stdio.autoPayment.policy.payTo,
     "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
   );
-  assert.equal(agentCard.version, "0.12.0");
+  assert.equal(agentCard.version, "0.13.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);

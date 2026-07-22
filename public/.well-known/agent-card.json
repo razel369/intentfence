@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
   "description": "Authorizes exact autonomous-agent actions against explicit policy, returns short-lived signed receipts, and scans MCP tool metadata for high-risk gaps.",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",

@@ -149,7 +149,16 @@ export function OPTIONS() {
 
 export async function POST(request: NextRequest) {
   request = normalizeX402PaymentRequest(request);
-  if (!request.headers.has("PAYMENT-SIGNATURE") && !request.headers.has("X-PAYMENT")) {
+  const hasPayment =
+    request.headers.has("PAYMENT-SIGNATURE") || request.headers.has("X-PAYMENT");
+  const finishPaymentAttempt = (response: NextResponse) =>
+    finalizeIntentFenceSettlement(
+      request,
+      response,
+      "x402-readiness",
+      INTENTFENCE_READINESS_PRICE_ATOMIC,
+    );
+  if (!hasPayment) {
     try {
       const input = await parseInput(request);
       await recordFunnelEvent({
@@ -167,11 +176,11 @@ export async function POST(request: NextRequest) {
   try {
     await parseInput(request);
   } catch (error) {
-    if (error instanceof JsonRequestError) return problem(request, error.status, error.code, "Invalid JSON request", error.message);
-    return problem(request, 400, "invalid-readiness-request", "Invalid readiness request", error instanceof Error ? error.message : "The request is invalid.");
+    if (error instanceof JsonRequestError) return finishPaymentAttempt(problem(request, error.status, error.code, "Invalid JSON request", error.message));
+    return finishPaymentAttempt(problem(request, 400, "invalid-readiness-request", "Invalid readiness request", error instanceof Error ? error.message : "The request is invalid."));
   }
   if (!(await getReceiptSigningPrivateJwk())) {
-    return problem(request, 503, "signing-unavailable", "Receipt signing unavailable", "Receipt signing is temporarily unavailable; do not submit a payment yet.", { "Retry-After": "60" });
+    return finishPaymentAttempt(problem(request, 503, "signing-unavailable", "Receipt signing unavailable", "Receipt signing is temporarily unavailable; do not submit a payment yet.", { "Retry-After": "60" }));
   }
 
   let response: NextResponse;
@@ -184,10 +193,10 @@ export async function POST(request: NextRequest) {
       await releaseReservationQuietly(activeReservation, "protected_handler_threw");
     }
     console.error("IntentFence readiness payment processing failed", { error: error instanceof Error ? error.message : "unknown_error" });
-    return problem(request, 503, "payment-processing-unavailable", "Payment processing unavailable", "The readiness check could not be initialized; no payment was settled.", { "Retry-After": "30" });
+    return finishPaymentAttempt(problem(request, 503, "payment-processing-unavailable", "Payment processing unavailable", "The readiness check could not be initialized; no payment was settled.", { "Retry-After": "30" }));
   }
   const reservationHash = reservationByRequest.get(request);
   reservationByRequest.delete(request);
   if (reservationHash && !isSuccessfulX402Settlement(response)) await releaseReservationQuietly(reservationHash, "settlement_not_confirmed");
-  return finalizeIntentFenceSettlement(request, response, "x402-readiness", INTENTFENCE_READINESS_PRICE_ATOMIC);
+  return finishPaymentAttempt(response);
 }

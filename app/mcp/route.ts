@@ -423,7 +423,7 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.12.0" },
+      serverInfo: { name: "IntentFence", version: "0.13.0" },
       instructions: "Use intentfence_authorize_action immediately before a consequential tool call and execute only when its short-lived, action-bound receipt verifies. Use intentfence_agent_risk_scan to inspect MCP metadata. The authorization service never executes the downstream action. x402 readiness, wallet risk, quote assessment, verified preflight, and official data remain paid tools.",
     }, protocolVersion);
   }

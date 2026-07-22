@@ -1,5 +1,6 @@
 import { getDb } from "../db";
 import { paymentAudits } from "../db/schema";
+import { classifyPaymentVerificationFailure } from "./payment-funnel";
 import { recordFunnelEvent } from "./telemetry";
 import {
   INTENTFENCE_ASSET,
@@ -25,8 +26,42 @@ export async function finalizeIntentFenceSettlement(
   const settlementResponse = response.headers.get("PAYMENT-RESPONSE");
   const requestId = response.headers.get("X-IntentFence-Request-ID");
   const sourceKind = classifySettlementSource(request);
+  const hasPaymentSignature = Boolean(
+    request.headers.get("PAYMENT-SIGNATURE") ?? request.headers.get("X-PAYMENT"),
+  );
+  const settlementSucceeded = isSuccessfulX402Settlement(response);
 
-  if (settlementResponse && requestId && isSuccessfulX402Settlement(response)) {
+  if (hasPaymentSignature) {
+    await recordFunnelEvent({
+      eventName: "payment_signature_received",
+      request,
+      requestId,
+      metadata: {
+        amount_atomic: amountAtomic,
+        protocol: "x402-v2",
+        product,
+        source_kind: sourceKind,
+      },
+    });
+    await recordFunnelEvent({
+      eventName: settlementSucceeded
+        ? "payment_verification_succeeded"
+        : "payment_verification_failed",
+      request,
+      requestId,
+      metadata: {
+        amount_atomic: amountAtomic,
+        protocol: "x402-v2",
+        product,
+        source_kind: sourceKind,
+        ...(settlementSucceeded
+          ? {}
+          : { reason: classifyPaymentVerificationFailure(response) }),
+      },
+    });
+  }
+
+  if (settlementResponse && requestId && settlementSucceeded) {
     let auditWritten = false;
     try {
       const decodedSettlement = decodeX402Header(settlementResponse);
