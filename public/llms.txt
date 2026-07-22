@@ -11,6 +11,7 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
+- Commercial pilot offer: read `commercial_offer` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Capped Agentic Wallet checkout: read `buyer_quickstart` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Pinned Coinbase AgentKit checkout: https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
@@ -45,6 +46,10 @@ Assessment input fields are `subject`, `target_url`, optional `method` (`GET`, `
 Every advertised payment option must pass every automatic check. Mixed safe and unsafe option sets are denied.
 
 IntentFence never needs a wallet private key and cannot initiate transfers from a payer wallet.
+
+## Commercial deployment
+
+Teams can request a scoped paid integration pilot for one production agent-payment workflow. The published starting price is $3,000 for implementation plus $750 per month after written production activation acceptance. No automatic charge is made from this discovery document or application form. Read `commercial_offer` from `GET /api/payments`, then apply with `POST /api/leads` using plan `pilot`; a human must agree to the written scope, success criteria, and billing terms before work or recurring billing starts.
 
 ## Decision semantics
 

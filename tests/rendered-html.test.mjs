@@ -255,6 +255,26 @@ test("publishes a directly executable and strictly capped agent checkout", async
   assert.match(readme, /--max-amount 5000/u);
 });
 
+test("publishes a priced commercial pilot without automatic billing", async () => {
+  const [paymentRoute, growth, llms, layout] = await Promise.all([
+    source("app/api/payments/route.ts"),
+    source("app/GrowthSections.tsx"),
+    source("public/llms.txt"),
+    source("app/layout.tsx"),
+  ]);
+
+  assert.match(paymentRoute, /commercial_offer/u);
+  assert.match(paymentRoute, /setup_fee: \{ amount: 3000, currency: "USD" \}/u);
+  assert.match(paymentRoute, /amount: 750/u);
+  assert.match(paymentRoute, /no automatic charge before written scope/u);
+  assert.match(growth, /Paid Integration Pilot/u);
+  assert.match(growth, /\$3,000/u);
+  assert.match(growth, /\$750\/month/u);
+  assert.match(llms, /Commercial deployment/u);
+  assert.match(llms, /No automatic charge/u);
+  assert.match(layout, /Paid Integration Pilot/u);
+});
+
 test("publishes a quote-pinned Coinbase AgentKit adapter", async () => {
   const [adapter, adapterReadme, paymentRoute, growth, manifest, integration, llms, readme] = await Promise.all([
     source("integrations/coinbase-agentkit/intentfence-checkout.ts"),

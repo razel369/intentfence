@@ -103,15 +103,15 @@ const plans = [
   },
   {
     key: "pilot",
-    name: "Founding Integration",
-    price: "Apply",
-    note: "one guarded payment workflow",
+    name: "Paid Integration Pilot",
+    price: "$3,000",
+    note: "setup + $750/month after production activation",
     features: [
-      "30-day design-partner trial",
+      "30-day implementation pilot",
       "One payment-provider adapter",
       "Spend and exception policy",
       "Approval and audit workflow",
-      "Pricing agreed before activation",
+      "Written scope and success criteria before billing",
     ],
   },
 ];
@@ -406,19 +406,19 @@ export default function GrowthSections() {
               ) : item.key === "cpi" || item.key === "verified" || item.key === "quote" ? (
                 <a className="plan-button" href="#agent-wallet-checkout">Copy the capped checkout</a>
               ) : (
-                <button className="plan-button" onClick={() => selectPlan(item.key)}>Request founding access</button>
+                <button className="plan-button" onClick={() => selectPlan(item.key)}>Request the paid pilot</button>
               )}
             </article>
           ))}
         </div>
-        <p className="pricing-note">The 0.001, 0.002 and 0.005 USDC endpoints are live. Founding Integration is an application, not a checkout; no subscription is charged before scope and success criteria are agreed.</p>
+        <p className="pricing-note">The 0.001, 0.002 and 0.005 USDC endpoints are live. The paid pilot is a scoped business engagement, not an instant checkout; no setup or recurring fee is charged before written scope and success criteria are agreed.</p>
       </section>
 
       <section className="founding-section" id="founding-access">
         <div>
-          <div className="section-kicker">Founding integration program</div>
-          <h2>Bring one AI-agent payment that needs a hard boundary.</h2>
-          <p>We will define its merchant, amount, purpose, and exception rules, then put the guard directly before the payment call.</p>
+          <div className="section-kicker">Paid integration pilot</div>
+          <h2>Put one production AI-agent payment behind a hard boundary.</h2>
+          <p>$3,000 covers the scoped implementation. After production activation, monitoring and policy support are $750 per month. We define the merchant, amount, purpose, approval path, and exception rules before billing starts.</p>
         </div>
         <form onSubmit={submitLead}>
           <label>
@@ -436,7 +436,7 @@ export default function GrowthSections() {
           <label>
             Plan
             <select value={plan} onChange={(event) => setPlan(event.target.value)}>
-              <option value="pilot">Founding Integration - apply</option>
+              <option value="pilot">Paid Integration Pilot - $3,000 setup</option>
               <option value="enterprise">Private deployment - discuss</option>
             </select>
           </label>
@@ -445,10 +445,10 @@ export default function GrowthSections() {
             <input name="website" type="text" tabIndex={-1} autoComplete="off" />
           </label>
           <button className="button button-primary" disabled={state === "submitting"}>
-            {state === "submitting" ? "Saving..." : "Apply for founding integration"}
+            {state === "submitting" ? "Saving..." : "Request the paid integration pilot"}
           </button>
           <p className={`form-message ${state}`} aria-live="polite">
-            {message || "No card required. We will contact you only about this integration application."}
+            {message || "No payment is collected here. We will contact you only to confirm fit, written scope, success criteria, and billing terms."}
           </p>
         </form>
       </section>
