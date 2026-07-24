@@ -126,6 +126,28 @@ export type AgentRiskScanResult = {
         remediation: string;
     }>;
 };
+export type PolicyPackInput = {
+    project_name: string;
+    runtime: "cloudflare-agents" | "coinbase-agentkit" | "mcp-gateway";
+    authorization: ActionAuthorizationInput;
+};
+export type PolicyPackResult = {
+    intentfence: "policy-pack-1.0";
+    pack_id: string;
+    project_name: string;
+    runtime: PolicyPackInput["runtime"];
+    generated_at: string;
+    verification_tier: "production-policy-pack+x402-settled";
+    decision: Record<string, unknown>;
+    integration: {
+        language: "typescript";
+        filename: string;
+        source: string;
+        placement: string;
+    };
+    tests: Record<string, unknown>;
+    deployment_checklist: string[];
+};
 export type X402AssessmentInput = {
     subject: string;
     target_url: string;
@@ -306,6 +328,9 @@ export declare class IntentFenceClient {
     }): Promise<IntentFenceDecision>;
     authorizeAction(input: ActionAuthorizationInput): Promise<ActionAuthorizationDecision>;
     scanAgentRisk(input: AgentRiskScanInput): Promise<AgentRiskScanResult>;
+    createPolicyPack(input: PolicyPackInput, options?: {
+        paymentSignature?: string;
+    }): Promise<PolicyPackResult>;
     assessX402(input: X402AssessmentInput, options?: {
         paymentSignature?: string;
     }): Promise<X402AssessmentDecision>;

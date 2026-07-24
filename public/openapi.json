@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.13.0",
+    "version": "0.14.0",
     "description": "Fail-closed, action-bound authorization for autonomous AI agents, MCP metadata risk scanning, and x402 payment safety with ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
@@ -267,6 +267,120 @@
           "400": { "$ref": "#/components/responses/InvalidRequest" },
           "413": { "description": "JSON body exceeds 16 KiB; a verified payment is not settled" },
           "415": { "description": "Unsupported content type; a verified payment is not settled" }
+        }
+      }
+    },
+    "/api/policy-packs": {
+      "post": {
+        "operationId": "createProductionPolicyPack",
+        "summary": "Buy a self-service production guard for an exact agent action",
+        "description": "Validates one exact action and policy, then returns a runtime-specific TypeScript fail-closed guard, a five-minute ES256 action receipt, negative test vectors, and a deployment checklist. Supports Cloudflare Agents, Coinbase AgentKit, and generic MCP gateways. Costs exactly 1 USDC through x402 on Base; no account, API key, email, meeting, or sales call is required.",
+        "tags": ["agent-policy", "authorization", "integration", "mcp", "x402", "agent-commerce"],
+        "security": [],
+        "x-payment-info": {
+          "price": { "mode": "fixed", "currency": "USD", "amount": "1.00" },
+          "protocols": [
+            {
+              "x402": {
+                "version": 2,
+                "network": "eip155:8453",
+                "asset": "USDC",
+                "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+              }
+            }
+          ]
+        },
+        "x-x402-price": "$1.00",
+        "x-x402": {
+          "version": 2,
+          "scheme": "exact",
+          "price": "1 USDC",
+          "network": "eip155:8453",
+          "asset": "USDC",
+          "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+        },
+        "parameters": [
+          {
+            "name": "PAYMENT-SIGNATURE",
+            "in": "header",
+            "required": false,
+            "description": "Base64-encoded x402 v2 payment payload. Omit on the first call to receive PAYMENT-REQUIRED.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["project_name", "runtime", "authorization"],
+                "properties": {
+                  "project_name": { "type": "string", "minLength": 1, "maxLength": 120 },
+                  "runtime": {
+                    "type": "string",
+                    "enum": ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"]
+                  },
+                  "authorization": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Production policy pack generated and the IntentFence fee settled",
+            "headers": {
+              "PAYMENT-RESPONSE": {
+                "description": "Base64-encoded x402 settlement result.",
+                "schema": { "type": "string" }
+              },
+              "X-IntentFence-Request-ID": {
+                "description": "IntentFence audit correlation identifier.",
+                "schema": { "type": "string", "format": "uuid" }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["intentfence", "runtime", "verification_tier", "decision", "integration", "tests", "deployment_checklist"],
+                  "properties": {
+                    "intentfence": { "type": "string", "const": "policy-pack-1.0" },
+                    "runtime": {
+                      "type": "string",
+                      "enum": ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"]
+                    },
+                    "verification_tier": {
+                      "type": "string",
+                      "const": "production-policy-pack+x402-settled"
+                    },
+                    "decision": { "type": "object" },
+                    "integration": { "type": "object" },
+                    "tests": { "type": "object" },
+                    "deployment_checklist": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment is required or the supplied payment could not be verified",
+            "headers": {
+              "PAYMENT-REQUIRED": {
+                "description": "Base64-encoded x402 v2 payment requirements for 1 USDC.",
+                "required": true,
+                "schema": { "type": "string" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "413": { "description": "JSON body exceeds 16 KiB; no payment is settled" },
+          "415": { "description": "Unsupported content type; no payment is settled" }
         }
       }
     },

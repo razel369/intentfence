@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Fail-closed, action-bound authorization for autonomous AI agents, plus MCP metadata risk scanning, x402 checks, and signed audit receipts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
@@ -8,6 +8,7 @@
       "free": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight",
       "authorizeAction": "https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize",
       "agentRiskScan": "https://agentpass-protocol.rmalka06.chatgpt.site/api/agent-risk/scan",
+      "policyPack": "https://agentpass-protocol.rmalka06.chatgpt.site/api/policy-packs",
       "verified": "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
       "x402Assessment": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "x402Readiness": "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
@@ -52,6 +53,7 @@
       "tools": [
         "intentfence_authorize_action",
         "intentfence_agent_risk_scan",
+        "intentfence_policy_pack",
         "intentfence_preflight",
         "intentfence_verified_preflight",
         "intentfence_x402_assessment",
@@ -59,7 +61,7 @@
         "intentfence_wallet_risk",
         "intentfence_us_cpi"
       ],
-      "paidTools": ["intentfence_verified_preflight", "intentfence_x402_assessment", "intentfence_x402_readiness", "intentfence_wallet_risk", "intentfence_us_cpi"]
+      "paidTools": ["intentfence_policy_pack", "intentfence_verified_preflight", "intentfence_x402_assessment", "intentfence_x402_readiness", "intentfence_wallet_risk", "intentfence_us_cpi"]
     },
     "a2a": {
       "protocolVersion": "1.0",
@@ -79,14 +81,16 @@
     "scheme": "exact",
     "endpoints": [
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/policy-packs",
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
       "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
-      "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk"
-      ,"https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
+      "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
     ],
     "price": "0.005 USDC",
     "amountAtomic": "5000",
     "offers": [
+      { "endpoint": "/api/policy-packs", "method": "POST", "price": "1 USDC", "amountAtomic": "1000000" },
       { "endpoint": "/api/us-cpi", "method": "GET", "price": "0.001 USDC", "amountAtomic": "1000" },
       { "endpoint": "/api/wallet-risk", "method": "GET", "price": "0.002 USDC", "amountAtomic": "2000" },
       { "endpoint": "/api/x402-readiness", "method": "POST", "price": "0.002 USDC", "amountAtomic": "2000" },

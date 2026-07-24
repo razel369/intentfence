@@ -27,7 +27,13 @@ import {
   validateUsCpiInput,
 } from "../../lib/us-cpi";
 import {
+  policyPackInputSchema,
+  PolicyPackValidationError,
+  validatePolicyPackInput,
+} from "../../lib/policy-pack";
+import {
   createIntentFencePaymentRequired,
+  createPolicyPackPaymentRequired,
   createUsCpiPaymentRequired,
   createWalletRiskPaymentRequired,
   createX402AssessmentPaymentRequired,
@@ -178,8 +184,16 @@ async function callPaidIntentFenceTool(
   input: unknown,
   payment: Record<string, unknown>,
   options: {
-    path: "/api/preflight/verified" | "/api/x402-assessments" | "/api/x402-readiness";
-    source: "mcp" | "mcp-x402-assessment" | "mcp-x402-readiness";
+    path:
+      | "/api/preflight/verified"
+      | "/api/x402-assessments"
+      | "/api/x402-readiness"
+      | "/api/policy-packs";
+    source:
+      | "mcp"
+      | "mcp-x402-assessment"
+      | "mcp-x402-readiness"
+      | "mcp-policy-pack";
     invalidResponseMessage: string;
     failedMessage: string;
     paymentRequired: (resourceUrl: string, error?: string) => Record<string, unknown>;
@@ -271,6 +285,20 @@ function callX402Readiness(
     invalidResponseMessage: "The x402 endpoint readiness service returned invalid JSON.",
     failedMessage: "The x402 endpoint readiness check could not be processed.",
     paymentRequired: createX402ReadinessPaymentRequired,
+  });
+}
+
+function callPolicyPack(
+  request: Request,
+  input: ReturnType<typeof validatePolicyPackInput>,
+  payment: Record<string, unknown>,
+) {
+  return callPaidIntentFenceTool(request, input, payment, {
+    path: "/api/policy-packs",
+    source: "mcp-policy-pack",
+    invalidResponseMessage: "The production policy pack returned invalid JSON.",
+    failedMessage: "The production policy pack could not be generated.",
+    paymentRequired: createPolicyPackPaymentRequired,
   });
 }
 
@@ -423,8 +451,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.13.0" },
-      instructions: "Use intentfence_authorize_action immediately before a consequential tool call and execute only when its short-lived, action-bound receipt verifies. Use intentfence_agent_risk_scan to inspect MCP metadata. The authorization service never executes the downstream action. x402 readiness, wallet risk, quote assessment, verified preflight, and official data remain paid tools.",
+      serverInfo: { name: "IntentFence", version: "0.14.0" },
+      instructions: "Use intentfence_authorize_action immediately before a consequential tool call and execute only when its short-lived, action-bound receipt verifies. Use intentfence_agent_risk_scan to inspect MCP metadata. The authorization service never executes the downstream action. Production policy packs, x402 readiness, wallet risk, quote assessment, verified preflight, and official data remain paid tools.",
     }, protocolVersion);
   }
 
@@ -434,7 +462,7 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 8 },
+      metadata: { protocol: "mcp", tools: 9 },
     });
     return jsonRpc(request, body.id, {
       tools: [
@@ -458,6 +486,13 @@ export async function POST(request: Request) {
           description: "Free declared-input preview with no signed receipt, authorization proof, or enforcement guarantee. Returns safe_to_proceed, needs_review, or denied.",
           inputSchema: preflightInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+        },
+        {
+          name: "intentfence_policy_pack",
+          title: "IntentFence Production Policy Pack",
+          description: "Paid self-service integration pack (1 USDC on Base). Generates a runtime-specific TypeScript guard, signed action and policy receipt, negative test vectors, and a fail-closed deployment checklist for Cloudflare Agents, Coinbase AgentKit, or an MCP gateway. No meeting or account is required.",
+          inputSchema: policyPackInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
         },
         {
           name: "intentfence_verified_preflight",
@@ -505,6 +540,7 @@ export async function POST(request: Request) {
       toolName !== "intentfence_preflight" &&
       toolName !== "intentfence_authorize_action" &&
       toolName !== "intentfence_agent_risk_scan" &&
+      toolName !== "intentfence_policy_pack" &&
       toolName !== "intentfence_verified_preflight" &&
       toolName !== "intentfence_x402_assessment" &&
       toolName !== "intentfence_x402_readiness" &&
@@ -567,6 +603,27 @@ export async function POST(request: Request) {
           structuredContent: result,
           isError: false,
         });
+      }
+
+      if (toolName === "intentfence_policy_pack") {
+        const input = validatePolicyPackInput(toolParams.arguments ?? {});
+        const payment = x402PaymentFromParams(toolParams);
+        if (!payment) {
+          const paidEndpoint = new URL("/api/policy-packs", request.url).toString();
+          const paymentRequired = createPolicyPackPaymentRequired(paidEndpoint);
+          await recordFunnelEvent({
+            eventName: "payment_required",
+            request,
+            subject: input.authorization.subject,
+            metadata: {
+              protocol: "mcp-x402",
+              product: "policy-pack",
+              runtime: input.runtime,
+            },
+          });
+          return jsonRpc(request, body.id, toolError("Payment required", paymentRequired));
+        }
+        return jsonRpc(request, body.id, await callPolicyPack(request, input, payment));
       }
 
       if (toolName === "intentfence_us_cpi") {
@@ -675,6 +732,7 @@ export async function POST(request: Request) {
           error instanceof WalletRiskValidationError ||
           error instanceof UsCpiValidationError ||
           error instanceof ActionAuthorizationValidationError ||
+          error instanceof PolicyPackValidationError ||
           error instanceof AgentRiskScanValidationError
         ? error.message
         : "The IntentFence request could not be processed.";

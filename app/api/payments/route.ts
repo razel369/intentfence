@@ -5,6 +5,8 @@ import {
   INTENTFENCE_NETWORK,
   INTENTFENCE_NETWORK_NAME,
   INTENTFENCE_PAY_TO,
+  INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
+  INTENTFENCE_POLICY_PACK_PRICE_USD,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
   INTENTFENCE_READINESS_PRICE_ATOMIC,
@@ -16,6 +18,7 @@ import {
 } from "../../../lib/x402";
 import { AGENTIC_WALLET_CHECKOUT } from "../../../lib/agentic-wallet-checkout";
 import { COINBASE_AGENTKIT_CHECKOUT } from "../../../lib/coinbase-agentkit-checkout";
+import { POLICY_PACK_CHECKOUT } from "../../../lib/policy-pack-checkout";
 
 export function GET() {
   return Response.json(
@@ -25,6 +28,15 @@ export function GET() {
       status: "live",
       endpoint: "/api/preflight/verified",
       endpoints: [
+        {
+          path: "/api/policy-packs",
+          method: "POST",
+          product: "production-policy-pack",
+          price: INTENTFENCE_POLICY_PACK_PRICE_USD,
+          amount_atomic: INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
+          recommended_for:
+            "a self-service, runtime-specific production guard with signed policy evidence, negative tests, and a fail-closed deployment checklist",
+        },
         {
           path: "/api/us-cpi?month={YYYY-MM}",
           method: "GET",
@@ -82,33 +94,40 @@ export function GET() {
         "Retry with PAYMENT-SIGNATURE; a successful response includes PAYMENT-RESPONSE.",
       ],
       buyer_quickstart: AGENTIC_WALLET_CHECKOUT,
+      policy_pack_checkout: POLICY_PACK_CHECKOUT,
       coinbase_agentkit: COINBASE_AGENTKIT_CHECKOUT,
       commercial_offer: {
-        status: "accepting_pilots",
-        name: "IntentFence Paid Integration Pilot",
+        status: "self_service_live",
+        name: "IntentFence Production Policy Pack",
         audience: "teams operating AI agents that can initiate x402 or USDC payments",
-        setup_fee: { amount: 3000, currency: "USD" },
-        recurring_fee: {
-          amount: 750,
-          currency: "USD",
-          interval: "month",
-          starts: "after written production activation acceptance",
+        price: {
+          amount: 1,
+          currency: "USDC",
+          network: INTENTFENCE_NETWORK,
+          amount_atomic: INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
         },
         scope: [
-          "one production agent-payment workflow",
-          "one payment-provider adapter",
-          "merchant, amount, purpose, approval, and exception policy",
-          "signed audit and settlement evidence",
-          "30-day implementation pilot",
+          "one exact consequential action and policy",
+          "Cloudflare Agents, Coinbase AgentKit, or MCP gateway runtime",
+          "copy-ready TypeScript fail-closed guard",
+          "signed action and policy receipt",
+          "allowed, denied, and over-budget test vectors",
+          "deployment and audit checklist",
         ],
-        application: {
+        checkout: {
+          method: "POST",
+          path: "/api/policy-packs",
+          content_type: "application/json",
+          payment_protocol: "x402-v2",
+          account_required: false,
+          meeting_required: false,
+        },
+        enterprise_application: {
           method: "POST",
           path: "/api/leads",
-          content_type: "application/json",
-          required_fields: ["email", "plan"],
-          plan: "pilot",
+          plan: "enterprise",
+          note: "Optional asynchronous application for custom private deployment.",
         },
-        checkout: "human-scoped engagement; no automatic charge before written scope and success criteria",
       },
       custody: "IntentFence never receives wallet private keys and cannot initiate transfers.",
       documentation: "/openapi.json",

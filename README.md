@@ -26,6 +26,7 @@ Official MCP Registry: <https://registry.modelcontextprotocol.io/v0.1/servers?se
 | Surface | Endpoint |
 | --- | --- |
 | Action-bound authorization | `POST /api/actions/authorize` |
+| Paid self-service production policy pack | `POST /api/policy-packs` |
 | Free MCP metadata risk scan | `POST /api/agent-risk/scan` |
 | Free REST preview | `POST /api/preflight` |
 | Paid x402 decision | `POST /api/preflight/verified` |
@@ -82,10 +83,22 @@ Permit2, unknown transfer metadata, and active extensions to review. A
 never fetches or pays the target. Every advertised payment option must satisfy
 every automatic check; mixed safe and unsafe option sets are denied.
 
-For teams that need a guarded production workflow, the founding-customer form
-is an application for hands-on integration of one consequential agent action.
-No subscription is charged until the production policy and success criteria
-are agreed with the customer.
+## Self-service production policy pack
+
+An agent or developer can buy a complete production guard without an account,
+email, meeting, or sales call:
+
+```text
+POST /api/policy-packs
+```
+
+The request selects `cloudflare-agents`, `coinbase-agentkit`, or `mcp-gateway`
+and supplies one exact action plus its allowlists, spend ceiling, retention
+limit, and optional approval policy. The first request returns an x402 challenge
+for exactly 1 USDC on Base. After settlement, the same response delivers a
+copy-ready TypeScript guard, signed action and policy receipt, allowed/denied/
+over-budget test vectors, and a fail-closed deployment checklist. The buyer
+must review the generated code and keep all credentials in its own runtime.
 
 ## Install now
 
@@ -108,6 +121,15 @@ npx --yes --package https://github.com/razel369/intentfence/releases/download/mc
 The release artifact is built and tested by GitHub Actions. Its SHA-256 digest
 is `f0cdf3df28da8a5c037e48193cbb4602744b5fb0b6c182d877abedb707b1e9f9`.
 Use the hosted endpoint above when the client supports Streamable HTTP.
+
+### Install in an agent runtime
+
+- [Cloudflare Agents fail-closed guard](integrations/cloudflare-agents)
+- [Coinbase AgentKit pinned x402 checkout](integrations/coinbase-agentkit)
+- [Generic MCP gateway guard](integrations/mcp-gateway)
+
+All adapters keep credentials in the caller runtime and execute the downstream
+action only after the exact local action digest and ES256 receipt verify.
 
 #### Opt-in one-call payment for local agents
 
@@ -311,11 +333,12 @@ endpoints crawlable by x402 indexes and autonomous tool routers. Production
 resources are continuously checked, and the original verified-preflight route
 is registered on x402scan.
 
-## Commercial pilot
+## Commercial path
 
-The fastest path to production is one guarded action: purchase, transfer,
-booking, deployment, deletion, or another consequential tool call. Submit the
-pilot form on the production site with the real action and its policy boundary.
+The fastest no-contact path to production is the 1 USDC policy pack for one
+guarded purchase, transfer, booking, deployment, deletion, or other
+consequential action. The machine-readable offer and capped Agentic Wallet
+checkout are published by `GET /api/payments`.
 
 See [docs/PROTOCOL.md](docs/PROTOCOL.md) and
 [docs/SECURITY.md](docs/SECURITY.md) for the protocol and security model.

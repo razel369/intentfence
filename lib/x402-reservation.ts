@@ -10,7 +10,8 @@ export type X402ReservationProduct =
   | "x402-assessment"
   | "x402-readiness"
   | "wallet-risk"
-  | "us-cpi";
+  | "us-cpi"
+  | "policy-pack";
 
 export class X402PaymentReservationInputError extends Error {
   constructor(message: string) {

@@ -11,6 +11,7 @@ import {
   INTENTFENCE_FACILITATOR_URL,
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
+  INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_READINESS_PRICE_ATOMIC,
   INTENTFENCE_US_CPI_PRICE_ATOMIC,
@@ -95,7 +96,7 @@ export async function GET() {
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.13.0",
+      version: "0.14.0",
       status,
       checks: {
         database,
@@ -114,6 +115,7 @@ export async function GET() {
           x402_readiness_amount_atomic: INTENTFENCE_READINESS_PRICE_ATOMIC,
           wallet_risk_amount_atomic: INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
           us_cpi_amount_atomic: INTENTFENCE_US_CPI_PRICE_ATOMIC,
+          policy_pack_amount_atomic: INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
         },
       },
       protocol: {
@@ -128,6 +130,7 @@ export async function GET() {
         signed_official_us_cpi: true,
         action_bound_authorization: true,
         mcp_agent_risk_scan: true,
+        self_service_production_policy_pack: true,
       },
     },
     {
