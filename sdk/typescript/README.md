@@ -51,6 +51,15 @@ const assessment = await intentFence.assessX402({
   },
 });
 
+const policyPack = await intentFence.createPolicyPack(
+  {
+    project_name: "Autonomous Checkout",
+    runtime: "cloudflare-agents",
+    authorization: productionAuthorization,
+  },
+  { paymentSignature: encodedOneUsdcX402Payment },
+);
+
 const result = await guard(
   {
     subject: "did:web:my-agent",

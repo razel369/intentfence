@@ -1,14 +1,17 @@
 import type { RouteConfig } from "@x402/core/server";
 import { declareDiscoveryExtension } from "@x402/extensions/bazaar";
-import { preflightInputSchema } from "./preflight";
-import { x402AssessmentInputSchema } from "./x402-assessment";
-import { x402ReadinessInputSchema } from "./x402-readiness";
-import { walletRiskInputSchema } from "./wallet-risk";
-import { usCpiInputSchema } from "./us-cpi";
+import { preflightInputSchema } from "./preflight.ts";
+import { policyPackInputSchema } from "./policy-pack.ts";
+import { x402AssessmentInputSchema } from "./x402-assessment.ts";
+import { x402ReadinessInputSchema } from "./x402-readiness.ts";
+import { walletRiskInputSchema } from "./wallet-risk.ts";
+import { usCpiInputSchema } from "./us-cpi.ts";
 import {
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PAYMENT_TIMEOUT_SECONDS,
+  INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
+  INTENTFENCE_POLICY_PACK_PRICE_USD,
   INTENTFENCE_PRICE_ATOMIC,
   INTENTFENCE_PRICE_USD,
   INTENTFENCE_READINESS_PRICE_ATOMIC,
@@ -18,7 +21,7 @@ import {
   INTENTFENCE_US_CPI_PRICE_USD,
   INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
   INTENTFENCE_WALLET_RISK_PRICE_USD,
-} from "./x402";
+} from "./x402.ts";
 
 export const INTENTFENCE_SITE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";
 
@@ -90,6 +93,112 @@ export const intentFencePaidRouteConfig = {
     body: {
       error: "payment_required",
       message: `Pay ${INTENTFENCE_PRICE_USD} in USDC on Base to run this verified preflight.`,
+      payment_info: `${INTENTFENCE_SITE_URL}/api/payments`,
+    },
+  }),
+} satisfies RouteConfig;
+
+export const policyPackDiscoveryExtensions = declareDiscoveryExtension({
+  input: {
+    project_name: "Autonomous Checkout",
+    runtime: "cloudflare-agents",
+    authorization: {
+      subject: "agent:checkout-production",
+      action: {
+        type: "purchase",
+        resource: "merchant://orders/42",
+        protocol: "payment",
+        method: "POST",
+      },
+      context: { currency: "USD", quoted_cost: 79, data_retention_hours: 24 },
+      policy: {
+        allowed_action_types: ["purchase"],
+        allowed_resources: ["merchant://orders/*"],
+        max_cost: { amount: 100, currency: "USD" },
+        max_data_retention_hours: 48,
+      },
+    },
+  },
+  inputSchema: policyPackInputSchema,
+  bodyType: "json",
+  output: {
+    example: {
+      intentfence: "policy-pack-1.0",
+      runtime: "cloudflare-agents",
+      verification_tier: "production-policy-pack+x402-settled",
+      integration: {
+        language: "typescript",
+        filename: "intentfence-cloudflare-agents.ts",
+      },
+      decision: {
+        status: "safe_to_proceed",
+        receipt: { signed: true, assurance: "action-bound-policy-authorization" },
+      },
+    },
+    schema: {
+      type: "object",
+      properties: {
+        intentfence: { type: "string", const: "policy-pack-1.0" },
+        runtime: { type: "string", enum: ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"] },
+        verification_tier: {
+          type: "string",
+          const: "production-policy-pack+x402-settled",
+        },
+        integration: { type: "object" },
+        decision: { type: "object" },
+        tests: { type: "object" },
+        deployment_checklist: { type: "array", items: { type: "string" } },
+      },
+      required: [
+        "intentfence",
+        "runtime",
+        "verification_tier",
+        "integration",
+        "decision",
+        "tests",
+        "deployment_checklist",
+      ],
+    },
+  },
+});
+
+export const policyPackPaymentRequiredExtensions = {
+  bazaar: {
+    ...policyPackDiscoveryExtensions.bazaar,
+    info: {
+      ...policyPackDiscoveryExtensions.bazaar.info,
+      input: {
+        ...policyPackDiscoveryExtensions.bazaar.info.input,
+        method: "POST" as const,
+      },
+    },
+  },
+};
+
+export const policyPackRouteConfig = {
+  accepts: {
+    scheme: "exact",
+    price: INTENTFENCE_POLICY_PACK_PRICE_USD,
+    network: INTENTFENCE_NETWORK,
+    payTo: INTENTFENCE_PAY_TO,
+  },
+  description:
+    "Generate a production-ready, runtime-specific IntentFence guard with a signed action and policy receipt, negative test vectors, and a fail-closed deployment checklist.",
+  mimeType: "application/json",
+  serviceName: "IntentFence Policy Pack",
+  tags: [
+    "ai-agents",
+    "authorization",
+    "integration",
+    "mcp",
+    "x402",
+  ],
+  iconUrl: `${INTENTFENCE_SITE_URL}/favicon.svg`,
+  unpaidResponseBody: () => ({
+    contentType: "application/json",
+    body: {
+      error: "payment_required",
+      message: `Pay ${INTENTFENCE_POLICY_PACK_PRICE_USD} in USDC on Base for a self-service production policy pack.`,
       payment_info: `${INTENTFENCE_SITE_URL}/api/payments`,
     },
   }),
@@ -428,13 +537,15 @@ function createPaymentRequired(
     | typeof x402AssessmentRouteConfig
     | typeof x402ReadinessRouteConfig
     | typeof walletRiskRouteConfig
-    | typeof usCpiRouteConfig,
+    | typeof usCpiRouteConfig
+    | typeof policyPackRouteConfig,
   extensions:
     | typeof intentFencePaymentRequiredExtensions
     | typeof x402AssessmentPaymentRequiredExtensions
     | typeof x402ReadinessPaymentRequiredExtensions
     | typeof walletRiskPaymentRequiredExtensions
-    | typeof usCpiPaymentRequiredExtensions,
+    | typeof usCpiPaymentRequiredExtensions
+    | typeof policyPackPaymentRequiredExtensions,
   error: string,
   amountAtomic = INTENTFENCE_PRICE_ATOMIC,
 ) {
@@ -521,6 +632,19 @@ export function createUsCpiPaymentRequired(
     usCpiPaymentRequiredExtensions,
     error,
     INTENTFENCE_US_CPI_PRICE_ATOMIC,
+  );
+}
+
+export function createPolicyPackPaymentRequired(
+  resourceUrl: string,
+  error = "Payment required",
+) {
+  return createPaymentRequired(
+    resourceUrl,
+    policyPackRouteConfig,
+    policyPackPaymentRequiredExtensions,
+    error,
+    INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
   );
 }
 

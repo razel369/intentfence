@@ -93,6 +93,30 @@ export type AgentRiskScanResult = {
   findings: Array<{ severity: "high" | "medium" | "low"; code: string; tool: string | null; detail: string; remediation: string }>;
 };
 
+export type PolicyPackInput = {
+  project_name: string;
+  runtime: "cloudflare-agents" | "coinbase-agentkit" | "mcp-gateway";
+  authorization: ActionAuthorizationInput;
+};
+
+export type PolicyPackResult = {
+  intentfence: "policy-pack-1.0";
+  pack_id: string;
+  project_name: string;
+  runtime: PolicyPackInput["runtime"];
+  generated_at: string;
+  verification_tier: "production-policy-pack+x402-settled";
+  decision: Record<string, unknown>;
+  integration: {
+    language: "typescript";
+    filename: string;
+    source: string;
+    placement: string;
+  };
+  tests: Record<string, unknown>;
+  deployment_checklist: string[];
+};
+
 export type X402AssessmentInput = {
   subject: string;
   target_url: string;
@@ -290,6 +314,30 @@ export class IntentFenceClient {
       throw new IntentFenceHttpError(`IntentFence returned HTTP ${response.status}.`, response.status, response);
     }
     return await response.json() as AgentRiskScanResult;
+  }
+
+  async createPolicyPack(
+    input: PolicyPackInput,
+    options: { paymentSignature?: string } = {},
+  ) {
+    const response = await this.request(`${this.baseUrl}/api/policy-packs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.paymentSignature
+          ? { "PAYMENT-SIGNATURE": options.paymentSignature }
+          : {}),
+      },
+      body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+      throw new IntentFenceHttpError(
+        `IntentFence returned HTTP ${response.status}.`,
+        response.status,
+        response,
+      );
+    }
+    return await response.json() as PolicyPackResult;
   }
 
   async assessX402(

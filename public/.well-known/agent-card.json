@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
   "description": "Authorizes exact autonomous-agent actions against explicit policy, returns short-lived signed receipts, and scans MCP tool metadata for high-risk gaps.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
@@ -16,6 +16,15 @@
   "defaultInputModes": ["application/json", "text/plain"],
   "defaultOutputModes": ["application/json", "text/plain"],
   "skills": [
+    {
+      "id": "intentfence-production-policy-pack",
+      "name": "Self-service production policy pack",
+      "description": "Generate a runtime-specific fail-closed TypeScript guard, signed action and policy receipt, negative test vectors, and deployment checklist for 1 USDC through x402.",
+      "tags": ["authorization", "Cloudflare Agents", "Coinbase AgentKit", "MCP", "x402"],
+      "examples": ["Build a Cloudflare Agents guard for purchases up to 100 USD without a sales call."],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
     {
       "id": "intentfence-action-authorization",
       "name": "Fail-closed agent action authorization",

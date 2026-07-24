@@ -8,6 +8,8 @@ For initial discovery, call `intentfence_agent_risk_scan` or `POST /api/agent-ri
 
 For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?month=YYYY-MM`. Before signing an x402 payment, call `intentfence_x402_readiness` with the endpoint URL, screen the recipient with `intentfence_wallet_risk`, or forward an already-observed `PAYMENT-REQUIRED` header to `intentfence_x402_assessment`.
 
+For a deployable, no-contact integration, call `intentfence_policy_pack` or `POST /api/policy-packs`. It costs 1 USDC on Base and returns a runtime-specific TypeScript guard, signed action and policy receipt, negative test vectors, and a fail-closed deployment checklist for Cloudflare Agents, Coinbase AgentKit, or an MCP gateway.
+
 ## Discovery
 
 - IntentFence manifest: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/intentfence.json
@@ -15,7 +17,8 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 - A2A Agent Card: https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json
 - OpenAPI: https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json
 - Payment metadata: https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
-- Commercial pilot offer: read `commercial_offer` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
+- Self-service production policy pack: https://agentpass-protocol.rmalka06.chatgpt.site/api/policy-packs
+- Machine commercial offer: read `commercial_offer` and `policy_pack_checkout` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Capped Agentic Wallet checkout: read `buyer_quickstart` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Pinned Coinbase AgentKit checkout: https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
@@ -30,6 +33,7 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 - Action authorization: https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize
 - MCP agent risk scan: https://agentpass-protocol.rmalka06.chatgpt.site/api/agent-risk/scan
 - Paid REST endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified
+- Paid production policy pack: https://agentpass-protocol.rmalka06.chatgpt.site/api/policy-packs
 - Caller-observed x402 quote assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments
 - Live x402 endpoint readiness: https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness
 - Live Base wallet-risk assessment: https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk
@@ -42,7 +46,7 @@ For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?
 
 ## Autonomous payment
 
-Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Official U.S. CPI costs 0.001 USDC, live readiness and wallet risk cost 0.002 USDC, and signed preflight or exact-quote assessment costs 0.005 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
+Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Official U.S. CPI costs 0.001 USDC, live readiness and wallet risk cost 0.002 USDC, signed preflight or exact-quote assessment costs 0.005 USDC, and the self-service production policy pack costs 1 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
 An agent with an authenticated Coinbase Agentic Wallet can retrieve a complete, versioned command from `GET /api/payments` under `buyer_quickstart`. It must review the request and obtain explicit authorization before running the command. The command caps the charge at exactly 5000 USDC atomic units (0.005 USDC) and never sends wallet credentials to IntentFence.
 
@@ -55,7 +59,7 @@ IntentFence never needs a wallet private key and cannot initiate transfers from 
 
 ## Commercial deployment
 
-Teams can request a scoped paid integration pilot for one production agent-payment workflow. The published starting price is $3,000 for implementation plus $750 per month after written production activation acceptance. No automatic charge is made from this discovery document or application form. Read `commercial_offer` from `GET /api/payments`, then apply with `POST /api/leads` using plan `pilot`; a human must agree to the written scope, success criteria, and billing terms before work or recurring billing starts.
+Teams and agents can buy a production policy pack without a meeting, email, or account. Read `commercial_offer` and `policy_pack_checkout` from `GET /api/payments`, then call `POST /api/policy-packs` with the target runtime and exact authorization policy. The 1 USDC response is delivered immediately after x402 settlement. Custom private deployments remain an optional asynchronous enterprise application and are not required for the self-service product.
 
 ## Decision semantics
 

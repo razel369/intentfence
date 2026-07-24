@@ -17,6 +17,12 @@ import {
   COINBASE_AGENTKIT_CHECKOUT,
   COINBASE_AGENTKIT_VERSION,
 } from "../lib/coinbase-agentkit-checkout.ts";
+import {
+  POLICY_PACK_CHECKOUT,
+  POLICY_PACK_CHECKOUT_COMMAND,
+  POLICY_PACK_CHECKOUT_REQUEST,
+} from "../lib/policy-pack-checkout.ts";
+import { validatePolicyPackInput } from "../lib/policy-pack.ts";
 import { validatePreflightInput } from "../lib/preflight.ts";
 
 const root = new URL("../", import.meta.url);
@@ -25,12 +31,13 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.13 protocol entry points in the site", async () => {
-  const [page, growth, layout, paidRoute, assessmentRoute, assessmentPreviewRoute, readinessRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
+test("publishes the IntentFence 0.14 protocol entry points in the site", async () => {
+  const [page, growth, layout, paidRoute, policyPackRoute, assessmentRoute, assessmentPreviewRoute, readinessRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
     source("app/layout.tsx"),
     source("app/api/preflight/verified/route.ts"),
+    source("app/api/policy-packs/route.ts"),
     source("app/api/x402-assessments/route.ts"),
     source("app/api/x402-assessments/preview/route.ts"),
     source("app/api/x402-readiness/route.ts"),
@@ -50,7 +57,7 @@ test("publishes the IntentFence 0.13 protocol entry points in the site", async (
   ]);
 
   assert.match(layout, /IntentFence/);
-  assert.match(page, /Open protocol \/ v0\.13/);
+  assert.match(page, /Open protocol \/ v0\.14/);
   assert.match(page, /POST \/api\/actions\/authorize/);
   assert.match(growth, /\/api\/agent-risk\/scan/);
   assert.match(page, /POST \/api\/receipts\/verify/);
@@ -64,6 +71,8 @@ test("publishes the IntentFence 0.13 protocol entry points in the site", async (
   assert.equal(socialImage.readUInt32BE(16), 1200);
   assert.equal(socialImage.readUInt32BE(20), 630);
   assert.match(paidRoute, /"POST \/api\/preflight\/verified": intentFencePaidRouteConfig/);
+  assert.match(policyPackRoute, /"POST \/api\/policy-packs": policyPackRouteConfig/);
+  assert.match(policyPackRoute, /reserveX402PaymentAuthorization\([\s\S]*"policy-pack"/u);
   assert.match(assessmentRoute, /"POST \/api\/x402-assessments": x402AssessmentRouteConfig/);
   assert.match(assessmentPreviewRoute, /isAuthorizedPayanAgentDelivery/);
   assert.match(assessmentPreviewRoute, /verification_tier: "unsigned-preview"/);
@@ -82,7 +91,7 @@ test("publishes the IntentFence 0.13 protocol entry points in the site", async (
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
   assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
-  assert.equal(manifest.version, "0.13.0");
+  assert.equal(manifest.version, "0.14.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
@@ -106,13 +115,18 @@ test("publishes the IntentFence 0.13 protocol entry points in the site", async (
     manifest.interfaces.mcp.stdio.autoPayment.policy.payTo,
     "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
   );
-  assert.equal(agentCard.version, "0.13.0");
+  assert.equal(agentCard.version, "0.14.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
   assert.equal(x402Manifest.spec, "agent402-service-manifest/1");
   assert.equal(x402Manifest.payment.x402.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
   assert.equal(openapi.paths["/api/preflight/verified"].post["x-x402-price"], "$0.005");
+  assert.equal(openapi.paths["/api/policy-packs"].post["x-x402-price"], "$1.00");
+  assert.equal(
+    openapi.paths["/api/policy-packs"].post["x-payment-info"].price.amount,
+    "1.00",
+  );
   assert.equal(openapi.paths["/api/actions/authorize"].post.operationId, "authorizeAgentAction");
   assert.equal(openapi.paths["/api/agent-risk/scan"].post.operationId, "scanMcpAgentRisk");
   assert.match(openapi.paths["/api/preflight/verified"].post.summary, /payment safety and policy preflight/u);
@@ -133,6 +147,7 @@ test("publishes the IntentFence 0.13 protocol entry points in the site", async (
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_x402_readiness"), true);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_authorize_action"), true);
   assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_agent_risk_scan"), true);
+  assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_policy_pack"), true);
   assert.equal(openapi.paths["/api/x402-assessments/preview"], undefined);
   assert.equal(openapi.paths["/api/x402-readiness/preview"], undefined);
   assert.equal(
@@ -261,24 +276,28 @@ test("publishes a directly executable and strictly capped agent checkout", async
   assert.match(readme, /--max-amount 5000/u);
 });
 
-test("publishes a priced commercial pilot without automatic billing", async () => {
-  const [paymentRoute, growth, llms, layout] = await Promise.all([
+test("publishes a no-contact one-USDC production policy pack", async () => {
+  const [paymentRoute, growth, llms, layout, readme] = await Promise.all([
     source("app/api/payments/route.ts"),
     source("app/GrowthSections.tsx"),
     source("public/llms.txt"),
     source("app/layout.tsx"),
+    source("README.md"),
   ]);
 
+  assert.doesNotThrow(() => validatePolicyPackInput(POLICY_PACK_CHECKOUT_REQUEST));
+  assert.equal(POLICY_PACK_CHECKOUT.amount_atomic, "1000000");
+  assert.equal(POLICY_PACK_CHECKOUT.meeting_required, false);
+  assert.match(POLICY_PACK_CHECKOUT_COMMAND, /--max-amount 1000000/u);
   assert.match(paymentRoute, /commercial_offer/u);
-  assert.match(paymentRoute, /setup_fee: \{ amount: 3000, currency: "USD" \}/u);
-  assert.match(paymentRoute, /amount: 750/u);
-  assert.match(paymentRoute, /no automatic charge before written scope/u);
-  assert.match(growth, /Paid Integration Pilot/u);
-  assert.match(growth, /\$3,000/u);
-  assert.match(growth, /\$750\/month/u);
+  assert.match(paymentRoute, /policy_pack_checkout: POLICY_PACK_CHECKOUT/u);
+  assert.match(paymentRoute, /meeting_required: false/u);
+  assert.match(growth, /NO-CONTACT PRODUCTION CHECKOUT/u);
+  assert.match(growth, /MAX 1 USDC/u);
   assert.match(llms, /Commercial deployment/u);
-  assert.match(llms, /No automatic charge/u);
-  assert.match(layout, /Paid Integration Pilot/u);
+  assert.match(llms, /without a meeting, email, or account/u);
+  assert.match(layout, /Production Policy Pack/u);
+  assert.match(readme, /Self-service production policy pack/u);
 });
 
 test("publishes a quote-pinned Coinbase AgentKit adapter", async () => {

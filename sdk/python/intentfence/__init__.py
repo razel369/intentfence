@@ -117,6 +117,19 @@ class UsCpiDecision(TypedDict):
     receipt: dict[str, Any]
 
 
+class PolicyPackDecision(TypedDict):
+    intentfence: Literal["policy-pack-1.0"]
+    pack_id: str
+    project_name: str
+    runtime: Literal["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"]
+    generated_at: str
+    verification_tier: Literal["production-policy-pack+x402-settled"]
+    decision: dict[str, Any]
+    integration: dict[str, Any]
+    tests: dict[str, Any]
+    deployment_checklist: list[str]
+
+
 @dataclass
 class IntentFenceError(RuntimeError):
     message: str
@@ -223,6 +236,21 @@ class IntentFenceClient:
             ),
         )
 
+    def create_policy_pack(
+        self,
+        payload: Mapping[str, Any],
+        *,
+        payment_signature: str | None = None,
+    ) -> PolicyPackDecision:
+        return cast(
+            PolicyPackDecision,
+            self._post(
+                "/api/policy-packs",
+                payload,
+                payment_signature=payment_signature,
+            ),
+        )
+
     def assess_wallet_risk(
         self,
         address: str,
@@ -318,6 +346,7 @@ class IntentFenceClient:
 __all__ = [
     "IntentFenceClient",
     "IntentFenceError",
+    "PolicyPackDecision",
     "UsCpiDecision",
     "X402AcceptedPayment",
     "X402AcceptedPaymentExtra",

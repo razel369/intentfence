@@ -55,6 +55,15 @@ assessment = client.assess_x402(
     },
     payment_signature=encoded_x402_payment,
 )
+
+policy_pack = client.create_policy_pack(
+    {
+        "project_name": "Autonomous Checkout",
+        "runtime": "cloudflare-agents",
+        "authorization": authorization_payload,
+    },
+    payment_signature=encoded_one_usdc_x402_payment,
+)
 ```
 
 The standard-library transport covers free calls. For autonomous paid calls,

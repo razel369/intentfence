@@ -63,7 +63,7 @@ const structuredData = {
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
     { "@type": "Offer", name: "Verified x402", price: "0.005", priceCurrency: "USDC" },
     { "@type": "Offer", name: "x402 quote assessment", price: "0.005", priceCurrency: "USDC" },
-    { "@type": "Offer", name: "Paid Integration Pilot", price: "3000", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Production Policy Pack", price: "1", priceCurrency: "USDC" },
   ],
 };
 

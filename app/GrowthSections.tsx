@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import {
   INTENTFENCE_VSCODE_INSTALL_URL,
   INTENTFENCE_VSCODE_MANUAL_CONFIG,
@@ -10,6 +10,7 @@ import {
   AGENTIC_WALLET_CLI_VERSION,
 } from "../lib/agentic-wallet-checkout";
 import { COINBASE_AGENTKIT_VERSION } from "../lib/coinbase-agentkit-checkout";
+import { POLICY_PACK_CHECKOUT_COMMAND } from "../lib/policy-pack-checkout";
 
 const curlExample = `curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize \\
   -H "Content-Type: application/json" \\
@@ -57,6 +58,21 @@ const plans = [
     ],
   },
   {
+    key: "policy_pack",
+    name: "Production Policy Pack",
+    price: "1 USDC",
+    note: "one-time, self-service x402 checkout",
+    features: [
+      "Cloudflare Agents, AgentKit, or MCP gateway",
+      "Copy-ready TypeScript guard",
+      "Signed action and policy receipt",
+      "Allowed, denied, and over-budget tests",
+      "Fail-closed deployment checklist",
+      "No account, meeting, or sales call",
+    ],
+    featured: true,
+  },
+  {
     key: "cpi",
     name: "Official U.S. CPI",
     price: "0.001 USDC",
@@ -69,7 +85,6 @@ const plans = [
       "ES256 provenance receipt",
       "MCP and REST discovery",
     ],
-    featured: true,
   },
   {
     key: "verified",
@@ -102,38 +117,24 @@ const plans = [
       "Payment audit record",
     ],
   },
-  {
-    key: "pilot",
-    name: "Paid Integration Pilot",
-    price: "$3,000",
-    note: "setup + $750/month after production activation",
-    features: [
-      "30-day implementation pilot",
-      "One consequential production tool",
-      "Action, resource, spend and retention policy",
-      "Action-bound approval and audit workflow",
-      "Written scope and success criteria before billing",
-    ],
-  },
 ];
 
 export default function GrowthSections() {
-  const [plan, setPlan] = useState("pilot");
-  const [state, setState] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
   const [checkoutCopied, setCheckoutCopied] = useState(false);
+  const [policyPackCopied, setPolicyPackCopied] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "running" | "complete" | "error">("idle");
   const [scanResult, setScanResult] = useState("Ready to scan a consequential MCP tool definition.");
-
-  function selectPlan(nextPlan: string) {
-    setPlan(nextPlan);
-    document.getElementById("founding-access")?.scrollIntoView({ behavior: "smooth" });
-  }
 
   async function copyAgentCheckout() {
     await navigator.clipboard?.writeText(AGENTIC_WALLET_CHECKOUT_COMMAND);
     setCheckoutCopied(true);
     window.setTimeout(() => setCheckoutCopied(false), 1800);
+  }
+
+  async function copyPolicyPackCheckout() {
+    await navigator.clipboard?.writeText(POLICY_PACK_CHECKOUT_COMMAND);
+    setPolicyPackCopied(true);
+    window.setTimeout(() => setPolicyPackCopied(false), 1800);
   }
 
   async function runRiskScan() {
@@ -158,35 +159,6 @@ export default function GrowthSections() {
     }
   }
 
-  async function submitLead(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setState("submitting");
-    setMessage("");
-    const form = new FormData(event.currentTarget);
-
-    try {
-      const response = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.get("email"),
-          company: form.get("company"),
-          useCase: form.get("useCase"),
-          website: form.get("website"),
-          plan,
-        }),
-      });
-      const result = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not save your request.");
-      setState("success");
-      setMessage("Your application is saved. We will use your details only to discuss the IntentFence integration.");
-      event.currentTarget.reset();
-    } catch (error) {
-      setState("error");
-      setMessage(error instanceof Error ? error.message : "Could not save your request.");
-    }
-  }
-
   return (
     <>
       <section className="agent-gateway" id="agents" aria-labelledby="agents-title">
@@ -205,6 +177,8 @@ export default function GrowthSections() {
             <a href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments">Agent Skill</a>
             <a href="/api/payments">x402 payment metadata</a>
             <a href="/integrations/coinbase-agentkit.json">Coinbase AgentKit adapter</a>
+            <a href="https://github.com/razel369/intentfence/tree/main/integrations/cloudflare-agents">Cloudflare Agents guard</a>
+            <a href="https://github.com/razel369/intentfence/tree/main/integrations/mcp-gateway">MCP gateway guard</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>
             <a href="/.well-known/jwks.json">Receipt signing keys</a>
           </div>
@@ -331,6 +305,34 @@ export default function GrowthSections() {
           </div>
         </div>
 
+        <div className="mcp-install-card" id="policy-pack-checkout">
+          <div className="mcp-install-copy">
+            <span>NO-CONTACT PRODUCTION CHECKOUT</span>
+            <h3>Turn one action policy into a deployable fail-closed guard.</h3>
+            <p>
+              An agent pays exactly 1 USDC through x402 and immediately receives
+              a runtime-specific TypeScript integration, a signed action and
+              policy receipt, negative test vectors, and a deployment checklist.
+              No account, meeting, email, or API key is required.
+            </p>
+            <div className="mcp-install-actions">
+              <button className="button mcp-install-button" onClick={copyPolicyPackCheckout}>
+                {policyPackCopied ? "Policy-pack checkout copied" : "Copy 1 USDC policy-pack checkout"}
+              </button>
+              <a className="mcp-install-docs" href="/api/payments">
+                Read the machine offer <span aria-hidden="true">&#8599;</span>
+              </a>
+            </div>
+          </div>
+          <div className="mcp-install-config">
+            <div className="code-topline">
+              <span>Self-service x402</span>
+              <span>MAX 1 USDC</span>
+            </div>
+            <pre><code>{POLICY_PACK_CHECKOUT_COMMAND}</code></pre>
+          </div>
+        </div>
+
         <div className="mcp-install-card" id="coinbase-agentkit-checkout">
           <div className="mcp-install-copy">
             <span>PINNED AGENTKIT CHECKOUT</span>
@@ -433,9 +435,11 @@ export default function GrowthSections() {
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
           <div className="section-kicker">Action authorization plus autonomous service-fee settlement</div>
-          <h2 id="pricing-title">Start free. Put production actions behind a private policy boundary.</h2>
+          <h2 id="pricing-title">Start free. Buy a deployable production guard without talking to sales.</h2>
           <p>
-            Public action authorization and MCP metadata scanning are free and rate-limited. Paid x402 evidence remains available without an account; private policy deployment and integration are the commercial product.
+            Public authorization and MCP metadata scanning are free and
+            rate-limited. Paid x402 evidence and the production policy pack are
+            delivered immediately without an account, API key, or meeting.
           </p>
         </div>
         <div className="pricing-grid">
@@ -450,54 +454,35 @@ export default function GrowthSections() {
               </ul>
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
+              ) : item.key === "policy_pack" ? (
+                <a className="plan-button" href="#policy-pack-checkout">Copy the 1 USDC checkout</a>
               ) : item.key === "cpi" || item.key === "verified" || item.key === "quote" ? (
                 <a className="plan-button" href="#agent-wallet-checkout">Copy the capped checkout</a>
-              ) : (
-                <button className="plan-button" onClick={() => selectPlan(item.key)}>Request the paid pilot</button>
-              )}
+              ) : null}
             </article>
           ))}
         </div>
-        <p className="pricing-note">The 0.001, 0.002 and 0.005 USDC endpoints are live. The paid pilot is a scoped business engagement, not an instant checkout; no setup or recurring fee is charged before written scope and success criteria are agreed.</p>
+        <p className="pricing-note">The 0.001, 0.002, 0.005 and 1 USDC endpoints are live on Base. Every paid response requires x402 settlement proof; wallet credentials stay with the buyer.</p>
       </section>
 
-      <section className="founding-section" id="founding-access">
+      <section className="founding-section" id="self-service">
         <div>
-          <div className="section-kicker">Paid integration pilot</div>
-          <h2>Put one consequential production tool behind a hard boundary.</h2>
-          <p>$3,000 covers the scoped implementation. After production activation, monitoring and policy support are $750 per month. We define the action, resources, spend, data retention, approval path, and exception rules before billing starts.</p>
-        </div>
-        <form onSubmit={submitLead}>
-          <label>
-            Work email
-            <input name="email" type="email" required placeholder="you@company.com" autoComplete="email" />
-          </label>
-          <label>
-            Company or project
-            <input name="company" type="text" placeholder="Acme Agents" autoComplete="organization" />
-          </label>
-          <label>
-            What action should IntentFence guard?
-            <textarea name="useCase" rows={4} placeholder="Our agent books travel up to $500 after manager approval..." />
-          </label>
-          <label>
-            Plan
-            <select value={plan} onChange={(event) => setPlan(event.target.value)}>
-              <option value="pilot">Paid Integration Pilot - $3,000 setup</option>
-              <option value="enterprise">Private deployment - discuss</option>
-            </select>
-          </label>
-          <label className="honeypot" aria-hidden="true">
-            Website
-            <input name="website" type="text" tabIndex={-1} autoComplete="off" />
-          </label>
-          <button className="button button-primary" disabled={state === "submitting"}>
-            {state === "submitting" ? "Saving..." : "Request the paid integration pilot"}
-          </button>
-          <p className={`form-message ${state}`} aria-live="polite">
-            {message || "No payment is collected here. We will contact you only to confirm fit, written scope, success criteria, and billing terms."}
+          <div className="section-kicker">Autonomous commercial path</div>
+          <h2>One payment. One complete integration pack. Zero sales calls.</h2>
+          <p>
+            The buyer supplies a public-safe project label, target runtime, and
+            exact authorization policy. IntentFence validates the request before
+            settlement, then returns the code, signed receipt, tests, and launch
+            checklist in the same paid response.
           </p>
-        </form>
+        </div>
+        <div className="quickstart">
+          <div className="code-topline">
+            <span>Production policy pack</span>
+            <span>1 USDC / BASE</span>
+          </div>
+          <pre><code>POST /api/policy-packs{"\n"}runtime + exact action + policy{"\n"}-&gt; 402 PAYMENT-REQUIRED{"\n"}-&gt; x402 settlement{"\n"}-&gt; code + signed receipt + tests + checklist</code></pre>
+        </div>
       </section>
     </>
   );

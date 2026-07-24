@@ -20,7 +20,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export async function finalizeIntentFenceSettlement(
   request: Request,
   response: Response,
-  product: "verified-preflight" | "x402-assessment" | "x402-readiness" | "wallet-risk" | "us-cpi",
+  product: "verified-preflight" | "x402-assessment" | "x402-readiness" | "wallet-risk" | "us-cpi" | "policy-pack",
   amountAtomic = INTENTFENCE_PRICE_ATOMIC,
 ) {
   const settlementResponse = response.headers.get("PAYMENT-RESPONSE");

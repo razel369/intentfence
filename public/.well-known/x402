@@ -6,6 +6,7 @@
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "resources": [
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/preflight/verified",
+    "https://agentpass-protocol.rmalka06.chatgpt.site/api/policy-packs",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-assessments",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/x402-readiness",
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
@@ -26,7 +27,7 @@
     }
   },
   "capabilities": {
-    "tools": 6,
+    "tools": 7,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
@@ -34,7 +35,8 @@
     "callerObservedX402QuoteAssessment": true,
     "liveX402EndpointReadiness": true,
     "liveBaseWalletRisk": true,
-    "signedOfficialUsCpi": true
+    "signedOfficialUsCpi": true,
+    "selfServiceProductionPolicyPack": true
   },
   "tags": [
     "ai-agents",
