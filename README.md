@@ -92,13 +92,14 @@ email, meeting, or sales call:
 POST /api/policy-packs
 ```
 
-The request selects `cloudflare-agents`, `coinbase-agentkit`, or `mcp-gateway`
-and supplies one exact action plus its allowlists, spend ceiling, retention
-limit, and optional approval policy. The first request returns an x402 challenge
-for exactly 1 USDC on Base. After settlement, the same response delivers a
-copy-ready TypeScript guard, signed action and policy receipt, allowed/denied/
-over-budget test vectors, and a fail-closed deployment checklist. The buyer
-must review the generated code and keep all credentials in its own runtime.
+The request selects `openai-agents-js`, `cloudflare-agents`,
+`coinbase-agentkit`, or `mcp-gateway` and supplies one exact action plus its
+allowlists, spend ceiling, retention limit, and optional approval policy. The
+first request returns an x402 challenge for exactly 1 USDC on Base. After
+settlement, the same response delivers a copy-ready TypeScript guard, signed
+action and policy receipt, allowed/denied/over-budget test vectors, and a
+fail-closed deployment checklist. The buyer must review the generated code and
+keep all credentials in its own runtime.
 
 ## Install now
 
@@ -124,6 +125,7 @@ Use the hosted endpoint above when the client supports Streamable HTTP.
 
 ### Install in an agent runtime
 
+- [OpenAI Agents SDK fail-closed guard](integrations/openai-agents-js)
 - [Cloudflare Agents fail-closed guard](integrations/cloudflare-agents)
 - [Coinbase AgentKit pinned x402 checkout](integrations/coinbase-agentkit)
 - [Generic MCP gateway guard](integrations/mcp-gateway)

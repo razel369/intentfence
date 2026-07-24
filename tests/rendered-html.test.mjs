@@ -31,7 +31,7 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.14 protocol entry points in the site", async () => {
+test("publishes the IntentFence 0.15 protocol entry points in the site", async () => {
   const [page, growth, layout, paidRoute, policyPackRoute, assessmentRoute, assessmentPreviewRoute, readinessRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
@@ -57,7 +57,7 @@ test("publishes the IntentFence 0.14 protocol entry points in the site", async (
   ]);
 
   assert.match(layout, /IntentFence/);
-  assert.match(page, /Open protocol \/ v0\.14/);
+  assert.match(page, /Open protocol \/ v0\.15/);
   assert.match(page, /POST \/api\/actions\/authorize/);
   assert.match(growth, /\/api\/agent-risk\/scan/);
   assert.match(page, /POST \/api\/receipts\/verify/);
@@ -91,7 +91,7 @@ test("publishes the IntentFence 0.14 protocol entry points in the site", async (
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
   assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
-  assert.equal(manifest.version, "0.14.0");
+  assert.equal(manifest.version, "0.15.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
@@ -115,7 +115,7 @@ test("publishes the IntentFence 0.14 protocol entry points in the site", async (
     manifest.interfaces.mcp.stdio.autoPayment.policy.payTo,
     "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
   );
-  assert.equal(agentCard.version, "0.14.0");
+  assert.equal(agentCard.version, "0.15.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
@@ -337,6 +337,31 @@ test("publishes a quote-pinned Coinbase AgentKit adapter", async () => {
   assert.equal(integration.payment.payTo, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
   assert.match(llms, /Pinned Coinbase AgentKit checkout/u);
   assert.match(readme, /pinned AgentKit adapter/u);
+});
+
+test("publishes an OpenAI Agents SDK function-tool guardrail", async () => {
+  const [adapter, adapterReadme, integration, growth, llms, readme] =
+    await Promise.all([
+      source("integrations/openai-agents-js/intentfence-tool-guardrail.ts"),
+      source("integrations/openai-agents-js/README.md"),
+      source("public/integrations/openai-agents-js.json").then(JSON.parse),
+      source("app/GrowthSections.tsx"),
+      source("public/llms.txt"),
+      source("README.md"),
+    ]);
+
+  assert.match(adapter, /createIntentFenceToolInputGuardrail/u);
+  assert.match(adapter, /payload_sha256/u);
+  assert.match(adapter, /api\/receipts\/verify/u);
+  assert.match(adapter, /rejectContent/u);
+  assert.match(adapterReadme, /inputGuardrails/u);
+  assert.match(adapterReadme, /Hosted tools/u);
+  assert.equal(integration.runtime, "openai-agents-js");
+  assert.equal(integration.behavior.raw_tool_arguments_sent, false);
+  assert.equal(integration.behavior.failure_mode, "reject tool call");
+  assert.match(growth, /OpenAI Agents SDK guard/u);
+  assert.match(llms, /OpenAI Agents SDK/u);
+  assert.match(readme, /OpenAI Agents SDK fail-closed guard/u);
 });
 
 test("does not publish a private signing key", async () => {

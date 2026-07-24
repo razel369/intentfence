@@ -1,6 +1,6 @@
 {
   "name": "intentfence",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Fail-closed action authorization, MCP risk scanning, x402 policy, and signed receipts for AI agent runtimes.",
   "keywords": [
     "ai-agents",

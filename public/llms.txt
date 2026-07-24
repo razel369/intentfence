@@ -8,7 +8,7 @@ For initial discovery, call `intentfence_agent_risk_scan` or `POST /api/agent-ri
 
 For official U.S. inflation data, call `intentfence_us_cpi` or `GET /api/us-cpi?month=YYYY-MM`. Before signing an x402 payment, call `intentfence_x402_readiness` with the endpoint URL, screen the recipient with `intentfence_wallet_risk`, or forward an already-observed `PAYMENT-REQUIRED` header to `intentfence_x402_assessment`.
 
-For a deployable, no-contact integration, call `intentfence_policy_pack` or `POST /api/policy-packs`. It costs 1 USDC on Base and returns a runtime-specific TypeScript guard, signed action and policy receipt, negative test vectors, and a fail-closed deployment checklist for Cloudflare Agents, Coinbase AgentKit, or an MCP gateway.
+For a deployable, no-contact integration, call `intentfence_policy_pack` or `POST /api/policy-packs`. It costs 1 USDC on Base and returns a runtime-specific TypeScript guard, signed action and policy receipt, negative test vectors, and a fail-closed deployment checklist for OpenAI Agents SDK function tools, Cloudflare Agents, Coinbase AgentKit, or an MCP gateway.
 
 ## Discovery
 
@@ -21,6 +21,7 @@ For a deployable, no-contact integration, call `intentfence_policy_pack` or `POS
 - Machine commercial offer: read `commercial_offer` and `policy_pack_checkout` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Capped Agentic Wallet checkout: read `buyer_quickstart` from https://agentpass-protocol.rmalka06.chatgpt.site/api/payments
 - Pinned Coinbase AgentKit checkout: https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json
+- OpenAI Agents SDK function-tool guardrail: https://agentpass-protocol.rmalka06.chatgpt.site/integrations/openai-agents-js.json
 - MCP endpoint: https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp
 - Immutable local MCP package: https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz
 - Local stdio command: npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz intentfence-mcp

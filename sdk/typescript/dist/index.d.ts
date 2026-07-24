@@ -128,7 +128,7 @@ export type AgentRiskScanResult = {
 };
 export type PolicyPackInput = {
     project_name: string;
-    runtime: "cloudflare-agents" | "coinbase-agentkit" | "mcp-gateway";
+    runtime: "cloudflare-agents" | "coinbase-agentkit" | "mcp-gateway" | "openai-agents-js";
     authorization: ActionAuthorizationInput;
 };
 export type PolicyPackResult = {

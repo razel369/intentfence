@@ -139,7 +139,7 @@ export const policyPackDiscoveryExtensions = declareDiscoveryExtension({
       type: "object",
       properties: {
         intentfence: { type: "string", const: "policy-pack-1.0" },
-        runtime: { type: "string", enum: ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"] },
+        runtime: { type: "string", enum: ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway", "openai-agents-js"] },
         verification_tier: {
           type: "string",
           const: "production-policy-pack+x402-settled",
