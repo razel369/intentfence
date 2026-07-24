@@ -10,6 +10,7 @@ export const policyPackRuntimes = [
   "cloudflare-agents",
   "coinbase-agentkit",
   "mcp-gateway",
+  "openai-agents-js",
 ] as const;
 
 export type PolicyPackRuntime = (typeof policyPackRuntimes)[number];
@@ -77,11 +78,15 @@ function integrationSource(runtime: PolicyPackRuntime, authorization: ActionAuth
     ? "guardMcpToolCall"
     : runtime === "coinbase-agentkit"
       ? "guardAgentKitAction"
+      : runtime === "openai-agents-js"
+        ? "guardOpenAIAgentTool"
       : "guardCloudflareAgentAction";
   const runtimeNote = runtime === "coinbase-agentkit"
     ? "Call this guard before the AgentKit wallet action. Signing remains inside the caller-owned wallet provider."
     : runtime === "mcp-gateway"
       ? "Call this guard immediately before forwarding tools/call to the consequential MCP server."
+      : runtime === "openai-agents-js"
+        ? "Call this guard from an OpenAI Agents SDK function tool input guardrail immediately before execute. Hosted and built-in tools require their own approval path."
       : "Call this guard inside the Cloudflare Agent tool handler immediately before the external side effect.";
 
   return `const INTENTFENCE_URL = "https://agentpass-protocol.rmalka06.chatgpt.site";

@@ -63,7 +63,7 @@ const plans = [
     price: "1 USDC",
     note: "one-time, self-service x402 checkout",
     features: [
-      "Cloudflare Agents, AgentKit, or MCP gateway",
+      "OpenAI, Cloudflare, AgentKit, or MCP gateway",
       "Copy-ready TypeScript guard",
       "Signed action and policy receipt",
       "Allowed, denied, and over-budget tests",
@@ -177,6 +177,7 @@ export default function GrowthSections() {
             <a href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments">Agent Skill</a>
             <a href="/api/payments">x402 payment metadata</a>
             <a href="/integrations/coinbase-agentkit.json">Coinbase AgentKit adapter</a>
+            <a href="/integrations/openai-agents-js.json">OpenAI Agents SDK guard</a>
             <a href="https://github.com/razel369/intentfence/tree/main/integrations/cloudflare-agents">Cloudflare Agents guard</a>
             <a href="https://github.com/razel369/intentfence/tree/main/integrations/mcp-gateway">MCP gateway guard</a>
             <a href="/api/metrics">Public usage & revenue metrics</a>

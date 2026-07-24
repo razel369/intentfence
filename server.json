@@ -7,7 +7,7 @@
     "url": "https://github.com/razel369/intentfence",
     "source": "github"
   },
-  "version": "0.14.0",
+  "version": "0.15.0",
   "remotes": [
     {
       "type": "streamable-http",

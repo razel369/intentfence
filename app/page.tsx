@@ -304,7 +304,7 @@ export default function Home() {
 
       <section className="manifest-section" id="manifest">
         <div className="manifest-copy">
-          <div className="section-kicker">Open protocol / v0.14</div>
+          <div className="section-kicker">Open protocol / v0.15</div>
           <h2>A tiny manifest with a very big job.</h2>
           <p>
             Call authorization immediately before a consequential tool. The SDK

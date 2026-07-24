@@ -47,6 +47,7 @@ export const POLICY_PACK_CHECKOUT = {
     "cloudflare-agents",
     "coinbase-agentkit",
     "mcp-gateway",
+    "openai-agents-js",
   ],
   command: POLICY_PACK_CHECKOUT_COMMAND,
   request: POLICY_PACK_CHECKOUT_REQUEST,

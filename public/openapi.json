@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.14.0",
+    "version": "0.15.0",
     "description": "Fail-closed, action-bound authorization for autonomous AI agents, MCP metadata risk scanning, and x402 payment safety with ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
@@ -320,7 +320,7 @@
                   "project_name": { "type": "string", "minLength": 1, "maxLength": 120 },
                   "runtime": {
                     "type": "string",
-                    "enum": ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"]
+                    "enum": ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway", "openai-agents-js"]
                   },
                   "authorization": { "type": "object" }
                 }
@@ -350,7 +350,7 @@
                     "intentfence": { "type": "string", "const": "policy-pack-1.0" },
                     "runtime": {
                       "type": "string",
-                      "enum": ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"]
+                      "enum": ["cloudflare-agents", "coinbase-agentkit", "mcp-gateway", "openai-agents-js"]
                     },
                     "verification_tier": {
                       "type": "string",

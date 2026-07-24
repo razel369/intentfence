@@ -1,0 +1,27 @@
+{
+  "name": "IntentFence OpenAI Agents SDK Tool Guardrail",
+  "version": "0.15.0",
+  "runtime": "openai-agents-js",
+  "applies_to": ["function tools created with tool()"],
+  "does_not_apply_to": [
+    "hosted tools",
+    "built-in execution tools",
+    "handoffs",
+    "agent.asTool()"
+  ],
+  "source": "https://github.com/razel369/intentfence/tree/main/integrations/openai-agents-js",
+  "authorization_endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/actions/authorize",
+  "receipt_verification_endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
+  "behavior": {
+    "raw_tool_arguments_sent": false,
+    "payload_binding": "SHA-256",
+    "receipt": "ES256 compact JWS",
+    "failure_mode": "reject tool call"
+  },
+  "policy_pack": {
+    "endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/policy-packs",
+    "runtime": "openai-agents-js",
+    "price": "1 USDC",
+    "network": "eip155:8453"
+  }
+}

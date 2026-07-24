@@ -121,7 +121,12 @@ class PolicyPackDecision(TypedDict):
     intentfence: Literal["policy-pack-1.0"]
     pack_id: str
     project_name: str
-    runtime: Literal["cloudflare-agents", "coinbase-agentkit", "mcp-gateway"]
+    runtime: Literal[
+        "cloudflare-agents",
+        "coinbase-agentkit",
+        "mcp-gateway",
+        "openai-agents-js",
+    ]
     generated_at: str
     verification_tier: Literal["production-policy-pack+x402-settled"]
     decision: dict[str, Any]

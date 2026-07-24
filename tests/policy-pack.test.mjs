@@ -88,11 +88,12 @@ test("builds a self-service runtime guard with negative test vectors", async () 
   assert.equal(pack.support.mode, "self-service");
 });
 
-test("supports Cloudflare Agents, AgentKit, and MCP gateway runtimes", () => {
+test("supports Cloudflare Agents, AgentKit, MCP gateway, and OpenAI Agents runtimes", () => {
   for (const runtime of [
     "cloudflare-agents",
     "coinbase-agentkit",
     "mcp-gateway",
+    "openai-agents-js",
   ]) {
     assert.equal(validatePolicyPackInput(validRequest(runtime)).runtime, runtime);
   }

@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Fail-closed, action-bound authorization for autonomous AI agents, plus MCP metadata risk scanning, x402 checks, and signed audit receipts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
@@ -103,7 +103,8 @@
     "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
     "instructions": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
     "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
-    "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json"
+    "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json",
+    "openAIAgentsJS": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/openai-agents-js.json"
   },
   "pricing": "https://agentpass-protocol.rmalka06.chatgpt.site/#pricing",
   "terms": "Action authorization signs the exact caller-supplied action and policy for five minutes but never executes it; callers must verify and enforce the receipt locally. The free scanner evaluates supplied MCP metadata only and is not a security certification. Live readiness blocks redirects and private-network targets. Wallet risk does not prove identity, ownership, authorization, or future behavior. x402 proves settlement of the IntentFence service fee."
