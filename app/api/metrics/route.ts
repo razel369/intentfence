@@ -8,7 +8,14 @@ export async function GET() {
     const db = getDb();
     const failureReason = sql<string>`coalesce(json_extract(${usageEvents.metadataJson}, '$.reason'), 'unknown')`;
     const signatureSource = sql<string>`coalesce(json_extract(${usageEvents.metadataJson}, '$.source_kind'), 'unknown')`;
-    const [revenueRows, leadRows, eventRows, failureRows, signatureSourceRows] = await Promise.all([
+    const [
+      revenueRows,
+      leadRows,
+      eventRows,
+      failureRows,
+      signatureSourceRows,
+      qualifiedCheckoutRows,
+    ] = await Promise.all([
       db
         .select({
           settledCalls: count(),
@@ -36,6 +43,18 @@ export async function GET() {
         .from(usageEvents)
         .where(eq(usageEvents.eventName, "payment_signature_received"))
         .groupBy(signatureSource),
+      db
+        .select({ total: count() })
+        .from(usageEvents)
+        .where(
+          and(
+            eq(usageEvents.eventName, "checkout_selected"),
+            sql`(
+              json_extract(${usageEvents.metadataJson}, '$.traffic_kind') = 'agent'
+              OR json_extract(${usageEvents.metadataJson}, '$.protocol') IN ('mcp', 'a2a')
+            )`,
+          ),
+        ),
     ]);
 
     const revenue = revenueRows[0];
@@ -73,8 +92,11 @@ export async function GET() {
           checkout_catalog_views_since_0_16: Number(
             eventTotals.checkout_discovered ?? 0,
           ),
-          qualified_checkout_intents_since_0_16: Number(
+          checkout_selections_total_since_0_16: Number(
             eventTotals.checkout_selected ?? 0,
+          ),
+          qualified_checkout_intents_since_0_16: Number(
+            qualifiedCheckoutRows[0]?.total ?? 0,
           ),
           signatures_received: Number(eventTotals.payment_signature_received ?? 0),
           signature_sources: signatureSources,
@@ -90,7 +112,7 @@ export async function GET() {
           privacy:
             "Payment-attempt events do not store payment signatures, raw facilitator errors, or full wallet addresses.",
           interpretation:
-            "A 402 response is not a payment attempt. Since 0.16.0, recognized liveness monitors and crawlers are counted as payment_probe instead of payment_required. Historical payment_required totals can still include probes.",
+            "A 402 response is not a payment attempt. Since 0.16.0, recognized liveness monitors and crawlers are counted as payment_probe instead of payment_required. Browser checkout selections are reported separately and do not count as qualified agent intent; only agent, MCP, or A2A selections qualify. Historical payment_required totals can still include probes.",
         },
         note: "Counts come from IntentFence D1 settlement and funnel records; failed, unverified, synthetic, known-monitor, and platform-verification payments are excluded from customer revenue.",
       },
