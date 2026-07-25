@@ -43,6 +43,13 @@
       "when": 1784541000000,
       "tag": "0005_classify_settlements",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1784970000000,
+      "tag": "0007_remove_checkout_qa",
+      "breakpoints": true
     }
   ]
 }
