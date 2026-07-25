@@ -5,6 +5,11 @@ import {
 } from "../../../lib/preflight";
 import { JsonRequestError, readJsonWithLimit } from "../../../lib/request";
 import { A2A_VERSION, a2aHeaders, a2aProblem, invalidA2AVersion } from "../../../lib/a2a";
+import {
+  AgentCheckoutValidationError,
+  buildAgentCheckout,
+} from "../../../lib/agent-checkout";
+import { recordFunnelEvent } from "../../../lib/telemetry";
 
 type A2APart = { text?: unknown; data?: unknown };
 
@@ -57,6 +62,36 @@ export async function POST(
         throw new PreflightValidationError("The text part must contain a JSON preflight request.");
       }
     }
+    if (isRecord(input) && input.skill === "intentfence-agent-checkout") {
+      const checkout = buildAgentCheckout({
+        product: input.product,
+        ...(input.input === undefined ? {} : { input: input.input }),
+      });
+      await recordFunnelEvent({
+        eventName: "checkout_selected",
+        request,
+        metadata: {
+          protocol: "a2a",
+          product: checkout.product.id,
+          example_only: checkout.example_only,
+        },
+      });
+      return new Response(
+        JSON.stringify({
+          message: {
+            role: "ROLE_AGENT",
+            parts: [{ text: JSON.stringify(checkout), data: checkout }],
+            messageId: crypto.randomUUID(),
+            contextId:
+              typeof message.contextId === "string"
+                ? message.contextId
+                : crypto.randomUUID(),
+          },
+        }),
+        { status: 200, headers: a2aHeaders },
+      );
+    }
+
     const decision = evaluatePreflight(validatePreflightInput(input));
     return new Response(
       JSON.stringify({
@@ -75,6 +110,9 @@ export async function POST(
     }
     if (error instanceof PreflightValidationError) {
       return a2aProblem(400, "invalid-parameters", "Invalid Parameters", error.message);
+    }
+    if (error instanceof AgentCheckoutValidationError) {
+      return a2aProblem(400, "invalid-checkout", "Invalid Checkout", error.message);
     }
     return a2aProblem(500, "internal-error", "Internal Error", "The A2A message could not be processed.");
   }

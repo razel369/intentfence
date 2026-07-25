@@ -31,7 +31,7 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("publishes the IntentFence 0.15 protocol entry points in the site", async () => {
+test("publishes the IntentFence 0.16 protocol entry points in the site", async () => {
   const [page, growth, layout, paidRoute, policyPackRoute, assessmentRoute, assessmentPreviewRoute, readinessRoute, readinessPreviewRoute, walletRiskRoute, walletRiskPreviewRoute, usCpiRoute, usCpiPreviewRoute, x402Server, manifest, agentCard, x402Manifest, openapi, readme, server, socialImage] = await Promise.all([
     source("app/page.tsx"),
     source("app/GrowthSections.tsx"),
@@ -57,7 +57,7 @@ test("publishes the IntentFence 0.15 protocol entry points in the site", async (
   ]);
 
   assert.match(layout, /IntentFence/);
-  assert.match(page, /Open protocol \/ v0\.15/);
+  assert.match(page, /Open protocol \/ v0\.16/);
   assert.match(page, /POST \/api\/actions\/authorize/);
   assert.match(growth, /\/api\/agent-risk\/scan/);
   assert.match(page, /POST \/api\/receipts\/verify/);
@@ -91,7 +91,7 @@ test("publishes the IntentFence 0.15 protocol entry points in the site", async (
   assert.match(usCpiPreviewRoute, /official-source-data\+marketplace-delivery/);
   assert.match(x402Server, /new HTTPFacilitatorClient\(\{[\s\S]*url: INTENTFENCE_FACILITATOR_URL/u);
   assert.doesNotMatch(x402Server, /@payai\/facilitator/u);
-  assert.equal(manifest.version, "0.15.0");
+  assert.equal(manifest.version, "0.16.0");
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
@@ -115,7 +115,7 @@ test("publishes the IntentFence 0.15 protocol entry points in the site", async (
     manifest.interfaces.mcp.stdio.autoPayment.policy.payTo,
     "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
   );
-  assert.equal(agentCard.version, "0.15.0");
+  assert.equal(agentCard.version, "0.16.0");
   assert.equal(agentCard.supportedInterfaces[0].protocolBinding, "HTTP+JSON");
   assert.equal(server.remotes[0].type, "streamable-http");
   assert.equal(server.remotes[0].url, INTENTFENCE_MCP_URL);
@@ -252,11 +252,15 @@ test("ships a discoverable live x402 readiness skill with a strict payment cap",
 });
 
 test("publishes a directly executable and strictly capped agent checkout", async () => {
-  const [paymentRoute, growth, manifest, x402Manifest, llms, readme] = await Promise.all([
+  const [paymentRoute, checkoutRoute, a2aRoute, growth, manifest, agentCard, x402Manifest, openapi, llms, readme] = await Promise.all([
     source("app/api/payments/route.ts"),
+    source("app/api/checkout/route.ts"),
+    source("app/a2a/[operation]/route.ts"),
     source("app/GrowthSections.tsx"),
     source("public/.well-known/intentfence.json").then(JSON.parse),
+    source("public/.well-known/agent-card.json").then(JSON.parse),
     source("public/.well-known/x402").then(JSON.parse),
+    source("public/openapi.json").then(JSON.parse),
     source("public/llms.txt"),
     source("README.md"),
   ]);
@@ -268,11 +272,21 @@ test("publishes a directly executable and strictly capped agent checkout", async
   assert.equal(AGENTIC_WALLET_CHECKOUT.max_amount_atomic, "5000");
   assert.equal(AGENTIC_WALLET_CHECKOUT.requires_explicit_authorization, true);
   assert.match(paymentRoute, /buyer_quickstart: AGENTIC_WALLET_CHECKOUT/u);
-  assert.match(growth, /Copy capped checkout command/u);
-  assert.match(growth, /MAX 0\.005 USDC/u);
-  assert.match(manifest.payments.buyerQuickstart, /\/api\/payments/u);
-  assert.match(x402Manifest.buyerQuickstart, /\/api\/payments/u);
-  assert.match(llms, /buyer_quickstart/u);
+  assert.match(checkoutRoute, /buildAgentCheckout/u);
+  assert.match(a2aRoute, /intentfence-agent-checkout/u);
+  assert.match(growth, /Build and copy exact checkout/u);
+  assert.match(growth, /UNIVERSAL AGENT CHECKOUT/u);
+  assert.match(growth, /checkout-product-select/u);
+  assert.match(manifest.payments.buyerQuickstart, /\/api\/checkout/u);
+  assert.match(manifest.payments.agentCheckout, /\/api\/checkout/u);
+  assert.match(x402Manifest.buyerQuickstart, /\/api\/checkout/u);
+  assert.equal(manifest.interfaces.mcp.tools.includes("intentfence_checkout"), true);
+  assert.equal(
+    agentCard.skills.some((skill) => skill.id === "intentfence-agent-checkout"),
+    true,
+  );
+  assert.equal(openapi.paths["/api/checkout"].post.operationId, "buildAgentCheckout");
+  assert.match(llms, /`POST \/api\/checkout`/u);
   assert.match(readme, /--max-amount 5000/u);
 });
 

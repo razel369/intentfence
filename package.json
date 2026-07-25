@@ -1,6 +1,6 @@
 {
   "name": "intentfence-service",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -25,12 +25,12 @@
     "@x402/extensions": "^2.18.0",
     "@x402/next": "^2.18.0",
     "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
+    "next": "16.2.11",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.44.0",
+    "@cloudflare/vite-plugin": "^1.47.0",
     "@cloudflare/workers-types": "^5.20260713.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@tailwindcss/postcss": "4.2.1",
@@ -50,7 +50,9 @@
     "zod": "^4.4.3"
   },
   "overrides": {
-    "postcss": "8.5.14",
+    "fast-uri": "3.1.4",
+    "postcss": "8.5.23",
+    "sharp": "0.35.3",
     "ws": "8.21.0"
   },
   "type": "module"

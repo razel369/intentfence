@@ -18,14 +18,8 @@ export const AGENTIC_WALLET_CHECKOUT_REQUEST = {
   },
 } as const;
 
-export const AGENTIC_WALLET_CHECKOUT_COMMAND = [
-  `npx awal@${AGENTIC_WALLET_CLI_VERSION} x402 pay \\`,
-  `  '${AGENTIC_WALLET_CHECKOUT_URL}' \\`,
-  "  -X POST \\",
-  `  -d '${JSON.stringify(AGENTIC_WALLET_CHECKOUT_REQUEST)}' \\`,
-  "  --max-amount 5000 \\",
-  "  --json",
-].join("\n");
+export const AGENTIC_WALLET_CHECKOUT_COMMAND =
+  `npx awal@${AGENTIC_WALLET_CLI_VERSION} x402 pay "${AGENTIC_WALLET_CHECKOUT_URL}" -X POST -d '${JSON.stringify(AGENTIC_WALLET_CHECKOUT_REQUEST)}' --max-amount 5000 --json`;
 
 export const AGENTIC_WALLET_CHECKOUT = {
   client: "Coinbase Agentic Wallet CLI",

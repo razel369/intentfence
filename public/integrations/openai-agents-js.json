@@ -1,6 +1,6 @@
 {
   "name": "IntentFence OpenAI Agents SDK Tool Guardrail",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "runtime": "openai-agents-js",
   "applies_to": ["function tools created with tool()"],
   "does_not_apply_to": [

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "IntentFence Policy API",
-    "version": "0.15.0",
+    "version": "0.16.0",
     "description": "Fail-closed, action-bound authorization for autonomous AI agents, MCP metadata risk scanning, and x402 payment safety with ES256-signed receipts.",
     "license": {
       "name": "Apache-2.0",
@@ -144,6 +144,71 @@
           "400": { "$ref": "#/components/responses/InvalidRequest" },
           "429": { "description": "Per-client rate limit exceeded" },
           "503": { "description": "Risk scan unavailable" }
+        }
+      }
+    },
+    "/api/checkout": {
+      "get": {
+        "operationId": "listAgentCheckoutProducts",
+        "summary": "List paid outcomes and build a non-custodial agent checkout",
+        "description": "Returns a machine-readable catalog of IntentFence paid outcomes. Supply an optional product query parameter to receive an example-only checkout containing the exact endpoint, x402 payment cap, Agentic Wallet argv, and MCP tool call. This endpoint never signs or initiates payment.",
+        "tags": ["agent-commerce", "x402", "checkout", "MCP"],
+        "security": [],
+        "x-price": "free",
+        "parameters": [
+          {
+            "name": "product",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["us-cpi", "wallet-risk", "x402-readiness", "x402-assessment", "verified-preflight", "policy-pack"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Checkout catalog or example-only checkout recipe" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" }
+        }
+      },
+      "post": {
+        "operationId": "buildAgentCheckout",
+        "summary": "Build an exact, budget-capped checkout for one paid outcome",
+        "description": "Validates the selected product input and returns the exact HTTP request, shell-safe Agentic Wallet argv, POSIX and PowerShell commands, MCP tool and arguments, and maximum Base USDC amount. It does not execute the paid request or access the buyer wallet.",
+        "tags": ["agent-commerce", "x402", "checkout", "MCP"],
+        "security": [],
+        "x-price": "free",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["product"],
+                "properties": {
+                  "product": {
+                    "type": "string",
+                    "enum": ["us-cpi", "wallet-risk", "x402-readiness", "x402-assessment", "verified-preflight", "policy-pack"]
+                  },
+                  "input": {
+                    "type": "object",
+                    "description": "Exact input for the selected product. Omit only to receive an example-only recipe."
+                  }
+                }
+              },
+              "example": {
+                "product": "wallet-risk",
+                "input": { "address": "0x1111111111111111111111111111111111111111" }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Validated checkout recipe with an exact x402 cap" },
+          "400": { "$ref": "#/components/responses/InvalidRequest" },
+          "413": { "$ref": "#/components/responses/InvalidRequest" },
+          "415": { "$ref": "#/components/responses/InvalidRequest" }
         }
       }
     },

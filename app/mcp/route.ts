@@ -56,6 +56,12 @@ import {
 import { enforceRequestRateLimit } from "../../lib/rate-limit";
 import { createSignedActionAuthorizationReceipt } from "../../lib/receipts";
 import { getReceiptSigningPrivateJwk } from "../../lib/runtime-secrets";
+import {
+  agentCheckoutInputSchema,
+  AgentCheckoutValidationError,
+  buildAgentCheckout,
+} from "../../lib/agent-checkout";
+import { paymentChallengeEventName } from "../../lib/request-traffic";
 
 const SITE_ORIGIN = "https://agentpass-protocol.rmalka06.chatgpt.site";
 const MCP_PAYMENT_META_KEY = "x402/payment";
@@ -451,8 +457,8 @@ export async function POST(request: Request) {
     return jsonRpc(request, body.id, {
       protocolVersion,
       capabilities: { tools: { listChanged: false } },
-      serverInfo: { name: "IntentFence", version: "0.15.0" },
-      instructions: "Use intentfence_authorize_action immediately before a consequential tool call and execute only when its short-lived, action-bound receipt verifies. Use intentfence_agent_risk_scan to inspect MCP metadata. The authorization service never executes the downstream action. Production policy packs, x402 readiness, wallet risk, quote assessment, verified preflight, and official data remain paid tools.",
+      serverInfo: { name: "IntentFence", version: "0.16.0" },
+      instructions: "Use intentfence_checkout to choose a paid outcome and receive an exact, budget-capped machine checkout without initiating payment. Use intentfence_authorize_action immediately before a consequential tool call and execute only when its short-lived, action-bound receipt verifies. Use intentfence_agent_risk_scan to inspect MCP metadata. The authorization service never executes the downstream action. Production policy packs, x402 readiness, wallet risk, quote assessment, verified preflight, and official data remain paid tools.",
     }, protocolVersion);
   }
 
@@ -462,7 +468,7 @@ export async function POST(request: Request) {
     await recordFunnelEvent({
       eventName: "discovery_served",
       request,
-      metadata: { protocol: "mcp", tools: 9 },
+      metadata: { protocol: "mcp", tools: 10 },
     });
     return jsonRpc(request, body.id, {
       tools: [
@@ -479,6 +485,13 @@ export async function POST(request: Request) {
           description: "Free metadata-only scan of caller-supplied MCP tool definitions for missing schemas, unsafe annotations, approval binding, and cost boundaries. Does not execute tools or certify security.",
           inputSchema: agentRiskScanInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+        },
+        {
+          name: "intentfence_checkout",
+          title: "IntentFence Agent Checkout",
+          description: "Free machine checkout builder. Select a paid IntentFence outcome and receive the exact endpoint, validated request, USDC cap, shell-safe Agentic Wallet argv, MCP tool call, and opt-in local auto-payment budget. It never signs or initiates payment.",
+          inputSchema: agentCheckoutInputSchema,
+          annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
         },
         {
           name: "intentfence_preflight",
@@ -540,6 +553,7 @@ export async function POST(request: Request) {
       toolName !== "intentfence_preflight" &&
       toolName !== "intentfence_authorize_action" &&
       toolName !== "intentfence_agent_risk_scan" &&
+      toolName !== "intentfence_checkout" &&
       toolName !== "intentfence_policy_pack" &&
       toolName !== "intentfence_verified_preflight" &&
       toolName !== "intentfence_x402_assessment" &&
@@ -605,6 +619,24 @@ export async function POST(request: Request) {
         });
       }
 
+      if (toolName === "intentfence_checkout") {
+        const checkout = buildAgentCheckout(toolParams.arguments ?? {});
+        await recordFunnelEvent({
+          eventName: "checkout_selected",
+          request,
+          metadata: {
+            protocol: "mcp",
+            product: checkout.product.id,
+            example_only: checkout.example_only,
+          },
+        });
+        return jsonRpc(request, body.id, {
+          content: [{ type: "text", text: JSON.stringify(checkout) }],
+          structuredContent: checkout,
+          isError: false,
+        });
+      }
+
       if (toolName === "intentfence_policy_pack") {
         const input = validatePolicyPackInput(toolParams.arguments ?? {});
         const payment = x402PaymentFromParams(toolParams);
@@ -612,7 +644,7 @@ export async function POST(request: Request) {
           const paidEndpoint = new URL("/api/policy-packs", request.url).toString();
           const paymentRequired = createPolicyPackPaymentRequired(paidEndpoint);
           await recordFunnelEvent({
-            eventName: "payment_required",
+            eventName: paymentChallengeEventName(request),
             request,
             subject: input.authorization.subject,
             metadata: {
@@ -634,7 +666,7 @@ export async function POST(request: Request) {
         if (!payment) {
           const paymentRequired = createUsCpiPaymentRequired(paidEndpoint.toString());
           await recordFunnelEvent({
-            eventName: "payment_required",
+            eventName: paymentChallengeEventName(request),
             request,
             subject: "official-data://bls/us-cpi",
             metadata: { protocol: "mcp-x402", product: "us-cpi" },
@@ -652,7 +684,7 @@ export async function POST(request: Request) {
         if (!payment) {
           const paymentRequired = createWalletRiskPaymentRequired(paidEndpoint.toString());
           await recordFunnelEvent({
-            eventName: "payment_required",
+            eventName: paymentChallengeEventName(request),
             request,
             subject: input.address,
             metadata: { protocol: "mcp-x402", product: "wallet-risk" },
@@ -669,7 +701,7 @@ export async function POST(request: Request) {
           const paidEndpoint = new URL("/api/x402-readiness", request.url).toString();
           const paymentRequired = createX402ReadinessPaymentRequired(paidEndpoint);
           await recordFunnelEvent({
-            eventName: "payment_required",
+            eventName: paymentChallengeEventName(request),
             request,
             subject: input.target_url,
             metadata: { protocol: "mcp-x402", product: "x402-readiness" },
@@ -686,7 +718,7 @@ export async function POST(request: Request) {
           const paidEndpoint = new URL("/api/x402-assessments", request.url).toString();
           const paymentRequired = createX402AssessmentPaymentRequired(paidEndpoint);
           await recordFunnelEvent({
-            eventName: "payment_required",
+            eventName: paymentChallengeEventName(request),
             request,
             subject: input.subject,
             metadata: { protocol: "mcp-x402", product: "x402-assessment" },
@@ -703,7 +735,7 @@ export async function POST(request: Request) {
           const paidEndpoint = new URL("/api/preflight/verified", request.url).toString();
           const paymentRequired = createIntentFencePaymentRequired(paidEndpoint);
           await recordFunnelEvent({
-            eventName: "payment_required",
+            eventName: paymentChallengeEventName(request),
             request,
             subject: input.subject,
             metadata: { protocol: "mcp-x402" },
@@ -733,7 +765,8 @@ export async function POST(request: Request) {
           error instanceof UsCpiValidationError ||
           error instanceof ActionAuthorizationValidationError ||
           error instanceof PolicyPackValidationError ||
-          error instanceof AgentRiskScanValidationError
+          error instanceof AgentRiskScanValidationError ||
+          error instanceof AgentCheckoutValidationError
         ? error.message
         : "The IntentFence request could not be processed.";
       return jsonRpc(request, body.id, {

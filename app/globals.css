@@ -1013,6 +1013,54 @@ footer > span {
   line-height: 1.55;
 }
 
+.checkout-product-label {
+  display: block;
+  margin-top: 24px;
+  color: #93adff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.checkout-product-select {
+  width: min(100%, 520px);
+  margin-top: 9px;
+  border: 1px solid #747b88;
+  border-radius: 0;
+  background: #111827;
+  color: var(--paper-raised);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 14px 42px 14px 14px;
+}
+
+.checkout-product-select:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+
+.checkout-input {
+  width: min(100%, 520px);
+  margin-top: 9px;
+  resize: vertical;
+  border: 1px solid #747b88;
+  border-radius: 0;
+  background: #070b12;
+  color: #b9c8ff;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  padding: 14px;
+}
+
+.checkout-input:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+
 .mcp-install-actions {
   margin-top: 28px;
   display: flex;
@@ -1030,6 +1078,11 @@ footer > span {
 
 .mcp-install-button:hover {
   background: white;
+}
+
+.mcp-install-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .mcp-install-docs {

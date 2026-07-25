@@ -13,7 +13,8 @@
     "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi"
   ],
   "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
-  "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
+  "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
+  "paymentMetadata": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
   "payment": {
     "x402": {
       "version": 2,
@@ -27,7 +28,7 @@
     }
   },
   "capabilities": {
-    "tools": 7,
+    "tools": 10,
     "rest": true,
     "mcp": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
     "a2a": "https://agentpass-protocol.rmalka06.chatgpt.site/.well-known/agent-card.json",
@@ -36,7 +37,8 @@
     "liveX402EndpointReadiness": true,
     "liveBaseWalletRisk": true,
     "signedOfficialUsCpi": true,
-    "selfServiceProductionPolicyPack": true
+    "selfServiceProductionPolicyPack": true,
+    "machineCheckout": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout"
   },
   "tags": [
     "ai-agents",

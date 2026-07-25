@@ -12,6 +12,7 @@ import {
 import { decodeX402Header } from "./x402-payment";
 import { isSuccessfulX402Settlement } from "./x402-settlement-status";
 import { classifySettlementSource } from "./x402-settlement-source";
+import { paymentChallengeEventName } from "./request-traffic";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -163,7 +164,7 @@ export async function finalizeIntentFenceSettlement(
     ]);
   } else if (response.status === 402) {
     await recordFunnelEvent({
-      eventName: "payment_required",
+      eventName: paymentChallengeEventName(request),
       request,
       metadata: { reason: "payment_not_verified", protocol: "rest-x402", product },
     });

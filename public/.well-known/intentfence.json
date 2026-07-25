@@ -1,6 +1,6 @@
 {
   "name": "IntentFence",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "Fail-closed, action-bound authorization for autonomous AI agents, plus MCP metadata risk scanning, x402 checks, and signed audit receipts.",
   "homepage": "https://agentpass-protocol.rmalka06.chatgpt.site/",
   "interfaces": {
@@ -16,7 +16,8 @@
       "usCpi": "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi",
       "verifyReceipt": "https://agentpass-protocol.rmalka06.chatgpt.site/api/receipts/verify",
       "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
-      "health": "https://agentpass-protocol.rmalka06.chatgpt.site/api/health"
+      "health": "https://agentpass-protocol.rmalka06.chatgpt.site/api/health",
+      "checkout": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout"
     },
     "mcp": {
       "transport": "streamable-http",
@@ -53,6 +54,7 @@
       "tools": [
         "intentfence_authorize_action",
         "intentfence_agent_risk_scan",
+        "intentfence_checkout",
         "intentfence_policy_pack",
         "intentfence_preflight",
         "intentfence_verified_preflight",
@@ -102,7 +104,8 @@
     "asset": "USDC",
     "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e",
     "instructions": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
-    "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
+    "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
+    "agentCheckout": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
     "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json",
     "openAIAgentsJS": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/openai-agents-js.json"
   },

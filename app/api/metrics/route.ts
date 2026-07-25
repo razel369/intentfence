@@ -64,9 +64,18 @@ export async function GET() {
         leads_submitted: leadRows[0]?.submitted ?? 0,
         funnel_events: eventTotals,
         payment_funnel: {
-          instrumentation_version: "1.0",
+          instrumentation_version: "2.0",
           tracking_started_version: "0.13.0",
+          traffic_classification_started_version: "0.16.0",
           challenges_issued: Number(eventTotals.payment_required ?? 0),
+          unclassified_or_buyer_challenges: Number(eventTotals.payment_required ?? 0),
+          automated_probes_excluded_since_0_16: Number(eventTotals.payment_probe ?? 0),
+          checkout_catalog_views_since_0_16: Number(
+            eventTotals.checkout_discovered ?? 0,
+          ),
+          qualified_checkout_intents_since_0_16: Number(
+            eventTotals.checkout_selected ?? 0,
+          ),
           signatures_received: Number(eventTotals.payment_signature_received ?? 0),
           signature_sources: signatureSources,
           verification_succeeded: Number(eventTotals.payment_verification_succeeded ?? 0),
@@ -80,8 +89,10 @@ export async function GET() {
             externalSignatures > 0 ? externalSettlements / externalSignatures : null,
           privacy:
             "Payment-attempt events do not store payment signatures, raw facilitator errors, or full wallet addresses.",
+          interpretation:
+            "A 402 response is not a payment attempt. Since 0.16.0, recognized liveness monitors and crawlers are counted as payment_probe instead of payment_required. Historical payment_required totals can still include probes.",
         },
-        note: "Counts come from IntentFence D1 settlement and funnel records; failed, unverified, and platform-verification payments are excluded from customer revenue.",
+        note: "Counts come from IntentFence D1 settlement and funnel records; failed, unverified, synthetic, known-monitor, and platform-verification payments are excluded from customer revenue.",
       },
       {
         headers: {

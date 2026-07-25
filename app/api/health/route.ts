@@ -96,7 +96,7 @@ export async function GET() {
   return Response.json(
     {
       service: "IntentFence",
-      version: "0.15.0",
+      version: "0.16.0",
       status,
       checks: {
         database,
@@ -130,7 +130,8 @@ export async function GET() {
         signed_official_us_cpi: true,
         action_bound_authorization: true,
         mcp_agent_risk_scan: true,
-        self_service_production_policy_pack: true,
+      self_service_production_policy_pack: true,
+      machine_checkout: true,
       },
     },
     {

@@ -28,14 +28,8 @@ export const POLICY_PACK_CHECKOUT_REQUEST = {
   },
 } as const;
 
-export const POLICY_PACK_CHECKOUT_COMMAND = [
-  `npx awal@${AGENTIC_WALLET_CLI_VERSION} x402 pay \\`,
-  `  '${POLICY_PACK_CHECKOUT_URL}' \\`,
-  "  -X POST \\",
-  `  -d '${JSON.stringify(POLICY_PACK_CHECKOUT_REQUEST)}' \\`,
-  "  --max-amount 1000000 \\",
-  "  --json",
-].join("\n");
+export const POLICY_PACK_CHECKOUT_COMMAND =
+  `npx awal@${AGENTIC_WALLET_CLI_VERSION} x402 pay "${POLICY_PACK_CHECKOUT_URL}" -X POST -d '${JSON.stringify(POLICY_PACK_CHECKOUT_REQUEST)}' --max-amount 1000000 --json`;
 
 export const POLICY_PACK_CHECKOUT = {
   product: "IntentFence Production Policy Pack",

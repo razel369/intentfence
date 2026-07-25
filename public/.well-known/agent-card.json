@@ -1,7 +1,7 @@
 {
   "name": "IntentFence Policy Agent",
   "description": "Authorizes exact autonomous-agent actions against explicit policy, returns short-lived signed receipts, and scans MCP tool metadata for high-risk gaps.",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "supportedInterfaces": [
     {
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/a2a",
@@ -16,6 +16,15 @@
   "defaultInputModes": ["application/json", "text/plain"],
   "defaultOutputModes": ["application/json", "text/plain"],
   "skills": [
+    {
+      "id": "intentfence-agent-checkout",
+      "name": "Budget-capped agent checkout",
+      "description": "Choose an IntentFence paid outcome and receive the exact endpoint, validated input, Agentic Wallet argv, MCP tool call, and Base USDC ceiling without signing or initiating payment.",
+      "tags": ["agent-commerce", "x402", "MCP", "Base", "USDC", "spend-control"],
+      "examples": ["Send A2A data {\"skill\":\"intentfence-agent-checkout\",\"product\":\"wallet-risk\",\"input\":{\"address\":\"0x1111111111111111111111111111111111111111\"}}."],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
     {
       "id": "intentfence-production-policy-pack",
       "name": "Self-service production policy pack",

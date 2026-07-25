@@ -72,7 +72,7 @@ const healthResponse = await fetchWithTimeout(`${baseUrl}/api/health`, {
 assert.equal(healthResponse.status, 200, "health endpoint is not ready");
 const health = await json(healthResponse);
 assert.equal(health.status, "ok");
-assert.equal(health.version, "0.15.0");
+assert.equal(health.version, "0.16.0");
 assert.equal(health.checks.database, true);
 assert.equal(health.checks.revenue_schema, true);
 assert.equal(health.checks.payment_reservation_schema, true);
@@ -84,6 +84,39 @@ assert.equal(health.checks.x402_configuration.facilitator_supports_route, true);
 assert.equal(health.checks.x402_configuration.amount_atomic, "5000");
 assert.equal(health.checks.x402_configuration.x402_readiness_amount_atomic, "2000");
 assert.equal(health.checks.x402_configuration.us_cpi_amount_atomic, "1000");
+assert.equal(health.protocol.machine_checkout, true);
+
+const checkoutCatalogResponse = await fetchWithTimeout(`${baseUrl}/api/checkout`, {
+  headers: monitorHeaders,
+});
+assert.equal(checkoutCatalogResponse.status, 200);
+const checkoutCatalog = await json(checkoutCatalogResponse);
+assert.equal(checkoutCatalog.intentfence, "agent-checkout-catalog-1.0");
+assert.equal(checkoutCatalog.products.length, 6);
+assert.ok(
+  checkoutCatalog.products.some(
+    (product) =>
+      product.id === "wallet-risk" &&
+      product.amount_atomic === "2000" &&
+      product.mcp_tool === "intentfence_wallet_risk",
+  ),
+  "wallet-risk machine checkout is missing or incorrectly capped",
+);
+
+const checkoutResponse = await fetchWithTimeout(`${baseUrl}/api/checkout`, {
+  method: "POST",
+  headers: { ...monitorHeaders, "Content-Type": "application/json" },
+  body: JSON.stringify({
+    product: "wallet-risk",
+    input: { address: "0x1111111111111111111111111111111111111111" },
+  }),
+});
+assert.equal(checkoutResponse.status, 200);
+const checkout = await json(checkoutResponse);
+assert.equal(checkout.example_only, false);
+assert.equal(checkout.payment.max_amount_atomic, "2000");
+assert.equal(checkout.mcp.tool, "intentfence_wallet_risk");
+assert.match(checkout.request.agentic_wallet.shell.powershell, /^npx\.cmd /u);
 
 const requiredResponse = await fetchWithTimeout(
   `${baseUrl}/api/preflight/verified`,
@@ -337,6 +370,10 @@ assert.ok(
 assert.ok(
   mcp.result.tools.some((tool) => tool.name === "intentfence_us_cpi"),
   "official U.S. CPI MCP tool missing",
+);
+assert.ok(
+  mcp.result.tools.some((tool) => tool.name === "intentfence_checkout"),
+  "machine checkout MCP tool missing",
 );
 
 const mcpChallengeResponse = await fetchWithTimeout(`${baseUrl}/api/mcp`, {

@@ -6,7 +6,6 @@ import {
   INTENTFENCE_VSCODE_MANUAL_CONFIG,
 } from "../lib/mcp-install";
 import {
-  AGENTIC_WALLET_CHECKOUT_COMMAND,
   AGENTIC_WALLET_CLI_VERSION,
 } from "../lib/agentic-wallet-checkout";
 import { COINBASE_AGENTKIT_VERSION } from "../lib/coinbase-agentkit-checkout";
@@ -43,6 +42,94 @@ const agentSkillInstall = `npx skills add razel369/intentfence \\
   --skill guard-x402-payments`;
 const readinessSkillInstall = `npx skills add razel369/intentfence \\
   --skill inspect-x402-endpoints`;
+
+const checkoutProducts = [
+  { id: "us-cpi", label: "Official U.S. CPI", price: "0.001 USDC", input: {} },
+  {
+    id: "wallet-risk",
+    label: "Base wallet risk",
+    price: "0.002 USDC",
+    input: { address: "0x1111111111111111111111111111111111111111" },
+  },
+  {
+    id: "x402-readiness",
+    label: "x402 endpoint readiness",
+    price: "0.002 USDC",
+    input: {
+      target_url: "https://agentpass-protocol.rmalka06.chatgpt.site/api/us-cpi",
+      method: "GET",
+      max_price_usdc: "0.01",
+      allowed_payees: ["0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"],
+    },
+  },
+  {
+    id: "x402-assessment",
+    label: "x402 quote assessment",
+    price: "0.005 USDC",
+    input: {
+      subject: "agent:buyer",
+      target_url: "https://merchant.example/api/paid-resource",
+      method: "GET",
+      payment_required: "PASTE_BASE64_PAYMENT_REQUIRED",
+      policy: {
+        max_price_usdc: "0.01",
+        allowed_payees: ["0x1111111111111111111111111111111111111111"],
+      },
+    },
+  },
+  {
+    id: "verified-preflight",
+    label: "Verified policy preflight",
+    price: "0.005 USDC",
+    input: {
+      subject: "agent:buyer",
+      action: { type: "purchase", resource: "order-42" },
+      constraints: {
+        currency: "USD",
+        cost_ceiling: 100,
+        quoted_cost: 79,
+        human_approval: "not_required",
+      },
+    },
+  },
+  {
+    id: "policy-pack",
+    label: "Production policy pack",
+    price: "1 USDC",
+    input: {
+      project_name: "Autonomous Checkout",
+      runtime: "cloudflare-agents",
+      authorization: {
+        subject: "agent:buyer",
+        action: {
+          type: "purchase",
+          resource: "merchant://orders/42",
+          protocol: "payment",
+          method: "POST",
+        },
+        context: { currency: "USD", quoted_cost: 79 },
+        policy: {
+          allowed_action_types: ["purchase"],
+          allowed_resources: ["merchant://orders/*"],
+          max_cost: { amount: 100, currency: "USD" },
+        },
+      },
+    },
+  },
+] as const;
+
+type CheckoutProductId = (typeof checkoutProducts)[number]["id"];
+
+type AgentCheckoutResponse = {
+  product?: { id?: string; name?: string; amount_atomic?: string };
+  example_only?: boolean;
+  request?: {
+    agentic_wallet?: {
+      shell?: { posix?: string };
+    };
+  };
+  message?: string;
+};
 
 const plans = [
   {
@@ -121,14 +208,57 @@ const plans = [
 
 export default function GrowthSections() {
   const [checkoutCopied, setCheckoutCopied] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [selectedCheckoutProduct, setSelectedCheckoutProduct] =
+    useState<CheckoutProductId>("us-cpi");
+  const [checkoutInput, setCheckoutInput] = useState(
+    JSON.stringify(checkoutProducts[0].input, null, 2),
+  );
+  const [checkoutCommand, setCheckoutCommand] = useState(
+    `POST /api/checkout\n{"product":"us-cpi","input":{}}\n-> exact request + ${AGENTIC_WALLET_CLI_VERSION} argv + MCP recipe + payment cap`,
+  );
   const [policyPackCopied, setPolicyPackCopied] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "running" | "complete" | "error">("idle");
   const [scanResult, setScanResult] = useState("Ready to scan a consequential MCP tool definition.");
 
-  async function copyAgentCheckout() {
-    await navigator.clipboard?.writeText(AGENTIC_WALLET_CHECKOUT_COMMAND);
-    setCheckoutCopied(true);
-    window.setTimeout(() => setCheckoutCopied(false), 1800);
+  async function loadAgentCheckout(product: CheckoutProductId, copy = false) {
+    setCheckoutLoading(true);
+    setCheckoutCopied(false);
+    try {
+      const input = JSON.parse(checkoutInput) as Record<string, unknown>;
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product, input }),
+      });
+      const checkout = await response.json() as AgentCheckoutResponse;
+      const command = checkout.request?.agentic_wallet?.shell?.posix;
+      if (!response.ok || !command) {
+        throw new Error(checkout.message || "Checkout unavailable.");
+      }
+      setCheckoutCommand(command);
+      if (copy) {
+        await navigator.clipboard?.writeText(command);
+        setCheckoutCopied(true);
+        window.setTimeout(() => setCheckoutCopied(false), 1800);
+      }
+    } catch {
+      setCheckoutCommand(
+        `POST /api/checkout\n{"product":"${product}","input":{...}}\nCheckout generation is temporarily unavailable.`,
+      );
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }
+
+  function selectAgentCheckout(product: CheckoutProductId) {
+    setSelectedCheckoutProduct(product);
+    const selection = checkoutProducts.find((item) => item.id === product);
+    setCheckoutInput(JSON.stringify(selection?.input ?? {}, null, 2));
+    setCheckoutCommand(
+      `POST /api/checkout\n{"product":"${product}","input":{...}}\nReview the input, then build the exact capped checkout.`,
+    );
+    setCheckoutCopied(false);
   }
 
   async function copyPolicyPackCheckout() {
@@ -172,6 +302,7 @@ export default function GrowthSections() {
             <a href="/.well-known/agent-card.json">A2A Agent Card</a>
             <a href="/.well-known/intentfence.json">IntentFence manifest</a>
             <a href="/.well-known/x402">x402 service manifest</a>
+            <a href="/api/checkout">Agent checkout catalog</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
             <a href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments">Agent Skill</a>
@@ -280,29 +411,67 @@ export default function GrowthSections() {
 
         <div className="mcp-install-card" id="agent-wallet-checkout">
           <div className="mcp-install-copy">
-            <span>DIRECT AGENT CHECKOUT</span>
-            <h3>Pay for a signed policy receipt in one capped x402 command.</h3>
+            <span>UNIVERSAL AGENT CHECKOUT</span>
+            <h3>Choose an outcome. Receive one exact, budget-capped machine checkout.</h3>
             <p>
-              For agents that already have Coinbase Agentic Wallet, this command
-              sends a complete policy request and caps the real Base USDC charge
-              at exactly 0.005. Review the request first; IntentFence never sees
-              wallet credentials and cannot initiate the payment itself.
+              The free checkout builder returns the correct endpoint, validated
+              input, shell-safe Agentic Wallet argv, MCP tool call, local
+              auto-payment budget, and exact USDC ceiling. It never signs or
+              initiates payment; the buyer wallet stays in control.
             </p>
+            <label className="checkout-product-label" htmlFor="checkout-product">
+              Paid outcome
+            </label>
+            <select
+              className="checkout-product-select"
+              id="checkout-product"
+              value={selectedCheckoutProduct}
+              onChange={(event) =>
+                selectAgentCheckout(event.target.value as CheckoutProductId)}
+            >
+              {checkoutProducts.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.label} · {product.price}
+                </option>
+              ))}
+            </select>
+            <label className="checkout-product-label" htmlFor="checkout-input">
+              Exact product input
+            </label>
+            <textarea
+              className="checkout-input"
+              id="checkout-input"
+              value={checkoutInput}
+              onChange={(event) => setCheckoutInput(event.target.value)}
+              rows={8}
+              spellCheck={false}
+            />
             <div className="mcp-install-actions">
-              <button className="button mcp-install-button" onClick={copyAgentCheckout}>
-                {checkoutCopied ? "Checkout command copied" : "Copy capped checkout command"}
+              <button
+                className="button mcp-install-button"
+                onClick={() => loadAgentCheckout(selectedCheckoutProduct, true)}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading
+                  ? "Building checkout…"
+                  : checkoutCopied
+                    ? "Exact checkout copied"
+                    : "Build and copy exact checkout"}
               </button>
-              <a className="mcp-install-docs" href="/api/payments">
-                Read machine payment metadata <span aria-hidden="true">&#8599;</span>
+              <a
+                className="mcp-install-docs"
+                href={`/api/checkout?product=${selectedCheckoutProduct}`}
+              >
+                Open machine checkout JSON <span aria-hidden="true">&#8599;</span>
               </a>
             </div>
           </div>
           <div className="mcp-install-config">
             <div className="code-topline">
               <span>Agentic Wallet v{AGENTIC_WALLET_CLI_VERSION}</span>
-              <span>MAX 0.005 USDC</span>
+              <span>{checkoutProducts.find((item) => item.id === selectedCheckoutProduct)?.price}</span>
             </div>
-            <pre><code>{AGENTIC_WALLET_CHECKOUT_COMMAND}</code></pre>
+            <pre><code>{checkoutCommand}</code></pre>
           </div>
         </div>
 
@@ -456,9 +625,37 @@ export default function GrowthSections() {
               {item.key === "free" ? (
                 <a className="plan-button" href="/openapi.json">Open the API spec</a>
               ) : item.key === "policy_pack" ? (
-                <a className="plan-button" href="#policy-pack-checkout">Copy the 1 USDC checkout</a>
-              ) : item.key === "cpi" || item.key === "verified" || item.key === "quote" ? (
-                <a className="plan-button" href="#agent-wallet-checkout">Copy the capped checkout</a>
+                <a
+                  className="plan-button"
+                  href="#agent-wallet-checkout"
+                  onClick={() => selectAgentCheckout("policy-pack")}
+                >
+                  Build the 1 USDC checkout
+                </a>
+              ) : item.key === "cpi" ? (
+                <a
+                  className="plan-button"
+                  href="#agent-wallet-checkout"
+                  onClick={() => selectAgentCheckout("us-cpi")}
+                >
+                  Build the 0.001 USDC checkout
+                </a>
+              ) : item.key === "verified" ? (
+                <a
+                  className="plan-button"
+                  href="#agent-wallet-checkout"
+                  onClick={() => selectAgentCheckout("wallet-risk")}
+                >
+                  Build the 0.002 USDC checkout
+                </a>
+              ) : item.key === "quote" ? (
+                <a
+                  className="plan-button"
+                  href="#agent-wallet-checkout"
+                  onClick={() => selectAgentCheckout("x402-assessment")}
+                >
+                  Build the 0.005 USDC checkout
+                </a>
               ) : null}
             </article>
           ))}

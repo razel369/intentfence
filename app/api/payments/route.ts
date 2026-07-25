@@ -89,11 +89,18 @@ export function GET() {
         url: INTENTFENCE_FACILITATOR_URL,
       },
       flow: [
+        "Choose a product and generate a validated, capped recipe at /api/checkout.",
         "Call the chosen endpoint without payment and read the PAYMENT-REQUIRED response header.",
         "Create and sign the exact USDC payment with an x402-compatible wallet.",
         "Retry with PAYMENT-SIGNATURE; a successful response includes PAYMENT-RESPONSE.",
       ],
       buyer_quickstart: AGENTIC_WALLET_CHECKOUT,
+      agent_checkout: {
+        catalog: "/api/checkout",
+        method: "POST",
+        purpose:
+          "Return the exact endpoint, validated input, Agentic Wallet argv, MCP tool call, and USDC cap for one selected product without initiating payment.",
+      },
       policy_pack_checkout: POLICY_PACK_CHECKOUT,
       coinbase_agentkit: COINBASE_AGENTKIT_CHECKOUT,
       commercial_offer: {

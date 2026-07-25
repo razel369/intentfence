@@ -154,6 +154,25 @@ signing. Failed attempts remain reserved, so retry loops and concurrent calls
 cannot exceed the cap. The private key stays in the buyer's local process and is
 never sent to IntentFence.
 
+#### Build an exact machine checkout
+
+Agents do not need to infer which endpoint, method, payload, or payment cap
+matches a product. Read the catalog, then submit the exact product input:
+
+```bash
+curl https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout
+
+curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout \
+  -H "Content-Type: application/json" \
+  -d '{"product":"wallet-risk","input":{"address":"0x1111111111111111111111111111111111111111"}}'
+```
+
+The checkout response is free and never initiates payment. It returns a
+validated HTTP request, shell-safe Agentic Wallet argv, POSIX and PowerShell
+commands, the matching MCP tool and arguments, and an exact Base USDC ceiling.
+Agents must still review and authorize the payment and require
+`PAYMENT-RESPONSE` settlement proof.
+
 ### Install in VS Code
 
 [Open the live install panel](https://agentpass-protocol.rmalka06.chatgpt.site/#vscode-install),

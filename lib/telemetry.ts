@@ -1,11 +1,15 @@
 import { getDb } from "../db";
 import { usageEvents } from "../db/schema";
+import { classifyRequestTraffic } from "./request-traffic";
 
 export type FunnelStage = "discovery" | "activation" | "lead" | "payment" | "revenue";
 
 export const funnelEventStages = {
   discovery_served: "discovery",
+  checkout_discovered: "discovery",
+  payment_probe: "discovery",
   activation_started: "activation",
+  checkout_selected: "activation",
   preview_completed: "activation",
   risk_scan_completed: "activation",
   action_authorized: "activation",
@@ -112,6 +116,7 @@ export async function recordFunnelEvent(event: FunnelEvent): Promise<void> {
   if (requestSource && syntheticSources.has(requestSource)) return;
   try {
     const attribution = requestAttribution(event.request);
+    const traffic = classifyRequestTraffic(event.request);
     await getDb()
       .insert(usageEvents)
       .values({
@@ -121,7 +126,11 @@ export async function recordFunnelEvent(event: FunnelEvent): Promise<void> {
         requestId: bounded(event.requestId, 200),
         subject: bounded(event.subject, 200),
         ...attribution,
-        metadataJson: serializeMetadata(event.metadata),
+        metadataJson: serializeMetadata({
+          ...event.metadata,
+          traffic_kind: traffic.kind,
+          client_family: traffic.family,
+        }),
         createdAt: new Date(),
       });
   } catch (error) {
