@@ -133,8 +133,8 @@ export default function Home() {
           <a href="#protocol">Protocol</a>
           <a href="#pricing">Pricing</a>
         </nav>
-        <a className="header-action" href="#playground">
-          Try the policy gate
+        <a className="header-action" href="#agent-wallet-checkout">
+          Buy a wallet screen
         </a>
       </header>
 
@@ -149,11 +149,11 @@ export default function Home() {
             IntentFence binds the exact action to your allowlist, resource scope, spend ceiling, retention rules, and approval policy. It returns a five-minute signed receipt; your SDK verifies it and fails closed before execution.
           </p>
           <div className="hero-actions">
-            <a className="button button-primary" href="#agents">
-              Run the live authorization
+            <a className="button button-primary" href="#agent-wallet-checkout">
+              Screen a Base wallet · 0.002 USDC
             </a>
-            <a className="text-link" href="#manifest">
-              Read the open protocol <span aria-hidden="true">↗</span>
+            <a className="text-link" href="#playground">
+              Run the free authorization demo <span aria-hidden="true">→</span>
             </a>
           </div>
           <div className="proof-grid" aria-label="Protocol highlights">
@@ -345,7 +345,7 @@ export default function Home() {
       <section className="closing">
         <span>THE ACTION LAYER IS ARRIVING</span>
         <h2>Give every agent a verifiable boundary before it spends, deploys, sends, or changes anything.</h2>
-        <a className="button button-light" href="#pricing">Choose a plan</a>
+        <a className="button button-light" href="#agent-wallet-checkout">Build one-call checkout</a>
       </section>
 
       <footer>

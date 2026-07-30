@@ -23,6 +23,13 @@
       "transport": "streamable-http",
       "protocolVersion": "2025-11-25",
       "url": "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp",
+      "proactivePayments": {
+        "metadata": "_meta.x402",
+        "scheme": "exact",
+        "network": "eip155:8453",
+        "asset": "USDC",
+        "payTo": "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e"
+      },
       "stdio": {
         "command": "npx",
         "args": [
@@ -106,6 +113,28 @@
     "instructions": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
     "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
     "agentCheckout": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
+    "recommendedRepeatPurchase": {
+      "product": "wallet-risk",
+      "endpoint": "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
+      "method": "GET",
+      "price": "0.002 USDC",
+      "amountAtomic": "2000",
+      "useBefore": "Every Base payment to a new recipient"
+    },
+    "buyerClients": {
+      "coinbaseAgenticWalletMcp": "https://docs.cdp.coinbase.com/agentic-wallet/mcp/welcome",
+      "mcpc": "https://github.com/apify/mcp-cli"
+    },
+    "agentSkills": {
+      "screenBaseWallets": {
+        "source": "https://github.com/razel369/intentfence/tree/main/skills/screen-base-wallets",
+        "install": "npx skills add razel369/intentfence --skill screen-base-wallets"
+      },
+      "guardAgentPurchases": {
+        "source": "https://github.com/razel369/intentfence/tree/main/skills/guard-agent-purchases",
+        "install": "npx skills add razel369/intentfence --skill guard-agent-purchases"
+      }
+    },
     "coinbaseAgentKit": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/coinbase-agentkit.json",
     "openAIAgentsJS": "https://agentpass-protocol.rmalka06.chatgpt.site/integrations/openai-agents-js.json"
   },

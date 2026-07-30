@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 const socialImage =
-  "https://agentpass-protocol.rmalka06.chatgpt.site/intentfence-social.png";
+  "https://agentpass-protocol.rmalka06.chatgpt.site/og.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://agentpass-protocol.rmalka06.chatgpt.site"),
-  title: "IntentFence — Stop unsafe AI-agent actions before execution",
+  title: "IntentFence — Screen every Base recipient before your agent pays",
   description:
-    "Fail-closed, action-bound authorization for AI agents with five-minute ES256 receipts, MCP risk scanning, and x402 payment safety.",
+    "One budget-capped x402 call screens a Base recipient for 0.002 USDC and returns a fail-closed signed result before your agent pays.",
   keywords: [
     "AI agent payment preflight",
     "AI agent payment firewall",
@@ -27,9 +27,9 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "IntentFence — Authorize the exact action before your agent executes.",
+    title: "IntentFence — Screen every Base recipient before your agent pays.",
     description:
-      "Bind an exact agent action to explicit policy and verify the short-lived signed receipt before the tool call executes.",
+      "A repeatable 0.002 USDC wallet-risk check for autonomous agents, exposed through REST, MCP, and Coinbase Agentic Wallet.",
     url: "/",
     siteName: "IntentFence",
     type: "website",
@@ -38,14 +38,15 @@ export const metadata: Metadata = {
         url: socialImage,
         width: 1200,
         height: 630,
-        alt: "IntentFence authorizes an exact AI-agent action before execution",
+        alt: "IntentFence screens a Base recipient before an AI agent pays",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "IntentFence — Stop unsafe AI-agent actions before execution.",
-    description: "Fail-closed action authorization with exact action digests and short-lived signed receipts.",
+    title: "IntentFence — Screen every Base recipient before your agent pays.",
+    description:
+      "A budget-capped 0.002 USDC x402 wallet-risk check with a fail-closed signed result.",
     images: [socialImage],
   },
 };
@@ -61,6 +62,7 @@ const structuredData = {
     "Action-bound authorization, MCP metadata risk scanning, and signed policy receipts for autonomous AI agents through REST and MCP.",
   offers: [
     { "@type": "Offer", name: "Open", price: "0", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Base wallet risk screen", price: "0.002", priceCurrency: "USDC" },
     { "@type": "Offer", name: "Verified x402", price: "0.005", priceCurrency: "USDC" },
     { "@type": "Offer", name: "x402 quote assessment", price: "0.005", priceCurrency: "USDC" },
     { "@type": "Offer", name: "Production Policy Pack", price: "1", priceCurrency: "USDC" },

@@ -8,7 +8,8 @@ import {
 } from "../../../lib/runtime-secrets";
 import { validateReceiptSigningKey } from "../../../lib/receipts";
 import {
-  INTENTFENCE_FACILITATOR_URL,
+  getIntentFenceActiveSupportedKinds,
+  getIntentFenceFacilitatorSelection,
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
@@ -17,7 +18,7 @@ import {
   INTENTFENCE_US_CPI_PRICE_ATOMIC,
   INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
 } from "../../../lib/x402";
-import { checkIntentFenceFacilitator } from "../../../lib/x402-health";
+import { supportsIntentFenceRoute } from "../../../lib/x402-health";
 
 export async function GET() {
   let database = false;
@@ -28,6 +29,7 @@ export async function GET() {
   let leadAdministration = false;
   let facilitatorReachable = false;
   let facilitatorSupportsRoute = false;
+  const facilitator = await getIntentFenceFacilitatorSelection();
 
   try {
     const db = getDb();
@@ -72,12 +74,12 @@ export async function GET() {
   }
 
   try {
-    const facilitator = await checkIntentFenceFacilitator(
-      INTENTFENCE_FACILITATOR_URL,
+    const supported = await getIntentFenceActiveSupportedKinds();
+    facilitatorReachable = true;
+    facilitatorSupportsRoute = supportsIntentFenceRoute(
+      supported,
       INTENTFENCE_NETWORK,
     );
-    facilitatorReachable = facilitator.reachable;
-    facilitatorSupportsRoute = facilitator.supportsRoute;
   } catch (error) {
     console.error("IntentFence health facilitator check failed", {
       error: error instanceof Error ? error.message : "unknown_error",
@@ -108,8 +110,12 @@ export async function GET() {
         x402_configuration: {
           ready: x402Ready,
           configured: x402Configured,
+          facilitator_name: facilitator.name,
+          facilitator_url: facilitator.url,
+          facilitator_provider: facilitator.provider,
           facilitator_reachable: facilitatorReachable,
           facilitator_supports_route: facilitatorSupportsRoute,
+          coinbase_bazaar_eligible: facilitator.coinbase_bazaar_eligible,
           network: INTENTFENCE_NETWORK,
           amount_atomic: INTENTFENCE_PRICE_ATOMIC,
           x402_readiness_amount_atomic: INTENTFENCE_READINESS_PRICE_ATOMIC,

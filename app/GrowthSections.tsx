@@ -42,6 +42,8 @@ const agentSkillInstall = `npx skills add razel369/intentfence \\
   --skill guard-x402-payments`;
 const readinessSkillInstall = `npx skills add razel369/intentfence \\
   --skill inspect-x402-endpoints`;
+const walletScreenSkillInstall = `npx skills add razel369/intentfence \\
+  --skill screen-base-wallets`;
 
 const checkoutProducts = [
   { id: "us-cpi", label: "Official U.S. CPI", price: "0.001 USDC", input: {} },
@@ -157,7 +159,6 @@ const plans = [
       "Fail-closed deployment checklist",
       "No account, meeting, or sales call",
     ],
-    featured: true,
   },
   {
     key: "cpi",
@@ -187,6 +188,7 @@ const plans = [
       "Machine-readable MCP and REST discovery",
       "No stored wallet credentials",
     ],
+    featured: true,
   },
   {
     key: "quote",
@@ -210,12 +212,12 @@ export default function GrowthSections() {
   const [checkoutCopied, setCheckoutCopied] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [selectedCheckoutProduct, setSelectedCheckoutProduct] =
-    useState<CheckoutProductId>("us-cpi");
+    useState<CheckoutProductId>("wallet-risk");
   const [checkoutInput, setCheckoutInput] = useState(
-    JSON.stringify(checkoutProducts[0].input, null, 2),
+    JSON.stringify(checkoutProducts[1].input, null, 2),
   );
   const [checkoutCommand, setCheckoutCommand] = useState(
-    `POST /api/checkout\n{"product":"us-cpi","input":{}}\n-> exact request + ${AGENTIC_WALLET_CLI_VERSION} argv + MCP recipe + payment cap`,
+    `POST /api/checkout\n{"product":"wallet-risk","input":{"address":"0x..."}}\n-> one exact request + ${AGENTIC_WALLET_CLI_VERSION} argv + Coinbase Wallet MCP recipe + 0.002 USDC cap`,
   );
   const [policyPackCopied, setPolicyPackCopied] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "running" | "complete" | "error">("idle");
@@ -305,7 +307,7 @@ export default function GrowthSections() {
             <a href="/api/checkout">Agent checkout catalog</a>
             <a href="/openapi.json">OpenAPI 3.1</a>
             <a href="/llms.txt">llms.txt</a>
-            <a href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments">Agent Skill</a>
+            <a href="https://github.com/razel369/intentfence/tree/main/skills/screen-base-wallets">Payment-screening Skill</a>
             <a href="/api/payments">x402 payment metadata</a>
             <a href="/integrations/coinbase-agentkit.json">Coinbase AgentKit adapter</a>
             <a href="/integrations/openai-agents-js.json">OpenAI Agents SDK guard</a>
@@ -376,27 +378,28 @@ export default function GrowthSections() {
             <span>CROSS-AGENT INSTALL</span>
             <h3>Teach your agent to inspect x402 before it pays.</h3>
             <p>
-              Two open Agent Skills work across Codex, Claude Code, Cursor,
+              Three open Agent Skills work across Codex, Claude Code, Cursor,
               Gemini CLI, GitHub Copilot, and other skills-compatible agents.
-              Inspect a live URL first, then guard the exact quote before signing.
-              Both keep keys local and pause before any unapproved fee.
+              Screen each new Base recipient, inspect a live x402 URL, then
+              guard the exact quote before signing. All keep keys local and
+              respect the wallet owner&apos;s pre-approved spending limits.
             </p>
             <div className="mcp-install-actions">
               <a
                 className="button mcp-install-button"
+                href="https://github.com/razel369/intentfence/tree/main/skills/screen-base-wallets"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Install the recurring wallet screen
+              </a>
+              <a
+                className="mcp-install-docs"
                 href="https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments"
                 target="_blank"
                 rel="noreferrer"
               >
-                Review and install the x402 guard
-              </a>
-              <a
-                className="mcp-install-docs"
-                href="https://github.com/razel369/intentfence/tree/main/skills/inspect-x402-endpoints"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Review the live-readiness skill <span aria-hidden="true">&#8599;</span>
+                Review the exact-quote guard <span aria-hidden="true">&#8599;</span>
               </a>
             </div>
           </div>
@@ -405,19 +408,19 @@ export default function GrowthSections() {
               <span>Install in supported agents</span>
               <span>NO API KEY</span>
             </div>
-            <pre><code>{readinessSkillInstall}{"\n\n"}{agentSkillInstall}</code></pre>
+            <pre><code>{walletScreenSkillInstall}{"\n\n"}{readinessSkillInstall}{"\n\n"}{agentSkillInstall}</code></pre>
           </div>
         </div>
 
         <div className="mcp-install-card" id="agent-wallet-checkout">
           <div className="mcp-install-copy">
-            <span>UNIVERSAL AGENT CHECKOUT</span>
-            <h3>Choose an outcome. Receive one exact, budget-capped machine checkout.</h3>
+            <span>ONE-CALL AUTONOMOUS CHECKOUT</span>
+            <h3>Screen the next Base recipient before your agent pays it.</h3>
             <p>
-              The free checkout builder returns the correct endpoint, validated
-              input, shell-safe Agentic Wallet argv, MCP tool call, local
-              auto-payment budget, and exact USDC ceiling. It never signs or
-              initiates payment; the buyer wallet stays in control.
+              Wallet risk is the recommended repeat purchase. The free builder
+              returns one validated URL, Coinbase Agentic Wallet CLI and MCP
+              instructions, proactive MCP payment metadata, and an exact 0.002
+              USDC ceiling. The buyer wallet stays in control.
             </p>
             <label className="checkout-product-label" htmlFor="checkout-product">
               Paid outcome
@@ -456,7 +459,7 @@ export default function GrowthSections() {
                   ? "Building checkout…"
                   : checkoutCopied
                     ? "Exact checkout copied"
-                    : "Build and copy exact checkout"}
+                    : "Build and copy one-call purchase"}
               </button>
               <a
                 className="mcp-install-docs"
@@ -605,7 +608,7 @@ export default function GrowthSections() {
       <section className="pricing-section" id="pricing" aria-labelledby="pricing-title">
         <div className="pricing-heading">
           <div className="section-kicker">Action authorization plus autonomous service-fee settlement</div>
-          <h2 id="pricing-title">Start free. Buy a deployable production guard without talking to sales.</h2>
+          <h2 id="pricing-title">Start with one wallet screen. Automate it before every Base payment.</h2>
           <p>
             Public authorization and MCP metadata scanning are free and
             rate-limited. Paid x402 evidence and the production policy pack are

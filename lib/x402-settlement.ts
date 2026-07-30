@@ -3,8 +3,8 @@ import { paymentAudits } from "../db/schema";
 import { classifyPaymentVerificationFailure } from "./payment-funnel";
 import { recordFunnelEvent } from "./telemetry";
 import {
+  getIntentFenceFacilitatorSelection,
   INTENTFENCE_ASSET,
-  INTENTFENCE_FACILITATOR,
   INTENTFENCE_NETWORK,
   INTENTFENCE_PAY_TO,
   INTENTFENCE_PRICE_ATOMIC,
@@ -65,6 +65,7 @@ export async function finalizeIntentFenceSettlement(
   if (settlementResponse && requestId && settlementSucceeded) {
     let auditWritten = false;
     try {
+      const facilitator = await getIntentFenceFacilitatorSelection();
       const decodedSettlement = decodeX402Header(settlementResponse);
       const paymentHeader =
         request.headers.get("PAYMENT-SIGNATURE") ?? request.headers.get("X-PAYMENT");
@@ -110,7 +111,7 @@ export async function finalizeIntentFenceSettlement(
               status: "settled",
               payerAddress,
               transactionHash,
-              facilitator: INTENTFENCE_FACILITATOR,
+              facilitator: facilitator.name,
               sourceKind,
               decisionStatus,
               receiptId,

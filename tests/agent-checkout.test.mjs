@@ -50,6 +50,12 @@ test("builds a validated, capped, cross-shell wallet-risk checkout", () => {
   assert.match(checkout.request.agentic_wallet.shell.posix, /--max-amount 2000/u);
   assert.match(checkout.request.agentic_wallet.shell.powershell, /^npx\.cmd /u);
   assert.equal(checkout.mcp.tool, "intentfence_wallet_risk");
+  assert.equal(
+    checkout.buyer_clients.coinbase_agentic_wallet_mcp.install,
+    "npx @coinbase/payments-mcp",
+  );
+  assert.equal(checkout.buyer_clients.mcpc.tool_call.name, "intentfence_wallet_risk");
+  assert.equal(checkout.agent_skill.name, "screen-base-wallets");
   assert.equal(checkout.payment.pay_to, "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e");
 });
 

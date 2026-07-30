@@ -19,6 +19,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern work --ignore-pattern outputs"
   },
   "dependencies": {
+    "@coinbase/x402": "2.1.0",
     "@payai/facilitator": "^2.4.3",
     "@x402/core": "^2.18.0",
     "@x402/evm": "^2.18.0",
@@ -26,13 +27,13 @@
     "@x402/next": "^2.18.0",
     "drizzle-orm": "0.45.2",
     "next": "16.2.11",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.47.0",
     "@cloudflare/workers-types": "^5.20260713.1",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "1.30.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -41,7 +42,7 @@
     "@vitejs/plugin-rsc": "0.5.26",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
-    "react-server-dom-webpack": "19.2.6",
+    "react-server-dom-webpack": "19.2.8",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
@@ -50,6 +51,7 @@
     "zod": "^4.4.3"
   },
   "overrides": {
+    "axios": "1.19.0",
     "fast-uri": "3.1.4",
     "postcss": "8.5.23",
     "sharp": "0.35.3",

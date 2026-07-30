@@ -19,9 +19,18 @@
     {
       "id": "intentfence-agent-checkout",
       "name": "Budget-capped agent checkout",
-      "description": "Choose an IntentFence paid outcome and receive the exact endpoint, validated input, Agentic Wallet argv, MCP tool call, and Base USDC ceiling without signing or initiating payment.",
+      "description": "Choose an IntentFence paid outcome and receive the exact endpoint, validated input, Coinbase Agentic Wallet MCP request, Agentic Wallet argv, proactive x402 MCP tool call, and Base USDC ceiling without signing or initiating payment.",
       "tags": ["agent-commerce", "x402", "MCP", "Base", "USDC", "spend-control"],
       "examples": ["Send A2A data {\"skill\":\"intentfence-agent-checkout\",\"product\":\"wallet-risk\",\"input\":{\"address\":\"0x1111111111111111111111111111111111111111\"}}."],
+      "inputModes": ["application/json", "text/plain"],
+      "outputModes": ["application/json", "text/plain"]
+    },
+    {
+      "id": "intentfence-screen-base-wallet",
+      "name": "Screen every Base recipient before payment",
+      "description": "Run a live Base wallet-risk screen for 0.002 USDC before paying a new recipient, using one budget-capped x402 call and a fail-closed signed result.",
+      "tags": ["wallet-risk", "Base", "USDC", "x402", "agent-commerce", "repeat-purchase"],
+      "examples": ["Screen 0x1111111111111111111111111111111111111111 before my agent sends Base USDC."],
       "inputModes": ["application/json", "text/plain"],
       "outputModes": ["application/json", "text/plain"]
     },

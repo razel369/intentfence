@@ -15,6 +15,20 @@
   "openapi": "https://agentpass-protocol.rmalka06.chatgpt.site/openapi.json",
   "buyerQuickstart": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
   "paymentMetadata": "https://agentpass-protocol.rmalka06.chatgpt.site/api/payments",
+  "recommendedRepeatPurchase": {
+    "product": "wallet-risk",
+    "resource": "https://agentpass-protocol.rmalka06.chatgpt.site/api/wallet-risk",
+    "method": "GET",
+    "amountAtomic": "2000",
+    "price": "0.002 USDC",
+    "trigger": "Before every Base payment to a new recipient"
+  },
+  "agentSkills": {
+    "screenBaseWallets": {
+      "source": "https://github.com/razel369/intentfence/tree/main/skills/screen-base-wallets",
+      "install": "npx skills add razel369/intentfence --skill screen-base-wallets"
+    }
+  },
   "payment": {
     "x402": {
       "version": 2,
@@ -38,7 +52,8 @@
     "liveBaseWalletRisk": true,
     "signedOfficialUsCpi": true,
     "selfServiceProductionPolicyPack": true,
-    "machineCheckout": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout"
+    "machineCheckout": "https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout",
+    "proactiveMcpPaymentMetadata": "_meta.x402"
   },
   "tags": [
     "ai-agents",

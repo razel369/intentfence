@@ -59,6 +59,13 @@ export async function GET(request: Request) {
             input: { address: "0x1111111111111111111111111111111111111111" },
           },
         },
+        recommended_repeat_purchase: {
+          product: "wallet-risk",
+          reason:
+            "Screen each new Base recipient immediately before an autonomous USDC or x402 payment.",
+          agent_skill:
+            "npx skills add razel369/intentfence --skill screen-base-wallets",
+        },
         products: listAgentCheckoutProducts(),
         safety: [
           "No payment is initiated by this catalog.",

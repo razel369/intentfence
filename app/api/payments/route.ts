@@ -1,7 +1,6 @@
 import {
   INTENTFENCE_ASSET,
-  INTENTFENCE_FACILITATOR,
-  INTENTFENCE_FACILITATOR_URL,
+  getIntentFenceFacilitatorSelection,
   INTENTFENCE_NETWORK,
   INTENTFENCE_NETWORK_NAME,
   INTENTFENCE_PAY_TO,
@@ -20,7 +19,8 @@ import { AGENTIC_WALLET_CHECKOUT } from "../../../lib/agentic-wallet-checkout";
 import { COINBASE_AGENTKIT_CHECKOUT } from "../../../lib/coinbase-agentkit-checkout";
 import { POLICY_PACK_CHECKOUT } from "../../../lib/policy-pack-checkout";
 
-export function GET() {
+export async function GET() {
+  const facilitator = await getIntentFenceFacilitatorSelection();
   return Response.json(
     {
       protocol: "x402",
@@ -85,8 +85,10 @@ export function GET() {
       network_name: INTENTFENCE_NETWORK_NAME,
       pay_to: INTENTFENCE_PAY_TO,
       facilitator: {
-        name: INTENTFENCE_FACILITATOR,
-        url: INTENTFENCE_FACILITATOR_URL,
+        name: facilitator.name,
+        url: facilitator.url,
+        provider: facilitator.provider,
+        coinbase_bazaar_eligible: facilitator.coinbase_bazaar_eligible,
       },
       flow: [
         "Choose a product and generate a validated, capped recipe at /api/checkout.",

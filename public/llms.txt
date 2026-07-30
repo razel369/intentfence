@@ -27,6 +27,8 @@ For a deployable, no-contact integration, call `intentfence_policy_pack` or `POS
 - Immutable local MCP package: https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz
 - Local stdio command: npx --yes --package https://github.com/razel369/intentfence/releases/download/mcp-v0.11.0/razel369-intentfence-mcp-0.11.0.tgz intentfence-mcp
 - Optional local auto-payment: set INTENTFENCE_EVM_PRIVATE_KEY, INTENTFENCE_MAX_AUTO_PAYMENT_USDC, and INTENTFENCE_AUTO_PAYMENT_BUDGET_USDC; disabled unless all three are set and restricted to exact Base USDC payments to the published IntentFence recipient.
+- Recurring Base recipient screening skill: https://github.com/razel369/intentfence/tree/main/skills/screen-base-wallets
+- Wallet-screen skill installer: npx skills add razel369/intentfence --skill screen-base-wallets
 - Cross-agent payment guard skill: https://github.com/razel369/intentfence/tree/main/skills/guard-x402-payments
 - Agent Skill installer: npx skills add razel369/intentfence --skill guard-x402-payments
 - Live x402 endpoint inspection skill: https://github.com/razel369/intentfence/tree/main/skills/inspect-x402-endpoints
@@ -50,7 +52,7 @@ For a deployable, no-contact integration, call `intentfence_policy_pack` or `POS
 
 Paid endpoints use x402 v2 on Base mainnet (eip155:8453). Official U.S. CPI costs 0.001 USDC, live readiness and wallet risk cost 0.002 USDC, signed preflight or exact-quote assessment costs 0.005 USDC, and the self-service production policy pack costs 1 USDC. Call without payment, read PAYMENT-REQUIRED, sign the exact quoted payment in the agent's own wallet, and retry with PAYMENT-SIGNATURE. A successful response includes PAYMENT-RESPONSE as settlement proof. No account or API key is required.
 
-An agent should call `GET /api/checkout` to list paid outcomes, then `POST /api/checkout` with `product` and the exact product `input`. The response contains a validated endpoint request, a shell-safe Agentic Wallet argv array, POSIX and PowerShell commands, the matching MCP tool call, an opt-in local auto-payment budget, and the exact Base USDC cap. Checkout generation is free and never signs or initiates payment. The buyer must review the generated request, authenticate and fund its wallet, and authorize the exact cap before execution.
+An agent should call `GET /api/checkout` to list paid outcomes, then `POST /api/checkout` with `product` and the exact product `input`. Wallet risk is the recommended repeat purchase before a new Base recipient is paid. The response contains a validated endpoint request, a shell-safe Agentic Wallet argv array, Coinbase Agentic Wallet MCP instructions, an `mcpc --x402` tool call, the matching Agent Skill, an opt-in local auto-payment budget, and the exact Base USDC cap. Checkout generation is free and never signs or initiates payment. Paid MCP tools also advertise `_meta.x402` so compatible clients can authorize and sign before the first tool call. The buyer must review the generated request, authenticate and fund its wallet, and authorize the exact cap before execution.
 
 For autonomous discovery, read `/.well-known/x402` or the OpenAPI document, then call the assessment endpoint with any x402 v2 client that supports Base USDC.
 

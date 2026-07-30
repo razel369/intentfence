@@ -1,0 +1,4 @@
+interface:
+  display_name: "Screen Base Wallets"
+  short_description: "Check a Base recipient before paying"
+  default_prompt: "Use $screen-base-wallets to screen this Base recipient before the agent sends USDC."

@@ -53,7 +53,7 @@ test("publishes the IntentFence 0.16 protocol entry points in the site", async (
     source("public/openapi.json").then(JSON.parse),
     source("README.md"),
     source("server.json").then(JSON.parse),
-    readFile(new URL("public/intentfence-social.png", root)),
+    readFile(new URL("public/og.png", root)),
   ]);
 
   assert.match(layout, /IntentFence/);
@@ -64,7 +64,7 @@ test("publishes the IntentFence 0.16 protocol entry points in the site", async (
   assert.match(growth, /ES256-signed policy receipt/);
   assert.match(growth, /Install IntentFence in VS Code/);
   assert.match(growth, /paid\s+tools still require/);
-  assert.match(layout, /intentfence-social\.png/);
+  assert.match(layout, /og\.png/);
   assert.match(readme, /## Install now/);
   assert.match(readme, /#vscode-install/);
   assert.deepEqual([...socialImage.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
@@ -95,6 +95,7 @@ test("publishes the IntentFence 0.16 protocol entry points in the site", async (
   assert.equal(manifest.receipts.algorithm, "ES256");
   assert.equal(manifest.interfaces.mcp.protocolVersion, "2025-11-25");
   assert.equal(manifest.interfaces.mcp.url, "https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp");
+  assert.equal(manifest.interfaces.mcp.proactivePayments.metadata, "_meta.x402");
   assert.deepEqual(manifest.interfaces.mcp.stdio.args, [
     "--yes",
     "--package",
@@ -274,8 +275,14 @@ test("publishes a directly executable and strictly capped agent checkout", async
   assert.match(paymentRoute, /buyer_quickstart: AGENTIC_WALLET_CHECKOUT/u);
   assert.match(checkoutRoute, /buildAgentCheckout/u);
   assert.match(a2aRoute, /intentfence-agent-checkout/u);
-  assert.match(growth, /Build and copy exact checkout/u);
-  assert.match(growth, /UNIVERSAL AGENT CHECKOUT/u);
+  assert.match(growth, /Build and copy one-call purchase/u);
+  assert.match(growth, /Coinbase Agentic Wallet CLI and MCP/u);
+  assert.equal(manifest.payments.recommendedRepeatPurchase.product, "wallet-risk");
+  assert.match(
+    manifest.payments.agentSkills.screenBaseWallets.install,
+    /--skill screen-base-wallets/u,
+  );
+  assert.match(growth, /ONE-CALL AUTONOMOUS CHECKOUT/u);
   assert.match(growth, /checkout-product-select/u);
   assert.match(manifest.payments.buyerQuickstart, /\/api\/checkout/u);
   assert.match(manifest.payments.agentCheckout, /\/api\/checkout/u);

@@ -1,6 +1,8 @@
+import { createFacilitatorConfig } from "@coinbase/x402";
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { bazaarResourceServerExtension } from "@x402/extensions/bazaar";
+import { getCdpFacilitatorCredentials } from "./runtime-secrets.ts";
 
 export const INTENTFENCE_PAY_TO = "0x833ca7dcdb6a681ddc0c15982ef0d609bceb3a5e";
 export const INTENTFENCE_NETWORK = "eip155:8453" as const;
@@ -20,10 +22,14 @@ export const INTENTFENCE_USDC_CONTRACT = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA0
 export const INTENTFENCE_PAYMENT_TIMEOUT_SECONDS = 300;
 export const INTENTFENCE_FACILITATOR = "PayAI";
 export const INTENTFENCE_FACILITATOR_URL = "https://facilitator.payai.network";
+export const INTENTFENCE_CDP_FACILITATOR = "Coinbase CDP";
+export const INTENTFENCE_CDP_FACILITATOR_URL =
+  "https://api.cdp.coinbase.com/platform/v2/x402";
 
-const httpFacilitatorClient = new HTTPFacilitatorClient({
+const payAiFacilitatorClient = new HTTPFacilitatorClient({
   url: INTENTFENCE_FACILITATOR_URL,
 });
+let cdpFacilitatorClient: HTTPFacilitatorClient | null = null;
 
 type SupportedResponse = Awaited<
   ReturnType<HTTPFacilitatorClient["getSupported"]>
@@ -61,10 +67,10 @@ export async function fetchIntentFenceSupportedKinds(
 }
 
 /**
- * Keep the paid request cold path independent from the facilitator's
- * `/supported` endpoint. The live health check still verifies that endpoint,
- * while verify and settle remain delegated to PayAI. This exact Base route is
- * the only capability the service advertises and accepts.
+ * Keep the PayAI request cold path independent from the facilitator's
+ * `/supported` endpoint. This exact Base route is the only capability the
+ * service advertises and accepts when CDP credentials are not configured.
+ * Coinbase CDP uses its authenticated `/supported` response instead.
  */
 export function getIntentFenceRuntimeSupportedKinds(): SupportedResponse {
   return {
@@ -80,10 +86,48 @@ export function getIntentFenceRuntimeSupportedKinds(): SupportedResponse {
   } as SupportedResponse;
 }
 
+export async function getIntentFenceFacilitatorSelection() {
+  const credentials = await getCdpFacilitatorCredentials();
+  return credentials
+    ? {
+        name: INTENTFENCE_CDP_FACILITATOR,
+        url: INTENTFENCE_CDP_FACILITATOR_URL,
+        provider: "coinbase-cdp" as const,
+        coinbase_bazaar_eligible: true,
+      }
+    : {
+        name: INTENTFENCE_FACILITATOR,
+        url: INTENTFENCE_FACILITATOR_URL,
+        provider: "payai" as const,
+        coinbase_bazaar_eligible: false,
+      };
+}
+
+async function getActiveFacilitatorClient() {
+  const credentials = await getCdpFacilitatorCredentials();
+  if (!credentials) return payAiFacilitatorClient;
+  cdpFacilitatorClient ??= new HTTPFacilitatorClient(
+    createFacilitatorConfig(credentials.apiKeyId, credentials.apiKeySecret),
+  );
+  return cdpFacilitatorClient;
+}
+
+export async function getIntentFenceActiveSupportedKinds() {
+  const selection = await getIntentFenceFacilitatorSelection();
+  if (selection.provider === "payai") return getIntentFenceRuntimeSupportedKinds();
+  return await (await getActiveFacilitatorClient()).getSupported();
+}
+
 const facilitatorClient = {
-  verify: httpFacilitatorClient.verify.bind(httpFacilitatorClient),
-  settle: httpFacilitatorClient.settle.bind(httpFacilitatorClient),
-  getSupported: async () => getIntentFenceRuntimeSupportedKinds(),
+  verify: async (
+    ...args: Parameters<HTTPFacilitatorClient["verify"]>
+  ): ReturnType<HTTPFacilitatorClient["verify"]> =>
+    await (await getActiveFacilitatorClient()).verify(...args),
+  settle: async (
+    ...args: Parameters<HTTPFacilitatorClient["settle"]>
+  ): ReturnType<HTTPFacilitatorClient["settle"]> =>
+    await (await getActiveFacilitatorClient()).settle(...args),
+  getSupported: async () => await getIntentFenceActiveSupportedKinds(),
 };
 
 export const intentFenceX402Server = new x402ResourceServer(facilitatorClient)

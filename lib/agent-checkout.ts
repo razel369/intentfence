@@ -274,6 +274,35 @@ function requestForProduct(
   };
 }
 
+function skillForProduct(product: AgentCheckoutProductId) {
+  if (product === "wallet-risk") {
+    return {
+      name: "screen-base-wallets",
+      install:
+        "npx skills add razel369/intentfence --skill screen-base-wallets",
+      trigger:
+        "Run before a new Base recipient receives USDC or an x402 payment.",
+    };
+  }
+  if (product === "x402-readiness") {
+    return {
+      name: "inspect-x402-endpoints",
+      install:
+        "npx skills add razel369/intentfence --skill inspect-x402-endpoints",
+      trigger: "Run when an agent discovers an unfamiliar x402 URL.",
+    };
+  }
+  if (product === "x402-assessment") {
+    return {
+      name: "guard-x402-payments",
+      install:
+        "npx skills add razel369/intentfence --skill guard-x402-payments",
+      trigger: "Run after receiving PAYMENT-REQUIRED and before signing it.",
+    };
+  }
+  return null;
+}
+
 export function listAgentCheckoutProducts() {
   return agentCheckoutProductIds.map((id) => {
     const product = productDefinitions[id];
@@ -357,7 +386,33 @@ export function buildAgentCheckout(value: unknown) {
         enabled_by_default: false,
       },
     },
+    buyer_clients: {
+      coinbase_agentic_wallet_mcp: {
+        install: "npx @coinbase/payments-mcp",
+        action: "Make an x402 request",
+        request: {
+          method: request.method,
+          url: request.url,
+          headers: request.headers,
+          body: request.body,
+        },
+        max_amount_atomic: definition.amountAtomic,
+        instruction:
+          "Use the connected wallet's x402 request tool. It handles the challenge, payment, and retry while enforcing the wallet owner's spending limits.",
+      },
+      mcpc: {
+        connect:
+          "mcpc connect https://agentpass-protocol.rmalka06.chatgpt.site/api/mcp @intentfence --x402",
+        tool_call: {
+          name: definition.mcpTool,
+          arguments: input,
+        },
+        instruction:
+          "The tool advertises _meta.x402, so compatible clients can sign before the first paid tool call.",
+      },
+    },
+    agent_skill: skillForProduct(product),
     next_step:
-      "Execute the request with an x402-capable client, or call the MCP tool. A successful paid response must include PAYMENT-RESPONSE settlement proof.",
+      "Use either listed buyer client or another x402 v2 client. A successful paid response must include PAYMENT-RESPONSE settlement proof.",
   };
 }

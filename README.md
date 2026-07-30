@@ -68,6 +68,18 @@ uses live Base RPC activity and GoPlus malicious-address intelligence. A
 address was established on Base at assessment time; it does not prove identity,
 ownership, authorization, or future behavior.
 
+Install the recurring pre-payment skill to attach that check to new Base
+recipients:
+
+```bash
+npx skills add razel369/intentfence --skill screen-base-wallets
+```
+
+The skill can run without interrupting an autonomous workflow only when the
+wallet owner already approved a standing 0.002 USDC screening budget and the
+wallet enforces it. It blocks the downstream payment on review, denial, missing
+settlement proof, invalid receipt, or service failure.
+
 The live readiness check is the simplest first call when an agent only has an endpoint URL. It makes one bounded credential-free request, rejects private-network targets and redirects, validates the returned challenge, never pays the target, and signs the result for five minutes.
 
 The quote assessment is the recommended check after an x402 merchant returns
@@ -169,7 +181,10 @@ curl -X POST https://agentpass-protocol.rmalka06.chatgpt.site/api/checkout \
 
 The checkout response is free and never initiates payment. It returns a
 validated HTTP request, shell-safe Agentic Wallet argv, POSIX and PowerShell
-commands, the matching MCP tool and arguments, and an exact Base USDC ceiling.
+commands, Coinbase Agentic Wallet MCP instructions, an `mcpc --x402` call, the
+matching Agent Skill, the matching MCP tool and arguments, and an exact Base
+USDC ceiling. Paid MCP tools advertise `_meta.x402` for clients that can sign
+before the first tool call.
 Agents must still review and authorize the payment and require
 `PAYMENT-RESPONSE` settlement proof.
 
@@ -353,6 +368,12 @@ The `/.well-known/x402` service manifest and Bazaar metadata make both paid
 endpoints crawlable by x402 indexes and autonomous tool routers. Production
 resources are continuously checked, and the original verified-preflight route
 is registered on x402scan.
+
+Production uses PayAI by default. When both `CDP_API_KEY_ID` and
+`CDP_API_KEY_SECRET` are configured in the hosted runtime, verification and
+settlement switch to Coinbase CDP. That makes successful Bazaar-enabled route
+settlements eligible for Coinbase Bazaar indexing; configuration alone does
+not create a listing or count as customer revenue.
 
 ## Commercial path
 

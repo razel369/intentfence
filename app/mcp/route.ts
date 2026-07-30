@@ -62,6 +62,14 @@ import {
   buildAgentCheckout,
 } from "../../lib/agent-checkout";
 import { paymentChallengeEventName } from "../../lib/request-traffic";
+import { createMcpX402ToolMeta } from "../../lib/mcp-x402";
+import {
+  INTENTFENCE_POLICY_PACK_PRICE_ATOMIC,
+  INTENTFENCE_PRICE_ATOMIC,
+  INTENTFENCE_READINESS_PRICE_ATOMIC,
+  INTENTFENCE_US_CPI_PRICE_ATOMIC,
+  INTENTFENCE_WALLET_RISK_PRICE_ATOMIC,
+} from "../../lib/x402";
 
 const SITE_ORIGIN = "https://agentpass-protocol.rmalka06.chatgpt.site";
 const MCP_PAYMENT_META_KEY = "x402/payment";
@@ -506,6 +514,7 @@ export async function POST(request: Request) {
           description: "Paid self-service integration pack (1 USDC on Base). Generates a runtime-specific TypeScript guard, signed action and policy receipt, negative test vectors, and a fail-closed deployment checklist for Cloudflare Agents, Coinbase AgentKit, or an MCP gateway. No meeting or account is required.",
           inputSchema: policyPackInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          _meta: createMcpX402ToolMeta(INTENTFENCE_POLICY_PACK_PRICE_ATOMIC),
         },
         {
           name: "intentfence_verified_preflight",
@@ -513,6 +522,7 @@ export async function POST(request: Request) {
           description: "Paid production preflight ($0.005 USDC on Base). Settles through x402 and returns a signed ES256 audit receipt plus settlement metadata.",
           inputSchema: preflightInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          _meta: createMcpX402ToolMeta(INTENTFENCE_PRICE_ATOMIC),
         },
         {
           name: "intentfence_x402_assessment",
@@ -520,6 +530,7 @@ export async function POST(request: Request) {
           description: "Paid assessment ($0.005 USDC on Base). Forward the exact base64 or base64url PAYMENT-REQUIRED header observed by the caller. IntentFence validates the quote, canonical Base USDC asset, price ceiling, payee allowlist, timeout, and resource binding without contacting the target, then returns a short-lived ES256 receipt bound to the quote hash. Supply allowed_payees for safe_to_proceed; omission yields needs_review.",
           inputSchema: x402AssessmentInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          _meta: createMcpX402ToolMeta(INTENTFENCE_PRICE_ATOMIC),
         },
         {
           name: "intentfence_x402_readiness",
@@ -527,6 +538,7 @@ export async function POST(request: Request) {
           description: "Paid live endpoint check ($0.002 USDC on Base). Makes one bounded credential-free request to a public HTTPS target, blocks private networks and redirects, never pays the target, validates the returned x402 challenge, and returns a signed five-minute receipt.",
           inputSchema: x402ReadinessInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          _meta: createMcpX402ToolMeta(INTENTFENCE_READINESS_PRICE_ATOMIC),
         },
         {
           name: "intentfence_wallet_risk",
@@ -534,6 +546,7 @@ export async function POST(request: Request) {
           description: "Paid AML/KYT wallet screening ($0.002 USDC on Base) before sending funds or approving a transaction. Checks live Base activity plus GoPlus sanctions, phishing, mixer, money-laundering, dark-web, blacklist, and related counterparty-risk flags, then returns a five-minute ES256 receipt. A low-risk result is not proof of identity, ownership, authorization, or future behavior.",
           inputSchema: walletRiskInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          _meta: createMcpX402ToolMeta(INTENTFENCE_WALLET_RISK_PRICE_ATOMIC),
         },
         {
           name: "intentfence_us_cpi",
@@ -541,6 +554,7 @@ export async function POST(request: Request) {
           description: "Paid official U.S. CPI and core CPI data ($0.001 USDC on Base), retrieved from the Bureau of Labor Statistics with a six-hour edge cache and returned with an ES256 provenance receipt. Optionally request a YYYY-MM period.",
           inputSchema: usCpiInputSchema,
           annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+          _meta: createMcpX402ToolMeta(INTENTFENCE_US_CPI_PRICE_ATOMIC),
         },
       ],
     });
